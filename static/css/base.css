@@ -1,27 +1,27 @@
 :root {
-    --color-primary: #1a3a5c;
-    --color-primary-light: #2a5a8c;
-    --color-primary-dark: #0f2440;
-    --color-accent: #c8a96e;
-    --color-accent-light: #e0c88a;
+    --color-primary: #0d0d0d;
+    --color-primary-light: #1f1f1f;
+    --color-primary-dark: #000000;
+    --color-accent: #c9a25b;
+    --color-accent-light: #e6c787;
     --color-success: #27ae60;
     --color-warning: #f39c12;
     --color-danger: #e74c3c;
     --color-info: #3498db;
-    --color-bg: #f8f7f4;
-    --color-bg-white: #ffffff;
-    --color-text: #2c3e50;
-    --color-text-light: #7f8c8d;
-    --color-text-muted: #95a5a6;
-    --color-border: #e0ddd5;
-    --color-border-light: #ece9e1;
+    --color-bg: #0a0a0a;
+    --color-bg-white: #161616;
+    --color-text: #ececec;
+    --color-text-light: #b8b8b8;
+    --color-text-muted: #8a8a8a;
+    --color-border: #2a2a2a;
+    --color-border-light: #1d1d1d;
     --color-badge-sale: #e74c3c;
     --color-badge-top: #f39c12;
     --color-badge-new: #27ae60;
-    --color-stock-in: #27ae60;
+    --color-stock-in: #2ecc71;
     --color-stock-ready: #f39c12;
     --color-stock-order: #3498db;
-    --color-stock-out: #95a5a6;
+    --color-stock-out: #8a8a8a;
 
     --font-main: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', sans-serif;
     --font-heading: 'Georgia', 'Times New Roman', serif;
@@ -73,13 +73,13 @@ body {
 }
 
 a {
-    color: var(--color-primary);
+    color: var(--color-accent);
     text-decoration: none;
     transition: color var(--transition);
 }
 
 a:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-light);
 }
 
 img {
@@ -115,7 +115,7 @@ h5,
 h6 {
     font-family: var(--font-heading);
     line-height: 1.3;
-    color: var(--color-primary-dark);
+    color: var(--color-accent);
 }
 
 .container {
@@ -153,34 +153,34 @@ h6 {
 }
 
 .btn--primary {
-    background: var(--color-primary);
-    color: #fff;
+    background: var(--color-accent);
+    color: var(--color-primary-dark);
 }
 
 .btn--primary:hover {
-    background: var(--color-primary-light);
-    color: #fff;
+    background: var(--color-accent-light);
+    color: var(--color-primary-dark);
 }
 
 .btn--accent {
     background: var(--color-accent);
-    color: #fff;
+    color: var(--color-primary-dark);
 }
 
 .btn--accent:hover {
     background: var(--color-accent-light);
-    color: #fff;
+    color: var(--color-primary-dark);
 }
 
 .btn--outline {
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
     background: transparent;
 }
 
 .btn--outline:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+    border-color: var(--color-accent-light);
+    color: var(--color-accent-light);
 }
 
 .btn--buy {
@@ -255,7 +255,7 @@ h6 {
 .price {
     font-size: 1.125rem;
     font-weight: 700;
-    color: var(--color-primary-dark);
+    color: var(--color-accent);
 }
 
 .price__old {
@@ -287,27 +287,27 @@ h6 {
 }
 
 .alert--success {
-    background: #d4edda;
-    color: #155724;
-    border-color: #c3e6cb;
+    background: rgba(39, 174, 96, 0.12);
+    color: #6fe0a3;
+    border-color: rgba(39, 174, 96, 0.4);
 }
 
 .alert--error {
-    background: #f8d7da;
-    color: #721c24;
-    border-color: #f5c6cb;
+    background: rgba(231, 76, 60, 0.12);
+    color: #f3a39a;
+    border-color: rgba(231, 76, 60, 0.4);
 }
 
 .alert--warning {
-    background: #fff3cd;
-    color: #856404;
-    border-color: #ffeeba;
+    background: rgba(243, 156, 18, 0.12);
+    color: #ffd285;
+    border-color: rgba(243, 156, 18, 0.4);
 }
 
 .alert--info {
-    background: #d1ecf1;
-    color: #0c5460;
-    border-color: #bee5eb;
+    background: rgba(201, 162, 91, 0.12);
+    color: var(--color-accent-light);
+    border-color: rgba(201, 162, 91, 0.4);
 }
 
 .main-content {

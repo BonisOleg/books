@@ -83,7 +83,7 @@
 .seo-text__content h2 {
     font-size: 1.125rem;
     margin-bottom: 12px;
-    color: var(--color-primary-dark);
+    color: var(--color-accent);
 }
 
 .seo-text__content p {
@@ -91,7 +91,7 @@
 }
 
 .seo-text__content a {
-    color: var(--color-primary);
+    color: var(--color-accent);
     text-decoration: underline;
 }
 
@@ -164,9 +164,9 @@
     margin-top: 16px;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-primary);
+    color: var(--color-accent);
 }
 
 .section__more:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-light);
 }

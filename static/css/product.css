@@ -65,7 +65,7 @@
 
 .product-gallery__thumb.is-active,
 .product-gallery__thumb:hover {
-    border-color: var(--color-primary);
+    border-color: var(--color-accent);
     opacity: 1;
 }
 
@@ -121,7 +121,7 @@
 }
 
 .product-gallery__arrow:hover {
-    background: #fff;
+    background: var(--color-bg-white);
 }
 
 .product-gallery__arrow svg {
@@ -162,7 +162,7 @@
 .product-info__price {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-primary-dark);
+    color: var(--color-accent);
 }
 
 .product-info__old-price {
@@ -189,7 +189,7 @@
 
 .product-info__oneclick {
     font-size: 0.8125rem;
-    color: var(--color-primary);
+    color: var(--color-accent);
     text-decoration: underline;
     text-align: center;
     background: none;
@@ -204,7 +204,7 @@
 .product-info__phone {
     display: block;
     padding: 4px 0;
-    color: var(--color-primary);
+    color: var(--color-accent);
     font-size: 0.875rem;
 }
 
@@ -240,8 +240,8 @@
 
 .product-tabs__btn.is-active,
 .product-tabs__btn:hover {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
 }
 
 .product-tabs__panel {
@@ -292,7 +292,7 @@
 
 .product-info__manager svg {
     flex-shrink: 0;
-    color: var(--color-primary);
+    color: var(--color-accent);
 }
 
 .product-info__schedule {
@@ -323,7 +323,7 @@
 .product-info__return-policy summary {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-accent);
     cursor: pointer;
     padding: 4px 0;
     list-style: none;
