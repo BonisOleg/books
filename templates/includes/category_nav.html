@@ -1,0 +1,12 @@
+{% if nav_categories %}
+<nav class="category-nav" aria-label="Категорії">
+    <div class="container">
+        <div class="category-nav__list">
+            <a href="{% url 'products:catalog' %}" class="category-nav__link">Усі товари</a>
+            {% for cat in nav_categories %}
+            <a href="{{ cat.get_absolute_url }}" class="category-nav__link">{{ cat.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</nav>
+{% endif %}

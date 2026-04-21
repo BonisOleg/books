@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container blog-detail">
+    <div class="blog-detail__header">
+        <div class="blog-detail__date">{{ article.created_at|date:"d.m.Y" }}</div>
+        <h1 class="blog-detail__title">{{ article.title }}</h1>
+    </div>
+
+    {% if article.image %}
+    <img class="blog-detail__img" src="{{ article.image.url }}" alt="{{ article.title }}">
+    {% endif %}
+
+    <div class="blog-detail__content">
+        {{ article.content|safe }}
+    </div>
+
+    <div style="margin-top:32px;">
+        <a href="{% url 'blog:articles' %}" class="btn btn--outline">&larr; Усі статті</a>
+    </div>
+</div>
+{% endblock %}

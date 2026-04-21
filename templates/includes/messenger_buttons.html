@@ -1,0 +1,54 @@
+{% if TELEGRAM_BOT_USERNAME or VIBER_BOT_URI %}
+<div class="messenger-btns">
+    {% if TELEGRAM_BOT_USERNAME %}
+    <a href="https://t.me/{{ TELEGRAM_BOT_USERNAME }}" class="messenger-btn messenger-btn--telegram"
+       target="_blank" rel="noopener" aria-label="Telegram">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+        </svg>
+    </a>
+    {% endif %}
+    {% if VIBER_BOT_URI %}
+    <a href="viber://pa?chatURI={{ VIBER_BOT_URI }}" class="messenger-btn messenger-btn--viber"
+       aria-label="Viber">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+            <path d="M11.398.002C9.473.028 5.331.344 3.014 2.467 1.294 4.187.63 6.771.527 9.945c-.104 3.174-.233 9.128 5.602 10.79v2.468s-.038.998.621 1.203c.795.248 1.263-.51 2.024-1.327.418-.449.993-1.107 1.428-1.611 3.937.332 6.962-.427 7.307-.538.795-.257 5.296-.836 6.028-6.815.756-6.163-.358-10.057-2.324-11.81C19.456.601 15.59-.052 11.398.002zM11.669 1.74c3.832-.054 7.153.425 8.745 1.903 1.66 1.476 2.651 5.022 1.983 10.397-.612 5.005-4.308 5.383-4.984 5.601-.283.092-2.932.751-6.283.539 0 0-2.489 3.003-3.266 3.784-.122.122-.265.17-.36.147-.132-.033-.168-.19-.165-.42 0-.148.011-4.545.011-4.545-5.035-1.42-4.737-6.612-4.65-9.26.087-2.648.602-4.906 2.069-6.358C6.273 2.1 9.377 1.771 11.508 1.742l.161-.002z"/>
+        </svg>
+    </a>
+    {% endif %}
+</div>
+
+<style>
+.messenger-btns {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 900;
+}
+.messenger-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.2s ease;
+}
+.messenger-btn:hover {
+    transform: scale(1.1);
+    color: #fff;
+}
+.messenger-btn--telegram { background: #0088cc; }
+.messenger-btn--viber { background: #7360f2; }
+@supports (padding: env(safe-area-inset-bottom)) {
+    .messenger-btns {
+        bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+}
+</style>
+{% endif %}

@@ -1,0 +1,16 @@
+{% load static %}
+<title>{% block title %}{% if page_title %}{{ page_title }} | {% endif %}{{ SITE_NAME }}{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}{% if page_meta_description %}{{ page_meta_description }}{% else %}{{ SITE_NAME }} - інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних товарів{% endif %}{% endblock %}">
+<meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
+<meta property="og:title" content="{% block og_title %}{{ page_title|default:SITE_NAME }}{% endblock %}">
+<meta property="og:description" content="{% block og_description %}{{ page_meta_description|default:'' }}{% endblock %}">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% block og_image %}{% endblock %}
+<meta property="og:locale" content="uk_UA">
+<meta property="og:site_name" content="{{ SITE_NAME }}">
+
+<link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+
+{% block structured_data %}{% endblock %}

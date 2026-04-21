@@ -1,0 +1,9 @@
+{% load core_tags %}
+{% for product in products %}
+{% include "includes/product_card.html" with product=product %}
+{% endfor %}
+{% if not products %}
+<div style="grid-column: 1/-1; text-align:center; padding:40px;">
+    <p style="color:var(--color-text-muted);">Товарів не знайдено</p>
+</div>
+{% endif %}

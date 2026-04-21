@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load core_tags %}
+
+{% block content %}
+<div class="container" style="padding:48px 0; text-align:center;">
+    <h1 style="font-size:1.25rem; margin-bottom:20px;">Оплата замовлення #{{ order.order_number }}</h1>
+    <p style="margin-bottom:24px;">Сума: {{ order.total|uah }}</p>
+    {{ liqpay_form|safe }}
+</div>
+{% endblock %}

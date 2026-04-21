@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+{% endblock %}
+
+{% block structured_data %}
+{% json_ld breadcrumb_schema %}
+{% endblock %}
+
+{% block content %}
+<div class="container catalog-page">
+    <nav aria-label="Breadcrumb" style="font-size:0.8125rem; margin-bottom:16px; color:var(--color-text-muted);">
+        {% for name, url in breadcrumbs %}
+        {% if url %}
+        <a href="{{ url }}">{{ name }}</a> &rsaquo;
+        {% else %}
+        <span>{{ name }}</span>
+        {% endif %}
+        {% endfor %}
+    </nav>
+
+    <div class="catalog-header">
+        <h1 class="catalog-header__title">{{ category.name }}</h1>
+        {% if category.description %}
+        <div class="catalog-header__desc">{{ category.description|truncatewords:50 }}</div>
+        {% endif %}
+    </div>
+
+    {% if subcategories %}
+    <div class="categories-grid" style="margin-bottom:20px;">
+        {% for sub in subcategories %}
+        <a href="{% url 'products:category' sub.slug %}" class="category-card">
+            {% if sub.image %}
+            <img class="category-card__img" src="{{ sub.image.url }}" alt="{{ sub.name }}" loading="lazy">
+            {% else %}
+            <div class="category-card__img"></div>
+            {% endif %}
+            <div class="category-card__name">{{ sub.name }}</div>
+            {% if sub.description %}
+            <div class="category-card__desc">{{ sub.description|truncatewords:12 }}</div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="catalog-toolbar">
+        <div class="catalog-toolbar__sort">
+            <select hx-get="{% url 'products:category' category.slug %}"
+                    hx-target="#product-grid"
+                    hx-swap="innerHTML"
+                    hx-include="[name='price_min'],[name='price_max'],[name='stock'],[name='subcategory']"
+                    name="sort">
+                <option value="default" {% if current_sort == 'default' %}selected{% endif %}>За порядком</option>
+                <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>За зростанням ціни</option>
+                <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>За зниженням ціни</option>
+                <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>За новизною</option>
+            </select>
+        </div>
+        <button class="catalog-toolbar__filter-btn" id="open-filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
+                <line x1="17" y1="16" x2="23" y2="16"/>
+            </svg>
+            Фільтри
+        </button>
+    </div>
+
+    <div class="catalog-layout">
+        <aside class="catalog-sidebar">
+            {% include "products/partials/filter_panel.html" %}
+        </aside>
+
+        <div id="product-grid" class="product-grid" style="flex:1;">
+            {% include "products/partials/product_grid.html" %}
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="catalog-pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&sort={{ current_sort }}">&laquo;</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="active">{{ num }}</span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}&sort={{ current_sort }}">{{ num }}</a>
+        {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&sort={{ current_sort }}">&raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if category.description %}
+    <div class="seo-text" style="margin-top:24px;">
+        <div class="seo-text__content">
+            {{ category.description|safe }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mobile-menu__overlay" id="filter-overlay"></div>
+<div class="mobile-filters" id="mobile-filters">
+    <div class="mobile-filters__header">
+        <span>Фільтри</span>
+        <button class="mobile-filters__close" id="close-filters" aria-label="Закрити">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+    <div class="mobile-filters__body">
+        {% include "products/partials/filter_panel.html" %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var openBtn = document.getElementById('open-filters');
+    var closeBtn = document.getElementById('close-filters');
+    var panel = document.getElementById('mobile-filters');
+    var overlay = document.getElementById('filter-overlay');
+    function open() { panel.classList.add('is-open'); overlay.classList.add('is-visible'); document.body.style.overflow='hidden'; }
+    function close() { panel.classList.remove('is-open'); overlay.classList.remove('is-visible'); document.body.style.overflow=''; }
+    if(openBtn) openBtn.addEventListener('click', open);
+    if(closeBtn) closeBtn.addEventListener('click', close);
+    if(overlay) overlay.addEventListener('click', close);
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/filters.js' %}"></script>
+{% endblock %}

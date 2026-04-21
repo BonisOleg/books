@@ -1,0 +1,220 @@
+.checkout-page {
+    padding: 24px 0 40px;
+}
+
+.checkout-page__title {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+}
+
+.checkout-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.checkout-section {
+    background: var(--color-bg-white);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.checkout-section__title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--color-primary-dark);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--color-text);
+}
+
+.form-label--required::after {
+    content: ' *';
+    color: var(--color-danger);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    background: var(--color-bg-white);
+    color: var(--color-text);
+    transition: border-color var(--transition);
+}
+
+.form-select {
+    text-overflow: ellipsis;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-error {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    margin-top: 4px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.form-row .form-group {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.payment-method {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+
+.payment-method:hover {
+    border-color: var(--color-primary);
+}
+
+.payment-method input[type="radio"] {
+    accent-color: var(--color-primary);
+}
+
+.payment-method__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.payment-method__desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.checkout-total {
+    background: var(--color-bg-white);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.checkout-total__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 0.875rem;
+}
+
+.checkout-total__row > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.checkout-total__row--grand {
+    border-top: 2px solid var(--color-border);
+    padding-top: 12px;
+    margin-top: 8px;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.warehouse-autocomplete {
+    position: relative;
+}
+
+.warehouse-autocomplete__results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+}
+
+.warehouse-autocomplete__results.is-visible {
+    display: block;
+}
+
+.warehouse-autocomplete__item {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.warehouse-autocomplete__item:hover {
+    background: var(--color-bg);
+}
+
+.order-success {
+    text-align: center;
+    padding: 48px 16px;
+}
+
+.order-success__icon {
+    font-size: 4rem;
+    color: var(--color-success);
+    margin-bottom: 16px;
+}
+
+.order-success__title {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+}
+
+.order-success__number {
+    font-size: 1rem;
+    color: var(--color-text-light);
+    margin-bottom: 24px;
+}

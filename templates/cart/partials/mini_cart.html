@@ -1,0 +1,28 @@
+{% load core_tags %}
+<div class="mini-cart__header">Кошик</div>
+<div class="mini-cart__items">
+    {% for item in cart_items %}
+    <div class="mini-cart__item">
+        <div class="mini-cart__item-img">
+            {% with img=item.product.main_image %}
+            {% if img %}
+            <img src="{{ img.image.url }}" alt="{{ item.product.name }}">
+            {% endif %}
+            {% endwith %}
+        </div>
+        <div>
+            <div>{{ item.product.name|truncatewords:6 }}</div>
+            <div style="color:var(--color-text-muted);">{{ item.quantity }} x {{ item.price|uah }}</div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="padding:16px;text-align:center;color:var(--color-text-muted);">Кошик порожній</div>
+    {% endfor %}
+</div>
+<div class="mini-cart__footer">
+    <div class="mini-cart__total">
+        <span>Разом:</span>
+        <span>{{ cart_total|uah }}</span>
+    </div>
+    <a href="{% url 'cart:detail' %}" class="btn btn--primary btn--block btn--sm">Перейти до кошика</a>
+</div>

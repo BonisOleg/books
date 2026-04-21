@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:480px;padding:32px var(--container-padding);">
+    <h1 class="checkout-page__title" style="text-align:center;">Реєстрація</h1>
+
+    <div class="checkout-section">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label class="form-label{% if field.field.required %} form-label--required{% endif %}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="form-error">{{ field.errors.0 }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--primary btn--block" style="margin-top:16px;">Зареєструватися</button>
+        </form>
+        <p style="text-align:center; margin-top:16px; font-size:0.875rem;">
+            Вже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

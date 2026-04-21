@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:640px;padding:32px var(--container-padding);">
+    <h1 class="checkout-page__title" style="text-align:center;">Підібрати подарунок</h1>
+    <p style="text-align:center;color:var(--color-text-light);margin-bottom:24px;font-size:0.875rem;">
+        Дайте відповідь на кілька запитань, і ми підберемо ідеальний подарунок
+    </p>
+
+    <div class="checkout-section" id="gift-wizard">
+        {% if questions %}
+        <form hx-get="{% url 'promotions:gift_picker_results' %}"
+              hx-target="#gift-results"
+              hx-swap="innerHTML">
+            {% for question in questions %}
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label" style="font-size:1rem;font-weight:600;">
+                    {{ forloop.counter }}. {{ question.text }}
+                </label>
+                {% for option in question.options.all %}
+                <label class="payment-method" style="margin-top:6px;">
+                    <input type="checkbox" name="option" value="{{ option.id }}">
+                    <div class="payment-method__label">{{ option.text }}</div>
+                </label>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn--primary btn--block">Підібрати</button>
+        </form>
+        {% else %}
+        <p style="text-align:center;color:var(--color-text-muted);">
+            Питання для підбору ще не налаштовані. Зверніться до адміністратора.
+        </p>
+        {% endif %}
+    </div>
+
+    <div id="gift-results" style="margin-top:24px;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gift-picker.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% load static core_tags %}
+<div class="product-card" itemscope itemtype="https://schema.org/Product">
+    <div class="product-card__badges">
+        {% if product.badge == 'sale' %}
+        <span class="badge badge--sale">Акція</span>
+        {% elif product.badge == 'top' %}
+        <span class="badge badge--top">Топ</span>
+        {% elif product.badge == 'new' %}
+        <span class="badge badge--new">Новинка</span>
+        {% endif %}
+        {% if product.discount_percent %}
+        <span class="badge badge--discount">-{{ product.discount_percent }}%</span>
+        {% endif %}
+    </div>
+
+    <div class="product-card__img-wrap">
+        <a href="{% url 'products:detail' product.slug %}">
+            {% with first_img=product.images.first %}
+            {% if first_img %}
+            <img class="product-card__img" src="{{ first_img.image.url }}"
+                 alt="{{ first_img.alt_text|default:product.name }}"
+                 loading="lazy" itemprop="image">
+            {% else %}
+            <div class="product-card__img" style="background:var(--color-border-light)"></div>
+            {% endif %}
+            {% endwith %}
+        </a>
+    </div>
+
+    <div class="product-card__body">
+        <div class="product-card__sku">{{ product.sku }}</div>
+        <div class="product-card__name" itemprop="name">
+            <a href="{% url 'products:detail' product.slug %}">{{ product.name }}</a>
+        </div>
+
+        <div class="product-card__stock">
+            <span class="stock-status stock-status--{{ product.stock_status }}">
+                {{ product.get_stock_status_display }}
+            </span>
+        </div>
+
+        <div class="product-card__price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+            <meta itemprop="priceCurrency" content="UAH">
+            <meta itemprop="price" content="{{ product.price }}">
+            {% if product.old_price %}
+            <span class="price__old">{{ product.old_price|uah }}</span>
+            {% endif %}
+            <span class="price">{{ product.price|uah }}</span>
+        </div>
+
+        <div class="product-card__actions">
+            {% if product.stock_status != 'out' %}
+            <button class="btn btn--buy btn--block btn--sm"
+                    hx-post="{% url 'cart:add' product.id %}"
+                    hx-target="#cart-count"
+                    hx-swap="innerHTML"
+                    hx-indicator=".htmx-indicator">
+                Купити
+            </button>
+            {% else %}
+            {% if PHONE_NUMBERS %}
+            <a href="tel:{{ PHONE_NUMBERS.0|phone_raw }}" class="btn btn--outline btn--block btn--sm">
+                Зателефонувати
+            </a>
+            {% else %}
+            <span class="btn btn--outline btn--block btn--sm" style="opacity:0.5;cursor:default;">Немає в наявності</span>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>

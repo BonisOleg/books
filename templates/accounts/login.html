@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:420px;padding:32px var(--container-padding);">
+    <h1 class="checkout-page__title" style="text-align:center;">Вхід</h1>
+
+    <div class="checkout-section">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="form-error">{{ field.errors.0 }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+            <div class="form-error" style="margin-bottom:12px;">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn--primary btn--block" style="margin-top:16px;">Увійти</button>
+        </form>
+        <p style="text-align:center; margin-top:16px; font-size:0.875rem;">
+            Немає акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

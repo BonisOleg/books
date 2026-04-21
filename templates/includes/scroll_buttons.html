@@ -1,0 +1,55 @@
+<button class="scroll-btn scroll-btn--up" id="scroll-up" aria-label="Вгору">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="18 15 12 9 6 15"/>
+    </svg>
+</button>
+<button class="scroll-btn scroll-btn--down" id="scroll-down" aria-label="Вниз">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 12 15 18 9"/>
+    </svg>
+</button>
+
+<style>
+.scroll-btn {
+    position: fixed;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    z-index: 900;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, background var(--transition);
+}
+.scroll-btn:hover {
+    background: var(--color-primary-light);
+}
+.scroll-btn svg {
+    width: 20px;
+    height: 20px;
+}
+.scroll-btn--up {
+    bottom: 120px;
+}
+.scroll-btn--down {
+    bottom: 68px;
+}
+.scroll-btn.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+@supports (padding: env(safe-area-inset-bottom)) {
+    .scroll-btn--up {
+        bottom: calc(120px + env(safe-area-inset-bottom));
+    }
+    .scroll-btn--down {
+        bottom: calc(68px + env(safe-area-inset-bottom));
+    }
+}
+</style>

@@ -1,0 +1,24 @@
+# Core
+Django>=5.1,<5.2
+gunicorn>=23.0
+argon2-cffi>=23.1  # активний password hasher у production
+
+# DB / config
+psycopg[binary]>=3.2
+dj-database-url>=2.2
+python-dotenv>=1.0
+
+# Static / media
+whitenoise[brotli]>=6.7
+cloudinary>=1.41
+django-cloudinary-storage>=0.3
+Pillow>=10.4
+django-cleanup>=9.0
+
+# Domain helpers
+openpyxl>=3.1
+requests>=2.32
+ecdsa>=0.19
+
+# Observability (опційно — активується, якщо SENTRY_DSN задано)
+sentry-sdk[django]>=2.18

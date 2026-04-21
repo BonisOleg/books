@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:640px;padding:32px var(--container-padding);">
+    <h1 class="checkout-page__title">Імпорт / Експорт товарів</h1>
+
+    <div class="checkout-section" style="margin-bottom:24px;">
+        <div class="checkout-section__title">Експорт товарів</div>
+        <p style="font-size:0.875rem;color:var(--color-text-light);margin-bottom:12px;">
+            Завантажте список усіх товарів у зручному форматі:
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{% url 'import_export_app:export' %}?format=csv" class="btn btn--outline btn--sm">CSV</a>
+            <a href="{% url 'import_export_app:export' %}?format=excel" class="btn btn--outline btn--sm">Excel</a>
+            <a href="{% url 'import_export_app:export' %}?format=xml" class="btn btn--outline btn--sm">XML</a>
+        </div>
+    </div>
+
+    <div class="checkout-section" style="margin-bottom:24px;">
+        <div class="checkout-section__title">Google Merchant Feed</div>
+        <p style="font-size:0.875rem;color:var(--color-text-light);margin-bottom:8px;">
+            XML фід для Google Merchant Center:
+        </p>
+        <a href="{% url 'products:google_merchant_feed' %}" class="btn btn--primary btn--sm" target="_blank">
+            Відкрити Google Merchant XML
+        </a>
+    </div>
+
+    <div class="checkout-section">
+        <div class="checkout-section__title">Імпорт товарів</div>
+        <p style="font-size:0.875rem;color:var(--color-text-light);margin-bottom:12px;">
+            Завантажте файл CSV або Excel з товарами. Товари з однаковим SKU будуть оновлені.
+        </p>
+        <form method="post" action="{% url 'import_export_app:import_action' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="file" name="file" accept=".csv,.xlsx" class="form-input">
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm">Імпортувати</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

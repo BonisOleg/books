@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container blog-page">
+    <h1 class="blog-page__title">Статті</h1>
+
+    <div class="blog-grid">
+        {% for article in articles %}
+        <div class="blog-card">
+            {% if article.image %}
+            <img class="blog-card__img" src="{{ article.image.url }}" alt="{{ article.title }}" loading="lazy">
+            {% endif %}
+            <div class="blog-card__body">
+                <div class="blog-card__date">{{ article.created_at|date:"d.m.Y" }}</div>
+                <div class="blog-card__title">
+                    <a href="{% url 'blog:article_detail' article.slug %}">{{ article.title }}</a>
+                </div>
+                {% if article.excerpt %}
+                <div class="blog-card__excerpt">{{ article.excerpt }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <p style="color:var(--color-text-muted);">Статей поки немає.</p>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="catalog-pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="active">{{ num }}</span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}">{{ num }}</a>
+        {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

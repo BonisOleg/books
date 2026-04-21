@@ -1,0 +1,57 @@
+{% load core_tags %}
+<div class="cart-items">
+    {% for item in cart_items %}
+    <div class="cart-item">
+        <div class="cart-item__img">
+            {% with img=item.product.main_image %}
+            {% if img %}
+            <img src="{{ img.image.url }}" alt="{{ item.product.name }}" loading="lazy">
+            {% endif %}
+            {% endwith %}
+        </div>
+        <div class="cart-item__info">
+            <div class="cart-item__name">
+                <a href="{% url 'products:detail' item.product.slug %}">{{ item.product.name }}</a>
+            </div>
+            <div class="cart-item__sku">{{ item.product.sku }}</div>
+            <div class="cart-item__qty">
+                <button class="cart-item__qty-btn"
+                        hx-post="{% url 'cart:update' item.product.id %}"
+                        hx-target="#cart-content"
+                        hx-swap="innerHTML"
+                        hx-vals='{"quantity": {{ item.quantity|add:"-1" }}}'>−</button>
+                <span class="cart-item__qty-val">{{ item.quantity }}</span>
+                <button class="cart-item__qty-btn"
+                        hx-post="{% url 'cart:update' item.product.id %}"
+                        hx-target="#cart-content"
+                        hx-swap="innerHTML"
+                        hx-vals='{"quantity": {{ item.quantity|add:"1" }}}'>+</button>
+            </div>
+            <div class="cart-item__price">{{ item.total|uah }}</div>
+        </div>
+        <button class="cart-item__remove"
+                hx-post="{% url 'cart:remove' item.product.id %}"
+                hx-target="#cart-content"
+                hx-swap="innerHTML"
+                aria-label="Видалити">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="cart-summary">
+    <div class="cart-summary__row">
+        <span>Товарів: {{ cart_count }}</span>
+    </div>
+    <div class="cart-summary__row cart-summary__row--total">
+        <span>Разом:</span>
+        <span>{{ cart_total|uah }}</span>
+    </div>
+    <div class="cart-summary__actions">
+        <a href="{% url 'orders:checkout' %}" class="btn btn--buy btn--block">Оформити замовлення</a>
+        <a href="{% url 'products:catalog' %}" class="btn btn--outline btn--block">Продовжити покупки</a>
+    </div>
+</div>

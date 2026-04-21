@@ -1,0 +1,72 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Django
+*.log
+*.pot
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-*
+local_settings.py
+
+# Static & media (генеруються/завантажуються в продакшені)
+/staticfiles/
+/media/
+
+# Coverage / Tests
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Cursor / AI tooling
+.cursor/
+.cursorignore
+.cursorindexingignore
+
+# Render local files
+.render-buildlogs/
+
+# Node (на випадок майбутніх збірок)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Backups
+*.bak
+*.tmp
+*~

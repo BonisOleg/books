@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container catalog-page">
+    <div class="catalog-header">
+        <h1 class="catalog-header__title">{{ page_title }}</h1>
+        {% if search_query %}
+        <p class="catalog-header__desc">Результати пошуку для: &laquo;{{ search_query }}&raquo;</p>
+        {% endif %}
+    </div>
+
+    {% if categories %}
+    <div class="categories-grid" style="margin-bottom: 24px;">
+        {% for cat in categories %}
+        <a href="{% url 'products:category' cat.slug %}" class="category-card">
+            {% if cat.image %}
+            <img class="category-card__img" src="{{ cat.image.url }}" alt="{{ cat.name }}" loading="lazy">
+            {% else %}
+            <div class="category-card__img"></div>
+            {% endif %}
+            <div class="category-card__name">{{ cat.name }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="catalog-toolbar">
+        <div class="catalog-toolbar__sort">
+            <select onchange="window.location.href=this.value">
+                {% with base_url=request.path %}
+                <option value="{{ base_url }}?sort=default" {% if current_sort == 'default' %}selected{% endif %}>За порядком</option>
+                <option value="{{ base_url }}?sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>За зростанням ціни</option>
+                <option value="{{ base_url }}?sort=price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>За зниженням ціни</option>
+                <option value="{{ base_url }}?sort=newest" {% if current_sort == 'newest' %}selected{% endif %}>За новизною</option>
+                {% endwith %}
+            </select>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="product-grid">
+        {% for product in products %}
+        {% include "includes/product_card.html" with product=product %}
+        {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="catalog-pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&sort={{ current_sort }}">&laquo;</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="active">{{ num }}</span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}&sort={{ current_sort }}">{{ num }}</a>
+        {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&sort={{ current_sort }}">&raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="cart-empty">
+        <div class="cart-empty__icon">&#128269;</div>
+        <div class="cart-empty__text">Товарів не знайдено</div>
+        <a href="{% url 'products:catalog' %}" class="btn btn--primary">До каталогу</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

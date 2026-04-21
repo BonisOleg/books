@@ -1,0 +1,39 @@
+{% load core_tags %}
+<div class="mobile-menu__overlay" id="mobile-overlay"></div>
+<nav class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu__header">
+        <span>{{ SITE_NAME }}</span>
+        <button class="mobile-menu__close" id="mobile-close" aria-label="Закрити">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="mobile-menu__nav">
+        <a href="{% url 'core:home' %}" class="mobile-menu__link">Головна</a>
+        <a href="{% url 'products:catalog' %}" class="mobile-menu__link">Каталог</a>
+        <a href="{% url 'promotions:gift_picker' %}" class="mobile-menu__link">Підібрати подарунок</a>
+        <a href="{% url 'blog:articles' %}" class="mobile-menu__link">Статті</a>
+        <a href="{% url 'blog:news_list' %}" class="mobile-menu__link">Новини</a>
+        <a href="{% url 'core:home' %}" class="mobile-menu__link">Доставка і оплата</a>
+        <a href="{% url 'core:home' %}" class="mobile-menu__link">Про нас</a>
+        <a href="{% url 'cart:detail' %}" class="mobile-menu__link">Кошик</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'accounts:profile' %}" class="mobile-menu__link">Мій профіль</a>
+        <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="mobile-menu__link" style="width:100%;text-align:left;background:none;border:none;font:inherit;color:inherit;cursor:pointer;padding:0;">Вихід</button>
+        </form>
+        {% else %}
+        <a href="{% url 'accounts:login' %}" class="mobile-menu__link">Вхід</a>
+        <a href="{% url 'accounts:register' %}" class="mobile-menu__link">Реєстрація</a>
+        {% endif %}
+    </div>
+
+    <div class="mobile-menu__phones">
+        {% for phone in PHONE_NUMBERS %}
+        <a href="tel:{{ phone|phone_raw }}" class="mobile-menu__phone">{{ phone }}</a>
+        {% endfor %}
+    </div>
+</nav>

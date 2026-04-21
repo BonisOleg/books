@@ -1,0 +1,75 @@
+{% load core_tags %}
+<div class="filter-panel">
+    <form hx-get="{% url 'products:category' category.slug %}"
+          hx-target="#product-grid"
+          hx-swap="innerHTML"
+          hx-trigger="change"
+          hx-include="[name='sort']">
+
+        <div class="filter-group">
+            <div class="filter-group__title">Бюджет</div>
+            <div class="filter-group__range">
+                <input type="number" name="price_min" class="filter-group__input"
+                       placeholder="від" value="{{ filter_params.price_min|default:'' }}" min="0">
+                <span class="filter-group__sep">&mdash;</span>
+                <input type="number" name="price_max" class="filter-group__input"
+                       placeholder="до" value="{{ filter_params.price_max|default:'' }}" min="0">
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__title">Наявність</div>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="stock" value="in_stock"
+                       {% if 'in_stock' in selected_stocks %}checked{% endif %}>
+                В наявності
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="stock" value="ready"
+                       {% if 'ready' in selected_stocks %}checked{% endif %}>
+                Готово до відправки
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="stock" value="order"
+                       {% if 'order' in selected_stocks %}checked{% endif %}>
+                Під замовлення
+            </label>
+        </div>
+
+        {% if subcategories %}
+        <div class="filter-group">
+            <div class="filter-group__title">Тип</div>
+            {% for sub in subcategories %}
+            <label class="filter-checkbox">
+                <input type="checkbox" name="subcategory" value="{{ sub.slug }}"
+                       {% if sub.slug in selected_subcategories %}checked{% endif %}>
+                {{ sub.name }}
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="filter-group">
+            <div class="filter-group__title">Мітки</div>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="badge" value="sale"
+                       {% if filter_params.badge == 'sale' %}checked{% endif %}>
+                Акція
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="badge" value="top"
+                       {% if filter_params.badge == 'top' %}checked{% endif %}>
+                Топ продажів
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" name="badge" value="new"
+                       {% if filter_params.badge == 'new' %}checked{% endif %}>
+                Новинка
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block btn--sm" style="margin-top:12px;">
+            Застосувати
+        </button>
+    </form>
+</div>

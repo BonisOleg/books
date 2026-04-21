@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container checkout-page">
+    <h1 class="checkout-page__title">Оформлення замовлення</h1>
+
+    <form method="post" class="checkout-form">
+        {% csrf_token %}
+
+        <div>
+            <div class="checkout-section">
+                <div class="checkout-section__title">Контактні дані</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label form-label--required">Прізвище</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label form-label--required">Ім'я</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">По батькові</label>
+                        {{ form.patronymic }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label form-label--required">Телефон</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div class="checkout-section">
+                <div class="checkout-section__title">Доставка (Нова Пошта)</div>
+                <div class="form-group">
+                    <label class="form-label form-label--required">Місто</label>
+                    <div class="warehouse-autocomplete">
+                        {{ form.city }}
+                        <div class="warehouse-autocomplete__results" id="city-results"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label form-label--required">Відділення</label>
+                    <div class="warehouse-autocomplete">
+                        {{ form.warehouse }}
+                        {{ form.warehouse_ref }}
+                        <div class="warehouse-autocomplete__results" id="warehouse-results"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="checkout-section">
+                <div class="checkout-section__title">Спосіб оплати</div>
+                <div class="payment-methods">
+                    <label class="payment-method">
+                        <input type="radio" name="payment_method" value="cod" checked>
+                        <div>
+                            <div class="payment-method__label">Накладений платіж</div>
+                            <div class="payment-method__desc">Оплата при отриманні на пошті</div>
+                        </div>
+                    </label>
+                    <label class="payment-method">
+                        <input type="radio" name="payment_method" value="liqpay">
+                        <div>
+                            <div class="payment-method__label">LiqPay</div>
+                            <div class="payment-method__desc">Оплата картою онлайн (ПриватБанк)</div>
+                        </div>
+                    </label>
+                    <label class="payment-method">
+                        <input type="radio" name="payment_method" value="monobank">
+                        <div>
+                            <div class="payment-method__label">Monobank</div>
+                            <div class="payment-method__desc">Оплата через Monobank</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checkout-section">
+                <div class="checkout-section__title">Коментар</div>
+                {{ form.comment }}
+            </div>
+        </div>
+
+        <div>
+            <div class="checkout-total">
+                <div class="checkout-section__title">Ваше замовлення</div>
+                {% for item in cart_items %}
+                <div class="checkout-total__row">
+                    <span>{{ item.product.name|truncatewords:5 }} &times; {{ item.quantity }}</span>
+                    <span>{{ item.total|uah }}</span>
+                </div>
+                {% endfor %}
+                <div class="checkout-total__row checkout-total__row--grand">
+                    <span>Разом:</span>
+                    <span>{{ cart_total|uah }}</span>
+                </div>
+                <button type="submit" class="btn btn--buy btn--block" style="margin-top:16px;">
+                    Підтвердити замовлення
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/novaposhta.js' %}"></script>
+{% endblock %}

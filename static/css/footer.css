@@ -1,0 +1,141 @@
+.site-footer {
+    background: var(--color-primary-dark);
+    color: rgba(255,255,255,0.8);
+    padding: 32px 0 16px;
+    margin-top: auto;
+}
+
+.footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.footer__section-title {
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: var(--font-main);
+}
+
+.footer__link {
+    display: block;
+    padding: 4px 0;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8125rem;
+    transition: color var(--transition);
+}
+
+.footer__link:hover {
+    color: var(--color-accent);
+}
+
+.footer__phone {
+    display: block;
+    padding: 4px 0;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.footer__phone:hover {
+    color: var(--color-accent);
+}
+
+.footer__email {
+    display: block;
+    padding: 4px 0;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8125rem;
+}
+
+.footer__email:hover {
+    color: var(--color-accent);
+}
+
+.footer__address {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+.footer__schedule {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.footer__social {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.footer__social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    transition: background var(--transition);
+}
+
+.footer__social-link:hover {
+    background: var(--color-accent);
+    color: #fff;
+}
+
+.footer__social-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+.footer__bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    text-align: center;
+}
+
+.footer__copy {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.footer__policy {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.footer__policy a {
+    color: rgba(255,255,255,0.6);
+}
+
+.footer__policy a:hover {
+    color: var(--color-accent);
+}
+
+@media (min-width: 768px) {
+    .footer__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer__bottom {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+@media (min-width: 1024px) {
+    .footer__grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

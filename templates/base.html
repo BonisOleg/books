@@ -1,0 +1,73 @@
+{% load static core_tags %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>{% block title %}{% if page_title %}{{ page_title }} | {% endif %}{{ SITE_NAME }}{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}{% if page_meta_description %}{{ page_meta_description }}{% else %}{{ SITE_NAME }} - інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних товарів{% endif %}{% endblock %}">
+    <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ page_title|default:SITE_NAME }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ page_meta_description|default:'' }}{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    {% block og_image %}{% endblock %}
+    <meta property="og:locale" content="uk_UA">
+    <meta property="og:site_name" content="{{ SITE_NAME }}">
+    <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+    {% block structured_data %}{% endblock %}
+    {% if site_settings and site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/header.css' %}">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
+
+    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% include "includes/header.html" %}
+    {% include "includes/category_nav.html" %}
+    {% include "includes/mobile_menu.html" %}
+
+    {% if site_settings and site_settings.promo_banner_text %}
+    <div class="promo-banner">
+        {% if site_settings.promo_banner_url %}
+        <a href="{{ site_settings.promo_banner_url }}">{{ site_settings.promo_banner_text }}</a>
+        {% else %}
+        {{ site_settings.promo_banner_text }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        {% if messages %}
+        <div class="container">
+            {% for message in messages %}
+            <div class="alert alert--{{ message.tags }}" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include "includes/footer.html" %}
+    {% include "includes/scroll_buttons.html" %}
+    {% include "includes/messenger_buttons.html" %}
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+    {% if site_settings and site_settings.online_consultant_code %}
+    {{ site_settings.online_consultant_code|safe }}
+    {% endif %}
+</body>
+</html>

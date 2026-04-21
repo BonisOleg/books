@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:32px var(--container-padding); max-width:800px;">
+    <h1 class="checkout-page__title">Мій профіль</h1>
+
+    <div class="checkout-section" style="margin-bottom:24px;">
+        <div class="checkout-section__title">Особисті дані</div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Прізвище</label>
+                    {{ form.last_name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ім'я</label>
+                    {{ form.first_name }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">По батькові</label>
+                    {{ form.patronymic }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    {{ form.phone }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                {{ form.email }}
+            </div>
+            <button type="submit" class="btn btn--primary" style="margin-top:12px;">Зберегти</button>
+        </form>
+    </div>
+
+    {% if user_orders %}
+    <div class="checkout-section">
+        <div class="checkout-section__title">Мої замовлення</div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--color-border);">
+                        <th style="text-align:left;padding:8px 4px;">№</th>
+                        <th style="text-align:left;padding:8px 4px;">Дата</th>
+                        <th style="text-align:left;padding:8px 4px;">Сума</th>
+                        <th style="text-align:left;padding:8px 4px;">Статус</th>
+                        <th style="text-align:left;padding:8px 4px;">Оплата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in user_orders %}
+                    <tr style="border-bottom:1px solid var(--color-border-light);">
+                        <td style="padding:8px 4px;">#{{ order.order_number }}</td>
+                        <td style="padding:8px 4px;">{{ order.created_at|date:"d.m.Y" }}</td>
+                        <td style="padding:8px 4px;">{{ order.total|uah }}</td>
+                        <td style="padding:8px 4px;">{{ order.get_status_display }}</td>
+                        <td style="padding:8px 4px;">{{ order.get_payment_status_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

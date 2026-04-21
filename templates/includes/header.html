@@ -1,0 +1,63 @@
+{% load static core_tags %}
+<header class="site-header">
+    <div class="container header__inner">
+        <button class="header__burger" id="burger-btn" aria-label="Меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12h18M3 6h18M3 18h18"/>
+            </svg>
+        </button>
+
+        <div class="header__logo">
+            {% if site_settings and site_settings.logo %}
+            <a href="{% url 'core:home' %}">
+                <img src="{{ site_settings.logo.url }}" alt="{{ SITE_NAME }}">
+            </a>
+            {% else %}
+            <a href="{% url 'core:home' %}">{{ SITE_NAME }}</a>
+            {% endif %}
+        </div>
+
+        <div class="header__search">
+            <form class="header__search-form" action="{% url 'products:search' %}" method="get">
+                <input type="search" name="q" class="header__search-input"
+                       placeholder="Пошук товарів..." autocomplete="off"
+                       value="{{ request.GET.q|default:'' }}">
+                <button type="submit" class="header__search-btn" aria-label="Шукати">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <div class="header__phones">
+            {% for phone in PHONE_NUMBERS %}
+            <a href="tel:{{ phone|phone_raw }}" class="header__phone-link">{{ phone }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="header__actions">
+            <a href="{% if user.is_authenticated %}{% url 'accounts:profile' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="header__action-btn" aria-label="Акаунт">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </a>
+
+            <div style="position:relative">
+                <a href="{% url 'cart:detail' %}" class="header__action-btn" aria-label="Кошик"
+                   id="cart-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 01-8 0"/>
+                    </svg>
+                    <span class="header__cart-count" id="cart-count"
+                          {% if not cart_items_count %}style="display:none"{% endif %}>{{ cart_items_count|default:"0" }}</span>
+                </a>
+                <div class="mini-cart" id="mini-cart"></div>
+            </div>
+        </div>
+    </div>
+</header>

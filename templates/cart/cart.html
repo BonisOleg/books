@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cart.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container cart-page">
+    <h1 class="cart-page__title">Кошик</h1>
+
+    {% if cart_items %}
+    <div id="cart-content">
+        {% include "cart/partials/cart_items.html" %}
+    </div>
+    {% else %}
+    <div class="cart-empty">
+        <div class="cart-empty__icon">&#128722;</div>
+        <div class="cart-empty__text">Кошик порожній</div>
+        <a href="{% url 'products:catalog' %}" class="btn btn--primary">До каталогу</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
