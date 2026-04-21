@@ -1,37 +1,29 @@
 """Production settings for Render (Web Service + Postgres + Cloudinary).
 
-Філософія: модуль ВСЕ ОДНО має імпортуватися без помилок навіть якщо частина
-секретів ще не задана — інакше падає `collectstatic` під час build (Render
-виконує build до того, як stage env vars фіналізовано). Реальна валідація
-обов'язкових ENV відбувається тільки коли запускається веб-процес.
+Філософія: сервіс ЗАВЖДИ повинен підніматися. Якщо якогось секрету ще немає
+(CLOUDINARY_URL, SMTP, кастомний домен) — вмикаємо безпечний fallback і
+лише пишемо WARNING у логи. Це дозволяє побачити сайт одразу після першого
+деплою і поступово підключати інтеграції через Render Dashboard.
 """
 from __future__ import annotations
 
+import logging
 import os
-import sys
 
 import dj_database_url
 
 from .base import *  # noqa: F401,F403
 from .base import MIDDLEWARE
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+_log = logging.getLogger(__name__)
+
+
 def _env(name: str, default: str = '') -> str:
-    """Read env var, повертає default замість того щоб падати."""
     return os.environ.get(name, default)
 
 
-def _is_runtime() -> bool:
-    """Чи працюємо ми зараз як веб-сервер / runserver / wsgi.
-
-    Під час build-фази Render викликає `collectstatic`, `migrate`, `check` —
-    у цих випадках ми НЕ маємо валити імпорт через відсутні рантайм-секрети.
-    """
-    argv = ' '.join(sys.argv)
-    runtime_markers = ('runserver', 'gunicorn', 'uwsgi', 'daphne', 'uvicorn')
-    return any(marker in argv for marker in runtime_markers)
+def _split_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(',') if item.strip()]
 
 
 # ---------------------------------------------------------------------------
@@ -39,30 +31,42 @@ def _is_runtime() -> bool:
 # ---------------------------------------------------------------------------
 DEBUG = False
 
-# SECRET_KEY на Render генерується автоматично через `generateValue: true`.
-# Дозволяємо тимчасовий fallback тільки під час build, щоб collectstatic не падав.
-SECRET_KEY = _env('DJANGO_SECRET_KEY') or 'build-time-placeholder-not-used-at-runtime'
-
-ALLOWED_HOSTS = [h.strip() for h in _env('DJANGO_ALLOWED_HOSTS').split(',') if h.strip()]
+# DJANGO_SECRET_KEY на Render генерується автоматично (`generateValue: true`).
+# Якщо чомусь відсутній — генеруємо одноразовий, щоб процес стартанув.
+# WARNING: при рестарті ключ зміниться → сесії інвалідуються. Налаштуй ENV.
+SECRET_KEY = _env('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    import secrets
+    SECRET_KEY = secrets.token_urlsafe(64)
+    _log.warning(
+        'DJANGO_SECRET_KEY не задано — згенеровано тимчасовий. '
+        'Сесії і signed cookies не переживуть рестарт.'
+    )
 
 # Render автоматично виставляє RENDER_EXTERNAL_HOSTNAME для веб-сервісу.
 RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
+
+ALLOWED_HOSTS = _split_csv(_env('DJANGO_ALLOWED_HOSTS'))
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# Якщо нічого не задано — приймаємо .onrender.com (стандартний домен Render).
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
+    _log.warning(
+        'DJANGO_ALLOWED_HOSTS не задано — використовую fallback %s', ALLOWED_HOSTS
+    )
 
-CSRF_TRUSTED_ORIGINS = [
-    o.strip() for o in _env('CSRF_TRUSTED_ORIGINS').split(',') if o.strip()
-]
+CSRF_TRUSTED_ORIGINS = _split_csv(_env('CSRF_TRUSTED_ORIGINS'))
 if RENDER_EXTERNAL_HOSTNAME:
     auto_origin = f'https://{RENDER_EXTERNAL_HOSTNAME}'
     if auto_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(auto_origin)
+if not any('onrender.com' in o for o in CSRF_TRUSTED_ORIGINS):
+    CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-# DATABASE_URL інжектується Render Postgres. Локально під час build його може
-# не бути → використовуємо безпечний sqlite-плейсхолдер тільки для імпорту.
 _DATABASE_URL = _env('DATABASE_URL')
 if _DATABASE_URL:
     DATABASES = {
@@ -74,15 +78,20 @@ if _DATABASE_URL:
         )
     }
 else:
+    # Render Postgres зазвичай інжектує DATABASE_URL автоматично.
+    # Якщо ні — fallback на локальний sqlite (ephemeral, лише для smoke-тесту).
+    from .base import BASE_DIR
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    _log.warning('DATABASE_URL не задано — тимчасово використовую sqlite. '
+                 'Підключи Render Postgres у Dashboard.')
 
 # ---------------------------------------------------------------------------
-# Static (WhiteNoise) + Media (Cloudinary)
+# Static (WhiteNoise) + Media (Cloudinary або FileSystem fallback)
 # ---------------------------------------------------------------------------
 MIDDLEWARE = [
     MIDDLEWARE[0],
@@ -90,23 +99,24 @@ MIDDLEWARE = [
     *MIDDLEWARE[1:],
 ]
 
-# Якщо CLOUDINARY_URL ще не заданий (наприклад під час першого build на Render,
-# до того як секрети введені) — тимчасово вмикаємо FileSystemStorage, щоб
-# `django_cleanup.apps.ready()` зміг імпортувати default storage без помилки.
-# У runtime ця ситуація заборонена (див. блок `_is_runtime` нижче).
 _CLOUDINARY_URL = _env('CLOUDINARY_URL')
-_DEFAULT_STORAGE_BACKEND = (
-    'cloudinary_storage.storage.MediaCloudinaryStorage'
-    if _CLOUDINARY_URL
-    else 'django.core.files.storage.FileSystemStorage'
-)
+if _CLOUDINARY_URL:
+    _DEFAULT_STORAGE_BACKEND = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    CLOUDINARY_STORAGE = {'CLOUDINARY_URL': _CLOUDINARY_URL}
+else:
+    # Fallback: локальна файлова система (ephemeral на Render — ок для першого
+    # запуску, але на проді обов'язково задай CLOUDINARY_URL).
+    _DEFAULT_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
+    CLOUDINARY_STORAGE = {}
+    _log.warning('CLOUDINARY_URL не задано — медіа зберігаються локально '
+                 '(ephemeral диск Render, файли зникнуть при рестарті).')
 
 STORAGES = {
     'default': {'BACKEND': _DEFAULT_STORAGE_BACKEND},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
 }
 
-# Backward-compat для django-cloudinary-storage (читає legacy ключ).
+# Backward-compat для django-cloudinary-storage (читає legacy ключі).
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_FILE_STORAGE = _DEFAULT_STORAGE_BACKEND
 
@@ -114,10 +124,8 @@ WHITENOISE_MAX_AGE = 60 * 60 * 24 * 30  # 30 днів
 WHITENOISE_USE_FINDERS = False
 WHITENOISE_AUTOREFRESH = False
 
-CLOUDINARY_STORAGE = {'CLOUDINARY_URL': _CLOUDINARY_URL} if _CLOUDINARY_URL else {}
-
 # ---------------------------------------------------------------------------
-# Безпека (Django + рекомендації Render, квітень 2026)
+# Безпека
 # ---------------------------------------------------------------------------
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
@@ -143,16 +151,27 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
 
 # ---------------------------------------------------------------------------
-# Email (Gmail SMTP, App Password)
+# Email
 # ---------------------------------------------------------------------------
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_TIMEOUT = 15
-EMAIL_HOST_USER = _env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = _env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'webmaster@localhost'
+_EMAIL_USER = _env('EMAIL_HOST_USER')
+_EMAIL_PASSWORD = _env('EMAIL_HOST_PASSWORD')
+
+if _EMAIL_USER and _EMAIL_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_TIMEOUT = 15
+    EMAIL_HOST_USER = _EMAIL_USER
+    EMAIL_HOST_PASSWORD = _EMAIL_PASSWORD
+    DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or _EMAIL_USER
+else:
+    # Fallback: листи пишуться у stdout (видно у Render Logs).
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or 'webmaster@localhost'
+    _log.warning('EMAIL_HOST_USER/PASSWORD не задано — використовую console '
+                 'email backend. Листи будуть писатися в логи, не надсилатися.')
+
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # ---------------------------------------------------------------------------
@@ -202,26 +221,3 @@ if SENTRY_DSN:
         )
     except ImportError:
         pass
-
-# ---------------------------------------------------------------------------
-# Runtime-валідація: якщо нас запустив gunicorn/runserver — критичні секрети
-# ОБОВ'ЯЗКОВІ. Падаємо швидко зі зрозумілим повідомленням.
-# ---------------------------------------------------------------------------
-if _is_runtime():
-    _missing = [
-        name for name in (
-            'DJANGO_SECRET_KEY',
-            'DJANGO_ALLOWED_HOSTS',
-            'DATABASE_URL',
-            'CLOUDINARY_URL',
-            'EMAIL_HOST_USER',
-            'EMAIL_HOST_PASSWORD',
-        )
-        if not os.environ.get(name)
-    ]
-    if _missing:
-        raise RuntimeError(
-            'Production runtime missing required env vars: '
-            + ', '.join(_missing)
-            + '. Задай їх у Render Dashboard → Environment.'
-        )
