@@ -15,7 +15,7 @@
     </div>
 
     {% if categories %}
-    <div class="categories-grid" style="margin-bottom: 24px;">
+    <div class="categories-grid">
         {% for cat in categories %}
         <a href="{% url 'products:category' cat.slug %}" class="category-card">
             {% if cat.image %}
@@ -31,7 +31,7 @@
 
     <div class="catalog-toolbar">
         <div class="catalog-toolbar__sort">
-            <select onchange="window.location.href=this.value">
+            <select class="js-sort-redirect">
                 {% with base_url=request.path %}
                 <option value="{{ base_url }}?sort=default" {% if current_sort == 'default' %}selected{% endif %}>За порядком</option>
                 <option value="{{ base_url }}?sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>За зростанням ціни</option>
@@ -74,4 +74,8 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/catalog.js' %}"></script>
 {% endblock %}

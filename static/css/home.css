@@ -2,51 +2,6 @@
     padding: 24px 0;
 }
 
-.categories-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.category-card {
-    background: var(--color-bg-white);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--transition), transform var(--transition);
-    text-decoration: none;
-    display: block;
-}
-
-.category-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.category-card__img {
-    width: 100%;
-    aspect-ratio: 4/3;
-    object-fit: cover;
-    background: var(--color-border-light);
-}
-
-.category-card__name {
-    padding: 10px 12px 4px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--color-text);
-    text-align: center;
-    line-height: 1.3;
-}
-
-.category-card__desc {
-    padding: 0 12px 10px;
-    font-size: 0.75rem;
-    color: var(--color-text-muted, #888);
-    text-align: center;
-    line-height: 1.4;
-}
-
 .hits-section {
     padding: 24px 0 32px;
 }
