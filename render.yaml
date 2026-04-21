@@ -52,9 +52,16 @@ services:
           name: bookshop-db
           property: connectionString
 
-      # Cloudinary (медіа з адмінки)
+      # Cloudinary (медіа з адмінки) — задати АБО CLOUDINARY_URL,
+      # АБО трійку CLOUD_NAME / API_KEY / API_SECRET.
       - key: CLOUDINARY_URL
         sync: false  # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
       # Gmail SMTP (App Password)
       - key: EMAIL_HOST_USER

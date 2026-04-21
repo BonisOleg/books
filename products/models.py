@@ -143,8 +143,8 @@ class ProductImage(models.Model):
         return f"Фото {self.order} для {self.product.name}"
 
     def clean(self):
-        if not self.pk:
-            count = ProductImage.objects.filter(product=self.product).count()
+        if not self.pk and self.product_id:
+            count = ProductImage.objects.filter(product_id=self.product_id).count()
             if count >= 20:
                 raise ValidationError('Максимум 20 фото на товар.')
 

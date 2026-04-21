@@ -100,16 +100,34 @@ MIDDLEWARE = [
 ]
 
 _CLOUDINARY_URL = _env('CLOUDINARY_URL')
+_CN = _env('CLOUDINARY_CLOUD_NAME')
+_AK = _env('CLOUDINARY_API_KEY')
+_AS = _env('CLOUDINARY_API_SECRET')
+
+# Якщо адмін додав три окремі ключі замість єдиного URL — збираємо URL самі
+# і пробрасуємо у os.environ, щоб бібліотека `cloudinary` теж його прочитала.
+if not _CLOUDINARY_URL and _CN and _AK and _AS:
+    _CLOUDINARY_URL = f'cloudinary://{_AK}:{_AS}@{_CN}'
+    os.environ.setdefault('CLOUDINARY_URL', _CLOUDINARY_URL)
+
 if _CLOUDINARY_URL:
     _DEFAULT_STORAGE_BACKEND = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     CLOUDINARY_STORAGE = {'CLOUDINARY_URL': _CLOUDINARY_URL}
+    if _CN and _AK and _AS:
+        CLOUDINARY_STORAGE.update({
+            'CLOUD_NAME': _CN,
+            'API_KEY': _AK,
+            'API_SECRET': _AS,
+        })
 else:
     # Fallback: локальна файлова система (ephemeral на Render — ок для першого
-    # запуску, але на проді обов'язково задай CLOUDINARY_URL).
+    # запуску, але на проді обов'язково задай Cloudinary).
     _DEFAULT_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
     CLOUDINARY_STORAGE = {}
-    _log.warning('CLOUDINARY_URL не задано — медіа зберігаються локально '
-                 '(ephemeral диск Render, файли зникнуть при рестарті).')
+    _log.warning('Cloudinary не сконфігуровано (немає ні CLOUDINARY_URL, '
+                 'ні трійки CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET) — '
+                 'медіа зберігаються локально (ephemeral диск Render, '
+                 'файли зникнуть при рестарті).')
 
 STORAGES = {
     'default': {'BACKEND': _DEFAULT_STORAGE_BACKEND},
