@@ -87,11 +87,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.addEventListener('htmx:afterSwap', function (evt) {
         if (evt.detail.target && evt.detail.target.id === 'cart-count') {
             var count = evt.detail.target.textContent.trim();
-            if (count === '0') {
-                evt.detail.target.style.display = 'none';
-            } else {
-                evt.detail.target.style.display = 'flex';
-            }
+            evt.detail.target.classList.toggle(
+                'header__cart-count--hidden',
+                count === '0' || count === ''
+            );
         }
     });
 });

@@ -12,11 +12,11 @@
         </div>
         <div>
             <div>{{ item.product.name|truncatewords:6 }}</div>
-            <div style="color:var(--color-text-muted);">{{ item.quantity }} x {{ item.price|uah }}</div>
+            <div class="mini-cart__item-meta">{{ item.quantity }} x {{ item.price|uah }}</div>
         </div>
     </div>
     {% empty %}
-    <div style="padding:16px;text-align:center;color:var(--color-text-muted);">Кошик порожній</div>
+    <div class="mini-cart__empty">Кошик порожній</div>
     {% endfor %}
 </div>
 <div class="mini-cart__footer">
