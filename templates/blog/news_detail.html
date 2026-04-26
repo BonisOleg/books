@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static core_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -20,8 +20,10 @@
         {{ news_item.content|safe }}
     </div>
 
-    <div style="margin-top:32px;">
+    <div class="blog-detail__back">
         <a href="{% url 'blog:news_list' %}" class="btn btn--outline">&larr; Усі новини</a>
     </div>
+
+    {% faq "blog" %}
 </div>
 {% endblock %}

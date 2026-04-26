@@ -231,6 +231,51 @@ h6 {
     background: var(--color-badge-sale);
 }
 
+.badge[data-color="red"] {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.badge[data-color="orange"] {
+    background: #f39c12;
+    color: #fff;
+}
+
+.badge[data-color="yellow"] {
+    background: #f1c40f;
+    color: #1a1a1a;
+}
+
+.badge[data-color="green"] {
+    background: #27ae60;
+    color: #fff;
+}
+
+.badge[data-color="blue"] {
+    background: #3498db;
+    color: #fff;
+}
+
+.badge[data-color="purple"] {
+    background: #8e44ad;
+    color: #fff;
+}
+
+.badge[data-color="pink"] {
+    background: #e91e63;
+    color: #fff;
+}
+
+.badge[data-color="gold"] {
+    background: var(--color-accent);
+    color: var(--color-primary-dark);
+}
+
+.badge[data-color="black"] {
+    background: #1a1a1a;
+    color: #fff;
+}
+
 .stock-status {
     font-size: 0.8125rem;
     font-weight: 500;
@@ -318,4 +363,11 @@ h6 {
     body {
         padding-bottom: env(safe-area-inset-bottom);
     }
+}
+
+.gtm-noscript-frame {
+    height: 0;
+    width: 0;
+    display: none;
+    visibility: hidden;
 }

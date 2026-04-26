@@ -13,6 +13,27 @@
         {% csrf_token %}
 
         <div>
+            {% if not user.is_authenticated %}
+            <div class="checkout-section checkout-mode">
+                <div class="checkout-section__title">Як ви бажаєте оформити замовлення?</div>
+                <div class="checkout-mode__options">
+                    {% for radio in form.checkout_mode %}
+                    <label class="payment-method payment-method--checkbox">
+                        {{ radio.tag }}
+                        <div class="payment-method__label">{{ radio.choice_label }}</div>
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="checkout-mode__hint">
+                    Маєте акаунт?
+                    <a href="{% url 'accounts:login' %}?next={{ request.path }}">Увійти</a>
+                    або <a href="{% url 'accounts:password_reset' %}">відновити пароль</a>.
+                </p>
+            </div>
+            {% else %}
+            {{ form.checkout_mode }}
+            {% endif %}
+
             <div class="checkout-section">
                 <div class="checkout-section__title">Контактні дані</div>
                 <div class="form-row">
@@ -109,7 +130,7 @@
                     <span>Разом:</span>
                     <span>{{ cart_total|uah }}</span>
                 </div>
-                <button type="submit" class="btn btn--buy btn--block" style="margin-top:16px;">
+                <button type="submit" class="btn btn--buy btn--block checkout-page__submit">
                     Підтвердити замовлення
                 </button>
             </div>

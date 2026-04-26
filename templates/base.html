@@ -23,15 +23,19 @@
     {% endif %}
 
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
     <link rel="stylesheet" href="{% static 'css/header.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 
     <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    {% include "includes/theme_vars.html" %}
+    {% include "includes/analytics_head.html" %}
     {% block extra_head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% include "includes/analytics_body.html" %}
     {% include "includes/header.html" %}
     {% include "includes/category_nav.html" %}
     {% include "includes/mobile_menu.html" %}
@@ -60,11 +64,18 @@
         {% block content %}{% endblock %}
     </main>
 
+    <div id="modal-root"></div>
+
+    <div class="container">
+        {% banners "footer_top" %}
+    </div>
+
     {% include "includes/footer.html" %}
     {% include "includes/scroll_buttons.html" %}
     {% include "includes/messenger_buttons.html" %}
 
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/oneclick-modal.js' %}"></script>
     {% block extra_js %}{% endblock %}
     {% if site_settings and site_settings.online_consultant_code %}
     {{ site_settings.online_consultant_code|safe }}

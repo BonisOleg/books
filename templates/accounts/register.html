@@ -6,8 +6,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width:480px;padding:32px var(--container-padding);">
-    <h1 class="checkout-page__title" style="text-align:center;">Реєстрація</h1>
+<div class="container auth-page">
+    <h1 class="auth-page__title auth-page__title--centered">Реєстрація</h1>
 
     <div class="checkout-section">
         <form method="post">
@@ -21,9 +21,9 @@
                 {% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn--primary btn--block" style="margin-top:16px;">Зареєструватися</button>
+            <button type="submit" class="btn btn--primary btn--block checkout-page__submit">Зареєструватися</button>
         </form>
-        <p style="text-align:center; margin-top:16px; font-size:0.875rem;">
+        <p class="auth-redirect">
             Вже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a>
         </p>
     </div>

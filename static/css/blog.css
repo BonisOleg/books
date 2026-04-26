@@ -94,6 +94,8 @@
 
 .blog-detail__img {
     width: 100%;
+    max-height: 360px;
+    object-fit: cover;
     border-radius: var(--radius-md);
     margin-bottom: 20px;
 }
@@ -132,4 +134,12 @@
 .blog-detail__content img {
     border-radius: var(--radius-sm);
     margin: 16px 0;
+}
+
+.blog-detail__back {
+    margin-top: 32px;
+}
+
+.blog-empty {
+    color: var(--color-text-muted);
 }

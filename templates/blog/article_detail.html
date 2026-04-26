@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static core_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -20,8 +20,10 @@
         {{ article.content|safe }}
     </div>
 
-    <div style="margin-top:32px;">
+    <div class="blog-detail__back">
         <a href="{% url 'blog:articles' %}" class="btn btn--outline">&larr; Усі статті</a>
     </div>
+
+    {% faq "blog" %}
 </div>
 {% endblock %}

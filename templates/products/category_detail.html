@@ -11,7 +11,7 @@
 
 {% block content %}
 <div class="container catalog-page">
-    <nav aria-label="Breadcrumb" style="font-size:0.8125rem; margin-bottom:16px; color:var(--color-text-muted);">
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
         {% for name, url in breadcrumbs %}
         {% if url %}
         <a href="{{ url }}">{{ name }}</a> &rsaquo;
@@ -24,12 +24,14 @@
     <div class="catalog-header">
         <h1 class="catalog-header__title">{{ category.name }}</h1>
         {% if category.description %}
-        <div class="catalog-header__desc">{{ category.description|truncatewords:50 }}</div>
+        <div class="catalog-header__desc">{{ category.description|safe }}</div>
         {% endif %}
     </div>
 
+    {% banners "catalog_top" %}
+
     {% if subcategories %}
-    <div class="categories-grid" style="margin-bottom:20px;">
+    <div class="categories-grid catalog-subcategories">
         {% for sub in subcategories %}
         <a href="{% url 'products:category' sub.slug %}" class="category-card">
             {% if sub.image %}
@@ -76,7 +78,7 @@
             {% include "products/partials/filter_panel.html" %}
         </aside>
 
-        <div id="product-grid" class="product-grid" style="flex:1;">
+        <div id="product-grid" class="product-grid product-grid--with-sidebar">
             {% include "products/partials/product_grid.html" %}
         </div>
     </div>
@@ -99,13 +101,6 @@
     </div>
     {% endif %}
 
-    {% if category.description %}
-    <div class="seo-text" style="margin-top:24px;">
-        <div class="seo-text__content">
-            {{ category.description|safe }}
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <div class="mobile-menu__overlay" id="filter-overlay"></div>
@@ -123,21 +118,9 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var openBtn = document.getElementById('open-filters');
-    var closeBtn = document.getElementById('close-filters');
-    var panel = document.getElementById('mobile-filters');
-    var overlay = document.getElementById('filter-overlay');
-    function open() { panel.classList.add('is-open'); overlay.classList.add('is-visible'); document.body.style.overflow='hidden'; }
-    function close() { panel.classList.remove('is-open'); overlay.classList.remove('is-visible'); document.body.style.overflow=''; }
-    if(openBtn) openBtn.addEventListener('click', open);
-    if(closeBtn) closeBtn.addEventListener('click', close);
-    if(overlay) overlay.addEventListener('click', close);
-});
-</script>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/category-filters.js' %}"></script>
 <script src="{% static 'js/filters.js' %}"></script>
 {% endblock %}

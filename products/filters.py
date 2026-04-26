@@ -34,7 +34,9 @@ def filter_products(queryset, params):
             queryset = queryset.filter(stock_status__in=stock_list)
 
     if badge:
-        queryset = queryset.filter(badge=badge)
+        queryset = queryset.filter(
+            Q(badge=badge) | Q(badge_obj__slug=badge)
+        )
 
     if subcategory:
         slug_list = subcategory if isinstance(subcategory, list) else [subcategory]

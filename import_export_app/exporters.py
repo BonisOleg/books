@@ -8,7 +8,7 @@ from products.models import Product
 
 
 FIELDS = [
-    'id', 'sku', 'name', 'category', 'price', 'old_price',
+    'id', 'sku', 'sku_manufacturer', 'name', 'category', 'price', 'old_price',
     'stock_status', 'badge', 'discount_percent',
     'manufacturer', 'country', 'weight', 'condition',
     'description', 'short_description',
@@ -21,7 +21,7 @@ def _get_rows():
     rows = []
     for p in products:
         rows.append([
-            p.id, p.sku, p.name,
+            p.id, p.sku, p.sku_manufacturer, p.name,
             p.category.name if p.category else '',
             str(p.price), str(p.old_price or ''),
             p.stock_status, p.badge, p.discount_percent,

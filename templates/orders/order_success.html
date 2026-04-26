@@ -7,7 +7,7 @@
         <div class="order-success__icon">&#10003;</div>
         <h1 class="order-success__title">Замовлення прийнято!</h1>
         <p class="order-success__number">Номер замовлення: #{{ order.order_number }}</p>
-        <p style="color:var(--color-text-light); margin-bottom:24px;">
+        <p class="order-success__hint">
             Ми зв'яжемося з вами найближчим часом для підтвердження.
         </p>
         <a href="{% url 'core:home' %}" class="btn btn--primary">На головну</a>

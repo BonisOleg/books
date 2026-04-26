@@ -6,31 +6,31 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width:640px;padding:32px var(--container-padding);">
-    <h1 class="checkout-page__title">Результати імпорту</h1>
+<div class="container auth-page">
+    <h1 class="auth-page__title">Результати імпорту</h1>
 
     <div class="checkout-section">
-        <table style="width:100%;font-size:0.875rem;border-collapse:collapse;">
+        <table class="data-table">
             <thead>
-                <tr style="border-bottom:2px solid var(--color-border);">
-                    <th style="text-align:left;padding:8px 4px;">Рядок</th>
-                    <th style="text-align:left;padding:8px 4px;">SKU</th>
-                    <th style="text-align:left;padding:8px 4px;">Статус</th>
+                <tr>
+                    <th>Рядок</th>
+                    <th>SKU</th>
+                    <th>Статус</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in results %}
-                <tr style="border-bottom:1px solid var(--color-border-light);">
-                    <td style="padding:8px 4px;">{{ r.row }}</td>
-                    <td style="padding:8px 4px;">{{ r.sku }}</td>
-                    <td style="padding:8px 4px;">{{ r.status }}</td>
+                <tr>
+                    <td>{{ r.row }}</td>
+                    <td>{{ r.sku }}</td>
+                    <td>{{ r.status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <a href="{% url 'import_export_app:dashboard' %}" class="btn btn--outline" style="margin-top:16px;">
+    <a href="{% url 'import_export_app:dashboard' %}" class="btn btn--outline import-export__back">
         &larr; Назад
     </a>
 </div>

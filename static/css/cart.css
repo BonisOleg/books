@@ -42,8 +42,8 @@
 }
 
 .cart-item__img {
-    width: 80px;
-    height: 80px;
+    width: 56px;
+    height: 56px;
     flex-shrink: 0;
     border-radius: var(--radius-sm);
     overflow: hidden;

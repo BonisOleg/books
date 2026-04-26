@@ -1,15 +1,15 @@
 {% load core_tags %}
 
 {% if products %}
-<h3 style="font-size:1rem;margin-bottom:16px;">Рекомендовані подарунки:</h3>
-<div class="product-grid" style="grid-template-columns:repeat(2,1fr);">
+<h3 class="gift-results__title">Рекомендовані подарунки:</h3>
+<div class="gift-results__grid">
     {% for product in products %}
     {% include "includes/product_card.html" with product=product %}
     {% endfor %}
 </div>
 {% else %}
-<div style="text-align:center;padding:24px;color:var(--color-text-muted);">
+<div class="gift-results__empty">
     <p>На жаль, за вашими критеріями нічого не знайдено.</p>
-    <a href="{% url 'products:catalog' %}" class="btn btn--outline" style="margin-top:12px;">Переглянути каталог</a>
+    <a href="{% url 'products:catalog' %}" class="btn btn--outline">Переглянути каталог</a>
 </div>
 {% endif %}

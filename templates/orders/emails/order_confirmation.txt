@@ -1,0 +1,19 @@
+{% load core_tags %}
+Доброго дня, {{ order.first_name }}!
+
+Дякуємо за замовлення в {{ site_name }}.
+
+Номер замовлення: #{{ order.order_number }}
+Сума: {{ order.total|uah }}
+Спосіб оплати: {{ order.get_payment_method_display }}
+Доставка: {{ order.city }}, {{ order.warehouse }}
+
+Склад замовлення:
+{% for item in order.items.all %}- {{ item.product_name }} × {{ item.quantity }} = {{ item.total|uah }}
+{% endfor %}
+
+Ми зв'яжемося з вами найближчим часом для підтвердження.
+
+З повагою,
+команда {{ site_name }}
+{{ site_url }}

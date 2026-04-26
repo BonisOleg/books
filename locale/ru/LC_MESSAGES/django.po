@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: bookshop 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-26 13:22+0300\n"
+"PO-Revision-Date: 2026-04-26 13:22+0300\n"
+"Last-Translator: Bookshop Team\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
+"(n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+msgid "Адмінка"
+msgstr "Админка"
+
+msgid "Адмінка магазину"
+msgstr "Админка магазина"
+
+msgid "Категорії"
+msgstr "Категории"
+
+msgid "Усі товари"
+msgstr "Все товары"
+
+msgid "Контакти"
+msgstr "Контакты"
+
+msgid "Інформація"
+msgstr "Информация"
+
+msgid "Каталог"
+msgstr "Каталог"
+
+msgid "Статті"
+msgstr "Статьи"
+
+msgid "Новини"
+msgstr "Новости"
+
+msgid "Покупцям"
+msgstr "Покупателям"
+
+msgid "Реєстрація"
+msgstr "Регистрация"
+
+msgid "Вхід"
+msgstr "Вход"
+
+msgid "Кошик"
+msgstr "Корзина"
+
+msgid "Підібрати подарунок"
+msgstr "Подобрать подарок"
+
+msgid "Графік роботи"
+msgstr "График работы"
+
+msgid "Всі права захищені."
+msgstr "Все права защищены."
+
+msgid "Політика конфіденційності"
+msgstr "Политика конфиденциальности"
+
+msgid "Меню"
+msgstr "Меню"
+
+msgid "Пошук товарів..."
+msgstr "Поиск товаров..."
+
+msgid "Шукати"
+msgstr "Искать"
+
+msgid "Мова"
+msgstr "Язык"
+
+msgid "Акаунт"
+msgstr "Аккаунт"
+
+msgid "Закрити"
+msgstr "Закрыть"
+
+msgid "Головна"
+msgstr "Главная"
+
+msgid "Мій профіль"
+msgstr "Мой профиль"
+
+msgid "Вихід"
+msgstr "Выход"
+
+msgid "Групи товарів"
+msgstr "Группы товаров"
+
+msgid "Новинки та Хіти продажу"
+msgstr "Новинки и хиты продаж"
+
+msgid "Усі новини"
+msgstr "Все новости"
+
+msgid "Усі статті"
+msgstr "Все статьи"

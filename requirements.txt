@@ -20,5 +20,8 @@ openpyxl>=3.1
 requests>=2.32
 ecdsa>=0.19
 
+# WYSIWYG editor for admin (Article/News/Product/Page rich content)
+django-tinymce>=4.1
+
 # Observability (опційно — активується, якщо SENTRY_DSN задано)
 sentry-sdk[django]>=2.18

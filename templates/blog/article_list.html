@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="container blog-page">
-    <h1 class="blog-page__title">Статті</h1>
+    <h1 class="blog-page__title">{% trans 'Статті' %}</h1>
 
     <div class="blog-grid">
         {% for article in articles %}
@@ -20,13 +20,10 @@
                 <div class="blog-card__title">
                     <a href="{% url 'blog:article_detail' article.slug %}">{{ article.title }}</a>
                 </div>
-                {% if article.excerpt %}
-                <div class="blog-card__excerpt">{{ article.excerpt }}</div>
-                {% endif %}
             </div>
         </div>
         {% empty %}
-        <p style="color:var(--color-text-muted);">Статей поки немає.</p>
+        <p class="blog-empty">Статей поки немає.</p>
         {% endfor %}
     </div>
 

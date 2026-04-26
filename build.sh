@@ -18,6 +18,9 @@ python -m pip install --upgrade pip setuptools wheel
 echo "==> Installing dependencies"
 pip install --no-cache-dir -r requirements.txt
 
+echo "==> Compiling translation messages"
+python manage.py compilemessages
+
 echo "==> Collecting static files (WhiteNoise compressed manifest)"
 python manage.py collectstatic --noinput --clear
 

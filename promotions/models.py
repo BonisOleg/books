@@ -10,9 +10,18 @@ class Promotion(models.Model):
     )
     title = models.CharField('Назва акції', max_length=200)
     description = models.TextField('Опис', blank=True)
-    start_date = models.DateTimeField('Початок')
-    end_date = models.DateTimeField('Кінець')
-    is_active = models.BooleanField('Активна', default=True)
+    start_date = models.DateTimeField(
+        'Початок', help_text='Дата і час, коли акція починається.'
+    )
+    end_date = models.DateTimeField(
+        'Кінець',
+        help_text='Дата і час завершення. Таймер на сторінці товару показує '
+                  'залишок до цього моменту.'
+    )
+    is_active = models.BooleanField(
+        'Активна', default=True,
+        help_text='Якщо вимкнено — акція не показується незалежно від дат.'
+    )
 
     class Meta:
         verbose_name = 'Акція'

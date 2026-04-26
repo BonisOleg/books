@@ -66,6 +66,7 @@ def _process_row(row_dict):
         'country': row_dict.get('country', '').strip(),
         'weight': weight,
         'condition': row_dict.get('condition', 'Новий').strip() or 'Новий',
+        'sku_manufacturer': row_dict.get('sku_manufacturer', '').strip(),
         'description': row_dict.get('description', '').strip(),
         'short_description': row_dict.get('short_description', '').strip(),
         'meta_title': row_dict.get('meta_title', '').strip(),

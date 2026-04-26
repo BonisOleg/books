@@ -1,0 +1,30 @@
+{% if banners %}
+<div class="banners banners--{{ position }}">
+    {% for banner in banners %}
+    {% if banner.link %}
+    <a href="{{ banner.link }}" class="banner banner--{{ position }}"
+       {% if banner.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+        {% if banner.image_mobile %}
+        <picture>
+            <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
+            <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
+        </picture>
+        {% else %}
+        <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
+        {% endif %}
+    </a>
+    {% else %}
+    <div class="banner banner--{{ position }}">
+        {% if banner.image_mobile %}
+        <picture>
+            <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
+            <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
+        </picture>
+        {% else %}
+        <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}

@@ -1,16 +1,7 @@
 {% load static core_tags %}
 <div class="product-card" itemscope itemtype="https://schema.org/Product">
     <div class="product-card__badges">
-        {% if product.badge == 'sale' %}
-        <span class="badge badge--sale">Акція</span>
-        {% elif product.badge == 'top' %}
-        <span class="badge badge--top">Топ</span>
-        {% elif product.badge == 'new' %}
-        <span class="badge badge--new">Новинка</span>
-        {% endif %}
-        {% if product.discount_percent %}
-        <span class="badge badge--discount">-{{ product.discount_percent }}%</span>
-        {% endif %}
+        {% include "includes/product_badges.html" with product=product %}
     </div>
 
     <div class="product-card__img-wrap">
@@ -21,7 +12,7 @@
                  alt="{{ first_img.alt_text|default:product.name }}"
                  loading="lazy" itemprop="image">
             {% else %}
-            <div class="product-card__img" style="background:var(--color-border-light)"></div>
+            <div class="product-card__img"></div>
             {% endif %}
             {% endwith %}
         </a>
@@ -63,7 +54,7 @@
                 Зателефонувати
             </a>
             {% else %}
-            <span class="btn btn--outline btn--block btn--sm" style="opacity:0.5;cursor:default;">Немає в наявності</span>
+            <span class="btn btn--outline btn--block btn--sm btn--disabled">Немає в наявності</span>
             {% endif %}
             {% endif %}
         </div>

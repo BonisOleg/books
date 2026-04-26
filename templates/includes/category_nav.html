@@ -1,8 +1,46 @@
+{% load i18n %}
 {% if nav_categories %}
-<nav class="category-nav" aria-label="Категорії">
+<nav class="category-nav" aria-label="{% trans 'Категорії' %}">
     <div class="container">
         <div class="category-nav__list">
-            <a href="{% url 'products:catalog' %}" class="category-nav__link">Усі товари</a>
+            <div class="category-nav__megamenu">
+                <a href="{% url 'products:catalog' %}" class="category-nav__link category-nav__link--all" aria-haspopup="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                    {% trans 'Усі товари' %}
+                    <svg class="category-nav__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </a>
+                <div class="megamenu" role="menu">
+                    <div class="megamenu__grid">
+                        {% for cat in nav_categories %}
+                        <div class="megamenu__column">
+                            <a href="{{ cat.get_absolute_url }}" class="megamenu__title">
+                                {% if cat.image %}
+                                <img class="megamenu__title-img" src="{{ cat.image.url }}" alt="" loading="lazy">
+                                {% endif %}
+                                <span>{{ cat.name }}</span>
+                            </a>
+                            {% with subs=cat.children.all %}
+                            {% if subs %}
+                            <ul class="megamenu__list">
+                                {% for sub in subs %}
+                                <li>
+                                    <a href="{{ sub.get_absolute_url }}" class="megamenu__link">{{ sub.name }}</a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             {% for cat in nav_categories %}
             <a href="{{ cat.get_absolute_url }}" class="category-nav__link">{{ cat.name }}</a>
             {% endfor %}

@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{% static 'css/product.css' %}">
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
 <link rel="stylesheet" href="{% static 'css/timer.css' %}">
+<link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
 {% endblock %}
 
 {% block structured_data %}
@@ -21,7 +22,7 @@
 
 {% block content %}
 <div class="container product-page">
-    <nav aria-label="Breadcrumb" style="font-size:0.8125rem; margin-bottom:16px; color:var(--color-text-muted);">
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
         {% for name, url in breadcrumbs %}
         {% if url %}
         <a href="{{ url }}">{{ name }}</a> &rsaquo;
@@ -34,16 +35,7 @@
     <div class="product-detail">
         <div class="product-gallery" id="product-gallery">
             <div class="product-gallery__badges">
-                {% if product.badge == 'sale' %}
-                <span class="badge badge--sale">Акція</span>
-                {% elif product.badge == 'top' %}
-                <span class="badge badge--top">Топ</span>
-                {% elif product.badge == 'new' %}
-                <span class="badge badge--new">Новинка</span>
-                {% endif %}
-                {% if product.computed_discount_percent %}
-                <span class="badge badge--discount">-{{ product.computed_discount_percent }}%</span>
-                {% endif %}
+                {% include "includes/product_badges.html" with product=product %}
             </div>
 
             <div class="product-gallery__main" id="gallery-main">
@@ -51,7 +43,7 @@
                 {% if first_img %}
                 <img src="{{ first_img.image.url }}" alt="{{ first_img.alt_text|default:product.name }}" id="gallery-current">
                 {% else %}
-                <div style="width:100%;height:100%;background:var(--color-border-light);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);">Немає фото</div>
+                <div class="no-photo">Немає фото</div>
                 {% endif %}
                 {% endwith %}
             </div>
@@ -84,7 +76,7 @@
                     {% if vid.poster %}
                     <img src="{{ vid.poster.url }}" alt="Відео" loading="lazy">
                     {% else %}
-                    <div style="width:100%;height:100%;background:var(--color-border-light);"></div>
+                    <div class="thumb-empty"></div>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -100,6 +92,10 @@
                     {{ product.get_stock_status_display }}
                 </span>
             </div>
+
+            {% if product.short_description %}
+            <div class="product-info__short">{{ product.short_description|safe }}</div>
+            {% endif %}
 
             <div class="product-info__price-block">
                 {% if product.old_price %}
@@ -132,7 +128,7 @@
                     Купити в 1 клік
                 </button>
                 {% else %}
-                <p style="color:var(--color-text-muted);font-size:0.875rem;">
+                <p class="product-info__unavailable">
                     Товар тимчасово відсутній. Зателефонуйте для уточнення.
                 </p>
                 {% endif %}
@@ -172,7 +168,7 @@
         </div>
     </div>
 
-    <div class="product-tabs" style="margin-top:24px;">
+    <div class="product-tabs product-tabs--top">
         <div class="product-tabs__nav" id="tabs-nav">
             <button class="product-tabs__btn is-active" data-tab="desc">Опис</button>
             <button class="product-tabs__btn" data-tab="attrs">Характеристики</button>
@@ -181,11 +177,11 @@
         </div>
 
         <div class="product-tabs__panel is-active" id="tab-desc">
-            {{ product.description|linebreaksbr }}
+            {{ product.description|safe }}
         </div>
 
         <div class="product-tabs__panel" id="tab-attrs">
-            {% if product.attributes.exists %}
+            {% if product.attributes.exists or product.manufacturer or product.country or product.weight or product.condition %}
             <table class="product-attrs">
                 {% for attr in product.attributes.all %}
                 <tr>
@@ -202,7 +198,9 @@
                 {% if product.weight %}
                 <tr><td>Вага</td><td>{{ product.weight }} кг</td></tr>
                 {% endif %}
+                {% if product.condition %}
                 <tr><td>Стан</td><td>{{ product.condition }}</td></tr>
+                {% endif %}
             </table>
             {% else %}
             <p>Характеристики не вказані.</p>
@@ -235,7 +233,7 @@
 
     {% if related_products %}
     <div class="upsell-section">
-        <h2 class="upsell-section__title">Схожі товари</h2>
+        <h2 class="upsell-section__title">Вам може сподобатись</h2>
         <div class="upsell-grid">
             {% for p in related_products %}
             {% include "includes/product_card.html" with product=p %}
@@ -243,24 +241,26 @@
         </div>
     </div>
     {% endif %}
+
+    {% if recently_viewed %}
+    <div class="upsell-section">
+        <h2 class="upsell-section__title">Ви переглядали</h2>
+        <div class="upsell-grid">
+            {% for p in recently_viewed %}
+            {% include "includes/product_card.html" with product=p %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% faq "product" %}
+
+    {% banners "product_bottom" %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/gallery.js' %}"></script>
 <script src="{% static 'js/timer.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var navBtns = document.querySelectorAll('.product-tabs__btn');
-    navBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            navBtns.forEach(function(b) { b.classList.remove('is-active'); });
-            document.querySelectorAll('.product-tabs__panel').forEach(function(p) { p.classList.remove('is-active'); });
-            btn.classList.add('is-active');
-            var panel = document.getElementById('tab-' + btn.dataset.tab);
-            if (panel) panel.classList.add('is-active');
-        });
-    });
-});
-</script>
+<script src="{% static 'js/product-tabs.js' %}"></script>
 {% endblock %}

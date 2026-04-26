@@ -1,0 +1,10 @@
+{% load core_tags %}
+<div id="page-modal" class="modal modal--page">
+    <div class="modal__dialog modal__dialog--wide">
+        <button type="button" class="modal__close" data-modal-close aria-label="Закрити">&times;</button>
+        <h3 class="modal__title">{{ page.title }}</h3>
+        <div class="modal__body">
+            {{ page.content|safe }}
+        </div>
+    </div>
+</div>

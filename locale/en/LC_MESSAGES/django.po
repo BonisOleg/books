@@ -1,0 +1,103 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: bookshop 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-26 13:22+0300\n"
+"PO-Revision-Date: 2026-04-26 13:22+0300\n"
+"Last-Translator: Bookshop Team\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Адмінка"
+msgstr "Admin"
+
+msgid "Адмінка магазину"
+msgstr "Shop admin"
+
+msgid "Категорії"
+msgstr "Categories"
+
+msgid "Усі товари"
+msgstr "All products"
+
+msgid "Контакти"
+msgstr "Contacts"
+
+msgid "Інформація"
+msgstr "Information"
+
+msgid "Каталог"
+msgstr "Catalog"
+
+msgid "Статті"
+msgstr "Articles"
+
+msgid "Новини"
+msgstr "News"
+
+msgid "Покупцям"
+msgstr "For customers"
+
+msgid "Реєстрація"
+msgstr "Register"
+
+msgid "Вхід"
+msgstr "Sign in"
+
+msgid "Кошик"
+msgstr "Cart"
+
+msgid "Підібрати подарунок"
+msgstr "Find a gift"
+
+msgid "Графік роботи"
+msgstr "Working hours"
+
+msgid "Всі права захищені."
+msgstr "All rights reserved."
+
+msgid "Політика конфіденційності"
+msgstr "Privacy policy"
+
+msgid "Меню"
+msgstr "Menu"
+
+msgid "Пошук товарів..."
+msgstr "Search products..."
+
+msgid "Шукати"
+msgstr "Search"
+
+msgid "Мова"
+msgstr "Language"
+
+msgid "Акаунт"
+msgstr "Account"
+
+msgid "Закрити"
+msgstr "Close"
+
+msgid "Головна"
+msgstr "Home"
+
+msgid "Мій профіль"
+msgstr "My profile"
+
+msgid "Вихід"
+msgstr "Sign out"
+
+msgid "Групи товарів"
+msgstr "Product groups"
+
+msgid "Новинки та Хіти продажу"
+msgstr "New arrivals & best sellers"
+
+msgid "Усі новини"
+msgstr "All news"
+
+msgid "Усі статті"
+msgstr "All articles"

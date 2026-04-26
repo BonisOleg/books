@@ -1,11 +1,15 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, Http404
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
 from cart.cart import Cart
 from products.models import Product
-from .models import Order, OrderItem
+
 from .forms import CheckoutForm, OneClickForm
+from .models import Order, OrderItem
+from .utils import create_account_for_order, send_order_confirmation_email
 
 ORDER_SESSION_KEY = 'allowed_order_ids'
 
@@ -32,9 +36,10 @@ def checkout(request):
         return redirect('cart:detail')
 
     if request.method == 'POST':
-        form = CheckoutForm(request.POST)
+        form = CheckoutForm(request.POST, user=request.user)
         if form.is_valid():
             order = form.save(commit=False)
+            mode = form.cleaned_data.get('checkout_mode', 'guest')
             if request.user.is_authenticated:
                 order.user = request.user
             order.total = cart.total_price
@@ -52,6 +57,10 @@ def checkout(request):
 
             cart.clear()
             _allow_order_access(request, order)
+
+            send_order_confirmation_email(order, request)
+            if mode == 'register' and not request.user.is_authenticated:
+                create_account_for_order(order, request)
 
             if order.payment_method == 'liqpay':
                 return redirect('orders:pay_liqpay', order_id=order.id)
@@ -72,7 +81,7 @@ def checkout(request):
                 'email': request.user.email,
                 'patronymic': getattr(request.user, 'patronymic', ''),
             }
-        form = CheckoutForm(initial=initial)
+        form = CheckoutForm(initial=initial, user=request.user)
 
     items = cart.get_items()
     return render(request, 'orders/checkout.html', {
@@ -116,12 +125,8 @@ def oneclick(request, product_id):
                 price=product.price,
                 quantity=1,
             )
-            return HttpResponse(
-                '<div style="padding:24px;text-align:center;">'
-                '<h3>Дякуємо!</h3>'
-                '<p>Ми зв\'яжемося з вами найближчим часом.</p>'
-                '</div>'
-            )
+            html = render_to_string('orders/partials/oneclick_success.html', {})
+            return HttpResponse(html)
     else:
         form = OneClickForm()
     return render(request, 'orders/partials/oneclick_modal.html', {

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
@@ -9,9 +9,13 @@
 {% block title %}{{ SITE_NAME }} - елітні подарунки, книги в шкірі{% endblock %}
 
 {% block content %}
+<div class="container">
+    {% banners "home_hero" %}
+</div>
+
 <section class="hero-categories">
     <div class="container">
-        <h2 class="section__title">Групи товарів</h2>
+        <h2 class="section__title">{% trans 'Групи товарів' %}</h2>
         <div class="categories-grid">
             {% for cat in categories %}
             <a href="{% url 'products:category' cat.slug %}" class="category-card">
@@ -31,16 +35,20 @@
 {% if hit_products %}
 <section class="hits-section">
     <div class="container">
-        <h2 class="section__title">Новинки та Хіти продажу</h2>
+        <h2 class="section__title">{% trans 'Новинки та Хіти продажу' %}</h2>
         <div class="hits-scroll">
             {% for product in hit_products %}
             {% include "includes/product_card.html" with product=product %}
             {% endfor %}
         </div>
-        <a href="{% url 'products:catalog' %}" class="section__more">Усі товари &rarr;</a>
+        <a href="{% url 'products:catalog' %}" class="section__more">{% trans 'Усі товари' %} &rarr;</a>
     </div>
 </section>
 {% endif %}
+
+<div class="container">
+    {% banners "home_middle" %}
+</div>
 
 {% if site_settings and site_settings.site_description %}
 <section class="seo-text">
@@ -55,7 +63,7 @@
 {% if latest_news %}
 <section class="news-section">
     <div class="container">
-        <h2 class="section__title">Новини</h2>
+        <h2 class="section__title">{% trans 'Новини' %}</h2>
         <div class="content-cards">
             {% for item in latest_news %}
             <a href="{% url 'blog:news_detail' item.slug %}" class="content-card">
@@ -73,7 +81,7 @@
             </a>
             {% endfor %}
         </div>
-        <a href="{% url 'blog:news_list' %}" class="section__more">Усі новини &rarr;</a>
+        <a href="{% url 'blog:news_list' %}" class="section__more">{% trans 'Усі новини' %} &rarr;</a>
     </div>
 </section>
 {% endif %}
@@ -81,7 +89,7 @@
 {% if latest_articles %}
 <section class="articles-section">
     <div class="container">
-        <h2 class="section__title">Статті</h2>
+        <h2 class="section__title">{% trans 'Статті' %}</h2>
         <div class="content-cards">
             {% for item in latest_articles %}
             <a href="{% url 'blog:article_detail' item.slug %}" class="content-card">
@@ -99,8 +107,12 @@
             </a>
             {% endfor %}
         </div>
-        <a href="{% url 'blog:articles' %}" class="section__more">Усі статті &rarr;</a>
+        <a href="{% url 'blog:articles' %}" class="section__more">{% trans 'Усі статті' %} &rarr;</a>
     </div>
 </section>
 {% endif %}
+
+<div class="container">
+    {% banners "home_bottom" %}
+</div>
 {% endblock %}

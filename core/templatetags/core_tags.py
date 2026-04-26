@@ -1,6 +1,9 @@
-from django import template
-from django.utils.safestring import mark_safe
 import json
+
+from django import template
+from django.db.models import Q
+from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -40,3 +43,30 @@ def calc_discount_percent(product):
     if product.old_price and product.old_price > 0:
         return int(((product.old_price - product.price) / product.old_price) * 100)
     return 0
+
+
+@register.inclusion_tag('includes/banners.html')
+def banners(position, limit=None):
+    from core.models import Banner
+
+    now = timezone.now()
+    qs = Banner.objects.filter(position=position, is_active=True).filter(
+        Q(start_date__isnull=True) | Q(start_date__lte=now)
+    ).filter(
+        Q(end_date__isnull=True) | Q(end_date__gte=now)
+    )
+    if limit:
+        qs = qs[:limit]
+    return {'banners': qs, 'position': position}
+
+
+@register.inclusion_tag('includes/faq.html')
+def faq(scope='global', limit=None):
+    from core.models import FAQ
+
+    qs = FAQ.objects.filter(
+        is_published=True, scope__in=[scope, 'global']
+    ).order_by('order', 'id')
+    if limit:
+        qs = qs[:limit]
+    return {'items': qs, 'scope': scope}

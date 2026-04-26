@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Адмінка</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:products_product_changelist' %}">{{ opts.verbose_name_plural }}</a>
+    &rsaquo; <a href="{% url 'admin:products_product_change' product.pk %}">{{ product }}</a>
+    &rsaquo; Масове завантаження фото
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Масове завантаження фото</h1>
+<p>Товар: <strong>{{ product }}</strong>. Можна завантажити до 20 зображень на товар.</p>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>
+        <label for="id_images">Виберіть фото (Ctrl/Cmd+клік для кількох):</label><br>
+        <input type="file" name="images" id="id_images" accept="image/*" multiple required>
+    </p>
+    <button type="submit" class="default">Завантажити</button>
+    <a href="{% url 'admin:products_product_change' product.pk %}" class="button cancel-link">Скасувати</a>
+</form>
+{% endblock %}

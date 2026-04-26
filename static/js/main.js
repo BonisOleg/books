@@ -84,6 +84,14 @@ document.addEventListener('DOMContentLoaded', function () {
         cartIcon.parentElement.addEventListener('mouseleave', hideMiniCart);
     }
 
+    document.querySelectorAll('select[data-auto-submit]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            if (select.form) {
+                select.form.submit();
+            }
+        });
+    });
+
     document.body.addEventListener('htmx:afterSwap', function (evt) {
         if (evt.detail.target && evt.detail.target.id === 'cart-count') {
             var count = evt.detail.target.textContent.trim();

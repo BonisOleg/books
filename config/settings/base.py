@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     'django.contrib.humanize',
     'django_cleanup.apps.CleanupConfig',
+    'tinymce',
     'core',
     'products',
     'cart',
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -80,7 +82,22 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 LANGUAGE_CODE = 'uk'
 TIME_ZONE = 'Europe/Kyiv'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('uk', 'Українська'),
+    ('ru', 'Русский'),
+    ('en', 'English'),
+]
+
+LOCALE_PATHS = [BASE_DIR / 'locale']
+
+LANGUAGE_COOKIE_NAME = 'bookshop_language'
+LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365
+LANGUAGE_COOKIE_SECURE = False
+LANGUAGE_COOKIE_HTTPONLY = False
+LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
@@ -114,3 +131,24 @@ PHONE_NUMBERS = [
     '+380 (63) 964-85-33',
     '+380 (99) 559-88-64',
 ]
+
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 360,
+    'menubar': False,
+    'plugins': (
+        'advlist autolink lists link image charmap preview anchor '
+        'searchreplace visualblocks code fullscreen '
+        'insertdatetime media table paste help wordcount'
+    ),
+    'toolbar': (
+        'undo redo | formatselect | bold italic underline | '
+        'alignleft aligncenter alignright | '
+        'bullist numlist outdent indent | link image | '
+        'removeformat | code fullscreen'
+    ),
+    'paste_as_text': False,
+    'paste_data_images': True,
+    'browser_spellcheck': True,
+    'language': 'uk',
+    'content_style': 'body { font-family: Segoe UI, sans-serif; font-size: 14px; }',
+}

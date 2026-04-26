@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="container blog-page">
-    <h1 class="blog-page__title">Новини</h1>
+    <h1 class="blog-page__title">{% trans 'Новини' %}</h1>
 
     <div class="blog-grid">
         {% for item in news_list %}
@@ -26,7 +26,7 @@
             </div>
         </div>
         {% empty %}
-        <p style="color:var(--color-text-muted);">Новин поки немає.</p>
+        <p class="blog-empty">Новин поки немає.</p>
         {% endfor %}
     </div>
 

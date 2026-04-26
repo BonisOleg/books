@@ -1,0 +1,13 @@
+{% if items %}
+<section class="faq-section">
+    <h2 class="faq-section__title">Часті запитання</h2>
+    <div class="faq-list">
+        {% for item in items %}
+        <details class="faq-item">
+            <summary class="faq-item__question">{{ item.question }}</summary>
+            <div class="faq-item__answer">{{ item.answer|safe }}</div>
+        </details>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

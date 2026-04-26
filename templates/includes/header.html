@@ -1,7 +1,7 @@
-{% load static core_tags %}
+{% load static core_tags i18n %}
 <header class="site-header">
     <div class="container header__inner">
-        <button class="header__burger" id="burger-btn" aria-label="Меню">
+        <button class="header__burger" id="burger-btn" aria-label="{% trans 'Меню' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12h18M3 6h18M3 18h18"/>
             </svg>
@@ -20,9 +20,9 @@
         <div class="header__search">
             <form class="header__search-form" action="{% url 'products:search' %}" method="get">
                 <input type="search" name="q" class="header__search-input"
-                       placeholder="Пошук товарів..." autocomplete="off"
+                       placeholder="{% trans 'Пошук товарів...' %}" autocomplete="off"
                        value="{{ request.GET.q|default:'' }}">
-                <button type="submit" class="header__search-btn" aria-label="Шукати">
+                <button type="submit" class="header__search-btn" aria-label="{% trans 'Шукати' %}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/>
                         <path d="M21 21l-4.35-4.35"/>
@@ -38,7 +38,20 @@
         </div>
 
         <div class="header__actions">
-            <a href="{% if user.is_authenticated %}{% url 'accounts:profile' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="header__action-btn" aria-label="Акаунт">
+            {% if available_languages|length > 1 %}
+            <form action="{% url 'set_language' %}" method="post" class="header__lang">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <select name="language" class="header__lang-select" data-auto-submit aria-label="{% trans 'Мова' %}">
+                    {% get_current_language as CURRENT_LANG %}
+                    {% for code, name in available_languages %}
+                    <option value="{{ code }}" {% if code == CURRENT_LANG %}selected{% endif %}>{{ code|upper }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <a href="{% if user.is_authenticated %}{% url 'accounts:profile' %}{% else %}{% url 'accounts:login' %}{% endif %}" class="header__action-btn" aria-label="{% trans 'Акаунт' %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -46,7 +59,7 @@
             </a>
 
             <div class="header__cart-wrap">
-                <a href="{% url 'cart:detail' %}" class="header__action-btn" aria-label="Кошик"
+                <a href="{% url 'cart:detail' %}" class="header__action-btn" aria-label="{% trans 'Кошик' %}"
                    id="cart-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>

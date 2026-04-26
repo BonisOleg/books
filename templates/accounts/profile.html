@@ -6,10 +6,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="container" style="padding:32px var(--container-padding); max-width:800px;">
-    <h1 class="checkout-page__title">Мій профіль</h1>
+<div class="container auth-page auth-page--wide">
+    <h1 class="auth-page__title">Мій профіль</h1>
 
-    <div class="checkout-section" style="margin-bottom:24px;">
+    <div class="checkout-section checkout-section--spaced">
         <div class="checkout-section__title">Особисті дані</div>
         <form method="post">
             {% csrf_token %}
@@ -37,32 +37,32 @@
                 <label class="form-label">Email</label>
                 {{ form.email }}
             </div>
-            <button type="submit" class="btn btn--primary" style="margin-top:12px;">Зберегти</button>
+            <button type="submit" class="btn btn--primary form-group__submit">Зберегти</button>
         </form>
     </div>
 
     {% if user_orders %}
     <div class="checkout-section">
         <div class="checkout-section__title">Мої замовлення</div>
-        <div style="overflow-x:auto;">
-            <table style="width:100%;font-size:0.875rem;border-collapse:collapse;">
+        <div class="data-table--scroll">
+            <table class="data-table">
                 <thead>
-                    <tr style="border-bottom:2px solid var(--color-border);">
-                        <th style="text-align:left;padding:8px 4px;">№</th>
-                        <th style="text-align:left;padding:8px 4px;">Дата</th>
-                        <th style="text-align:left;padding:8px 4px;">Сума</th>
-                        <th style="text-align:left;padding:8px 4px;">Статус</th>
-                        <th style="text-align:left;padding:8px 4px;">Оплата</th>
+                    <tr>
+                        <th>№</th>
+                        <th>Дата</th>
+                        <th>Сума</th>
+                        <th>Статус</th>
+                        <th>Оплата</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for order in user_orders %}
-                    <tr style="border-bottom:1px solid var(--color-border-light);">
-                        <td style="padding:8px 4px;">#{{ order.order_number }}</td>
-                        <td style="padding:8px 4px;">{{ order.created_at|date:"d.m.Y" }}</td>
-                        <td style="padding:8px 4px;">{{ order.total|uah }}</td>
-                        <td style="padding:8px 4px;">{{ order.get_status_display }}</td>
-                        <td style="padding:8px 4px;">{{ order.get_payment_status_display }}</td>
+                    <tr>
+                        <td>#{{ order.order_number }}</td>
+                        <td>{{ order.created_at|date:"d.m.Y" }}</td>
+                        <td>{{ order.total|uah }}</td>
+                        <td>{{ order.get_status_display }}</td>
+                        <td>{{ order.get_payment_status_display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

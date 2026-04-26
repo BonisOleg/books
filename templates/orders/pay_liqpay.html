@@ -1,10 +1,14 @@
 {% extends "base.html" %}
-{% load core_tags %}
+{% load static core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container" style="padding:48px 0; text-align:center;">
-    <h1 style="font-size:1.25rem; margin-bottom:20px;">Оплата замовлення #{{ order.order_number }}</h1>
-    <p style="margin-bottom:24px;">Сума: {{ order.total|uah }}</p>
+<div class="container pay-page">
+    <h1 class="pay-page__title">Оплата замовлення #{{ order.order_number }}</h1>
+    <p class="pay-page__amount">Сума: {{ order.total|uah }}</p>
     {{ liqpay_form|safe }}
 </div>
 {% endblock %}

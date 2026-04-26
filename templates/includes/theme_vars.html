@@ -1,0 +1,12 @@
+{% if site_settings %}
+{% if site_settings.primary_color or site_settings.accent_color or site_settings.bg_color or site_settings.text_color %}
+<style>
+:root {
+{% if site_settings.primary_color %}    --color-primary: {{ site_settings.primary_color }};{% endif %}
+{% if site_settings.accent_color %}    --color-accent: {{ site_settings.accent_color }};{% endif %}
+{% if site_settings.bg_color %}    --color-bg: {{ site_settings.bg_color }};{% endif %}
+{% if site_settings.text_color %}    --color-text: {{ site_settings.text_color }};{% endif %}
+}
+</style>
+{% endif %}
+{% endif %}

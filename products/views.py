@@ -91,6 +91,21 @@ class ProductDetailView(DetailView):
         ctx['product_schema'] = get_product_schema(product, self.request)
         ctx['reviews'] = product.reviews.filter(is_approved=True).order_by('-created_at')
 
+        viewed_ids = self.request.session.get('viewed_products', [])
+        previous_viewed = [pid for pid in viewed_ids if pid != product.id]
+        if previous_viewed:
+            recently_viewed_qs = Product.objects.filter(
+                id__in=previous_viewed[:12], is_active=True
+            ).prefetch_related('images')
+            recently_viewed_map = {p.id: p for p in recently_viewed_qs}
+            ctx['recently_viewed'] = [
+                recently_viewed_map[pid] for pid in previous_viewed[:12]
+                if pid in recently_viewed_map
+            ]
+
+        new_history = [product.id] + [pid for pid in viewed_ids if pid != product.id]
+        self.request.session['viewed_products'] = new_history[:24]
+
         breadcrumbs = [('Головна', '/'), ('Каталог', '/catalog/')]
         if product.category:
             for anc in product.category.get_ancestors():

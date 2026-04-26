@@ -1,11 +1,10 @@
 {% load core_tags %}
-<div id="oneclick-modal" style="position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);">
-    <div style="background:#fff;border-radius:var(--radius-md);padding:24px;max-width:380px;width:90%;position:relative;">
-        <button onclick="document.getElementById('oneclick-modal').remove()"
-                style="position:absolute;top:8px;right:12px;font-size:1.25rem;background:none;border:none;cursor:pointer;">&times;</button>
-        <h3 style="font-size:1rem;margin-bottom:16px;">Купити в 1 клік</h3>
-        <p style="font-size:0.875rem;margin-bottom:12px;">{{ product.name }}</p>
-        <p style="font-size:1.125rem;font-weight:700;margin-bottom:16px;">{{ product.price|uah }}</p>
+<div id="oneclick-modal" class="modal">
+    <div class="modal__dialog">
+        <button type="button" class="modal__close" data-modal-close aria-label="Закрити">&times;</button>
+        <h3 class="modal__title">Купити в 1 клік</h3>
+        <p class="modal__text">{{ product.name }}</p>
+        <p class="modal__price">{{ product.price|uah }}</p>
         <form hx-post="{% url 'orders:oneclick' product.id %}" hx-target="#oneclick-modal" hx-swap="outerHTML">
             {% csrf_token %}
             <div class="form-group">
@@ -16,7 +15,7 @@
                 <label class="form-label">Ваше ім'я</label>
                 {{ form.name }}
             </div>
-            <button type="submit" class="btn btn--buy btn--block" style="margin-top:12px;">Замовити</button>
+            <button type="submit" class="btn btn--buy btn--block modal__submit">Замовити</button>
         </form>
     </div>
 </div>

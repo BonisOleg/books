@@ -1,6 +1,42 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
-from django.core.exceptions import ValidationError
+
+from tinymce.models import HTMLField
+
+
+class Badge(models.Model):
+    COLOR_CHOICES = [
+        ('red', 'Червоний'),
+        ('orange', 'Помаранчевий'),
+        ('yellow', 'Жовтий'),
+        ('green', 'Зелений'),
+        ('blue', 'Синій'),
+        ('purple', 'Фіолетовий'),
+        ('pink', 'Рожевий'),
+        ('gold', 'Золотий'),
+        ('black', 'Чорний'),
+    ]
+
+    slug = models.SlugField(
+        'Код', max_length=40, unique=True,
+        help_text='Латиницею, без пробілів. Наприклад: sale, top, new, gift.'
+    )
+    name = models.CharField('Назва', max_length=100, help_text='Текст, який видно на товарі.')
+    color = models.CharField(
+        'Колір', max_length=20, choices=COLOR_CHOICES, default='red',
+        help_text='Виберіть колір фону бейджа.'
+    )
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Активний', default=True)
+
+    class Meta:
+        verbose_name = 'Бейдж'
+        verbose_name_plural = 'Бейджі'
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
 
 
 class Category(models.Model):
@@ -11,8 +47,11 @@ class Category(models.Model):
         null=True, blank=True, on_delete=models.CASCADE,
         related_name='children'
     )
-    description = models.TextField('Опис', blank=True)
-    image = models.ImageField('Зображення', upload_to='categories/', blank=True)
+    description = HTMLField('Опис', blank=True)
+    image = models.ImageField(
+        'Зображення', upload_to='categories/', blank=True,
+        help_text='Рекомендований розмір: 600×450 px (співвідношення 4:3), JPG/WEBP.'
+    )
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     order = models.PositiveIntegerField('Порядок', default=0)
@@ -57,13 +96,17 @@ class Product(models.Model):
     name = models.CharField('Назва', max_length=400)
     slug = models.SlugField('URL', unique=True, max_length=400)
     sku = models.CharField('Артикул', max_length=50, unique=True)
+    sku_manufacturer = models.CharField(
+        'Артикул виробника', max_length=100, blank=True,
+        help_text='Заводський / код постачальника. Бачать лише адміністратори.'
+    )
     category = models.ForeignKey(
         Category, verbose_name='Категорія',
         on_delete=models.SET_NULL, null=True, blank=True,
         related_name='products'
     )
-    description = models.TextField('Опис')
-    short_description = models.TextField('Короткий опис', blank=True)
+    description = HTMLField('Опис')
+    short_description = HTMLField('Короткий опис', blank=True)
     price = models.DecimalField('Ціна', max_digits=12, decimal_places=2)
     old_price = models.DecimalField(
         'Стара ціна', max_digits=12, decimal_places=2, null=True, blank=True
@@ -73,8 +116,14 @@ class Product(models.Model):
         choices=STOCK_CHOICES, default='in_stock'
     )
     badge = models.CharField(
-        'Бейдж', max_length=20,
-        choices=BADGE_CHOICES, blank=True, default=''
+        'Бейдж (старий)', max_length=20,
+        choices=BADGE_CHOICES, blank=True, default='',
+        help_text='Залишено для зворотної сумісності. Використовуйте поле «Бейдж (новий)».'
+    )
+    badge_obj = models.ForeignKey(
+        Badge, verbose_name='Бейдж',
+        null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='products'
     )
     discount_percent = models.PositiveIntegerField('Знижка %', default=0)
     manufacturer = models.CharField('Виробник', max_length=200, blank=True)
@@ -82,7 +131,7 @@ class Product(models.Model):
     weight = models.DecimalField(
         'Вага (кг)', max_digits=8, decimal_places=2, null=True, blank=True
     )
-    condition = models.CharField('Стан', max_length=50, default='Новий')
+    condition = models.CharField('Стан', max_length=50, blank=True, default='')
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     is_active = models.BooleanField('Активний', default=True)
@@ -130,7 +179,10 @@ class ProductImage(models.Model):
         Product, verbose_name='Товар',
         related_name='images', on_delete=models.CASCADE
     )
-    image = models.ImageField('Зображення', upload_to='products/')
+    image = models.ImageField(
+        'Зображення', upload_to='products/',
+        help_text='Рекомендований розмір: 1000×1000 px (квадрат), JPG/WEBP, до 1.5 МБ.'
+    )
     alt_text = models.CharField('Alt текст', max_length=200, blank=True)
     order = models.PositiveIntegerField('Порядок', default=0)
 
