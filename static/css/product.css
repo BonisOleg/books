@@ -399,6 +399,7 @@
 
 .upsell-grid {
     display: flex;
+    align-items: flex-start;
     gap: 12px;
     overflow-x: auto;
     scrollbar-width: none;
