@@ -1,4 +1,24 @@
+import html as html_module
+import re
+
 from django.conf import settings
+from django.utils.html import strip_tags
+
+_DATA_ATTRS_RE = re.compile(
+    r'\s+data-(start|end|section-id)="[^"]*"',
+    flags=re.IGNORECASE,
+)
+
+
+def _plain_text(html_content: str, max_len: int = 500) -> str:
+    """Return plain text from an HTML string, safe for structured data."""
+    if not html_content:
+        return ""
+    cleaned = html_module.unescape(html_content)
+    if "&lt;" in cleaned:
+        cleaned = html_module.unescape(cleaned)
+    cleaned = _DATA_ATTRS_RE.sub("", cleaned)
+    return strip_tags(cleaned)[:max_len]
 
 
 def get_product_schema(product, request):
@@ -11,7 +31,7 @@ def get_product_schema(product, request):
         "@context": "https://schema.org",
         "@type": "Product",
         "name": product.name,
-        "description": product.description[:500],
+        "description": _plain_text(product.description),
         "sku": product.sku,
         "image": images,
         "offers": {

@@ -1,8 +1,9 @@
+from django.utils.html import strip_tags
 from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
 from .models import Product, Category
 from .filters import filter_products
-from .schema import get_product_schema, get_breadcrumb_schema
+from .schema import _plain_text, get_product_schema, get_breadcrumb_schema
 
 
 class CatalogView(ListView):
