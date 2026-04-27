@@ -106,7 +106,7 @@ class ProductAdmin(admin.ModelAdmin):
             'badge_obj', 'badge',
         )}),
         ('Додатково', {'fields': (
-            'manufacturer', 'country', 'weight', 'condition', 'is_active'
+            'manufacturer', 'country', 'weight', 'is_active'
         )}),
         ('SEO', {'fields': ('meta_title', 'meta_description'), 'classes': ('collapse',)}),
     )
