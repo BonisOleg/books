@@ -1,4 +1,4 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 <div class="cart-items">
     {% for item in cart_items %}
     <div class="cart-item">
@@ -33,7 +33,7 @@
                 hx-post="{% url 'cart:remove' item.product.id %}"
                 hx-target="#cart-content"
                 hx-swap="innerHTML"
-                aria-label="Видалити">
+                aria-label="{% trans 'Видалити' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
@@ -44,14 +44,14 @@
 
 <div class="cart-summary">
     <div class="cart-summary__row">
-        <span>Товарів: {{ cart_count }}</span>
+        <span>{% blocktrans with count=cart_count %}Товарів: {{ count }}{% endblocktrans %}</span>
     </div>
     <div class="cart-summary__row cart-summary__row--total">
-        <span>Разом:</span>
+        <span>{% trans 'Разом:' %}</span>
         <span>{{ cart_total|uah }}</span>
     </div>
     <div class="cart-summary__actions">
-        <a href="{% url 'orders:checkout' %}" class="btn btn--buy btn--block">Оформити замовлення</a>
-        <a href="{% url 'products:catalog' %}" class="btn btn--outline btn--block">Продовжити покупки</a>
+        <a href="{% url 'orders:checkout' %}" class="btn btn--buy btn--block">{% trans 'Оформити замовлення' %}</a>
+        <a href="{% url 'products:catalog' %}" class="btn btn--outline btn--block">{% trans 'Продовжити покупки' %}</a>
     </div>
 </div>

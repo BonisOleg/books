@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
@@ -55,10 +55,10 @@
                     hx-swap="innerHTML"
                     hx-include="[name='price_min'],[name='price_max'],[name='stock'],[name='subcategory']"
                     name="sort">
-                <option value="default" {% if current_sort == 'default' %}selected{% endif %}>За порядком</option>
-                <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>За зростанням ціни</option>
-                <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>За зниженням ціни</option>
-                <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>За новизною</option>
+                <option value="default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
+                <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>
+                <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
+                <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>{% trans 'За новизною' %}</option>
             </select>
         </div>
         <button class="catalog-toolbar__filter-btn" id="open-filters">
@@ -69,7 +69,7 @@
                 <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
                 <line x1="17" y1="16" x2="23" y2="16"/>
             </svg>
-            Фільтри
+            {% trans 'Фільтри' %}
         </button>
     </div>
 
@@ -106,8 +106,8 @@
 <div class="mobile-menu__overlay" id="filter-overlay"></div>
 <div class="mobile-filters" id="mobile-filters">
     <div class="mobile-filters__header">
-        <span>Фільтри</span>
-        <button class="mobile-filters__close" id="close-filters" aria-label="Закрити">
+        <span>{% trans 'Фільтри' %}</span>
+        <button class="mobile-filters__close" id="close-filters" aria-label="{% trans 'Закрити' %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
             </svg>

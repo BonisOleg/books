@@ -1,4 +1,4 @@
-{% load static core_tags %}
+{% load static core_tags i18n %}
 <div class="product-card" itemscope itemtype="https://schema.org/Product">
     <div class="product-card__badges">
         {% include "includes/product_badges.html" with product=product %}
@@ -46,15 +46,15 @@
                     hx-target="#cart-count"
                     hx-swap="innerHTML"
                     hx-indicator=".htmx-indicator">
-                Купити
+                {% trans 'Купити' %}
             </button>
             {% else %}
             {% if PHONE_NUMBERS %}
             <a href="tel:{{ PHONE_NUMBERS.0|phone_raw }}" class="btn btn--outline btn--block btn--sm">
-                Зателефонувати
+                {% trans 'Зателефонувати' %}
             </a>
             {% else %}
-            <span class="btn btn--outline btn--block btn--sm btn--disabled">Немає в наявності</span>
+            <span class="btn btn--outline btn--block btn--sm btn--disabled">{% trans 'Немає в наявності' %}</span>
             {% endif %}
             {% endif %}
         </div>

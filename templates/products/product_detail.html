@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product.css' %}">
@@ -43,18 +43,18 @@
                 {% if first_img %}
                 <img src="{{ first_img.image.url }}" alt="{{ first_img.alt_text|default:product.name }}" id="gallery-current">
                 {% else %}
-                <div class="no-photo">Немає фото</div>
+                <div class="no-photo">{% trans 'Немає фото' %}</div>
                 {% endif %}
                 {% endwith %}
             </div>
 
             <div class="product-gallery__arrows">
-                <button class="product-gallery__arrow" id="gallery-prev" aria-label="Попереднє фото">
+                <button class="product-gallery__arrow" id="gallery-prev" aria-label="{% trans 'Попереднє фото' %}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="15 18 9 12 15 6"/>
                     </svg>
                 </button>
-                <button class="product-gallery__arrow" id="gallery-next" aria-label="Наступне фото">
+                <button class="product-gallery__arrow" id="gallery-next" aria-label="{% trans 'Наступне фото' %}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="9 6 15 12 9 18"/>
                     </svg>
@@ -74,7 +74,7 @@
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
                      data-index="{{ product.images.count|add:forloop.counter0 }}">
                     {% if vid.poster %}
-                    <img src="{{ vid.poster.url }}" alt="Відео" loading="lazy">
+                    <img src="{{ vid.poster.url }}" alt="{% trans 'Відео' %}" loading="lazy">
                     {% else %}
                     <div class="thumb-empty"></div>
                     {% endif %}
@@ -84,7 +84,7 @@
         </div>
 
         <div class="product-info">
-            <div class="product-info__sku">Код: {{ product.sku }}</div>
+            <div class="product-info__sku">{% trans 'Код:' %} {{ product.sku }}</div>
             <h1 class="product-info__title">{{ product.name }}</h1>
 
             <div class="product-info__stock">
@@ -120,16 +120,16 @@
                         hx-post="{% url 'cart:add' product.id %}"
                         hx-target="#cart-count"
                         hx-swap="innerHTML">
-                    Купити
+                    {% trans 'Купити' %}
                 </button>
                 <button class="product-info__oneclick"
                         hx-get="{% url 'orders:oneclick' product.id %}"
                         hx-target="body" hx-swap="beforeend">
-                    Купити в 1 клік
+                    {% trans 'Купити в 1 клік' %}
                 </button>
                 {% else %}
                 <p class="product-info__unavailable">
-                    Товар тимчасово відсутній. Зателефонуйте для уточнення.
+                    {% trans 'Товар тимчасово відсутній. Зателефонуйте для уточнення.' %}
                 </p>
                 {% endif %}
             </div>
@@ -152,14 +152,14 @@
 
             {% if site_settings and site_settings.work_schedule %}
             <div class="product-info__schedule">
-                <div class="product-info__schedule-title">Графік роботи</div>
+                <div class="product-info__schedule-title">{% trans 'Графік роботи' %}</div>
                 <div class="product-info__schedule-text">{{ site_settings.work_schedule|linebreaksbr }}</div>
             </div>
             {% endif %}
 
             {% if site_settings and site_settings.return_policy %}
             <details class="product-info__return-policy">
-                <summary>Умови повернення та обміну</summary>
+                <summary>{% trans 'Умови повернення та обміну' %}</summary>
                 <div class="return-policy__content">
                     {{ site_settings.return_policy|linebreaksbr }}
                 </div>
@@ -170,10 +170,10 @@
 
     <div class="product-tabs product-tabs--top">
         <div class="product-tabs__nav" id="tabs-nav">
-            <button class="product-tabs__btn is-active" data-tab="desc">Опис</button>
-            <button class="product-tabs__btn" data-tab="attrs">Характеристики</button>
-            <button class="product-tabs__btn" data-tab="order-info">Інформація для замовлення</button>
-            <button class="product-tabs__btn" data-tab="reviews">Відгуки ({{ reviews.count }})</button>
+            <button class="product-tabs__btn is-active" data-tab="desc">{% trans 'Опис' %}</button>
+            <button class="product-tabs__btn" data-tab="attrs">{% trans 'Характеристики' %}</button>
+            <button class="product-tabs__btn" data-tab="order-info">{% trans 'Інформація для замовлення' %}</button>
+            <button class="product-tabs__btn" data-tab="reviews">{% blocktrans with count=reviews.count %}Відгуки ({{ count }}){% endblocktrans %}</button>
         </div>
 
         <div class="product-tabs__panel is-active" id="tab-desc">
@@ -190,24 +190,24 @@
                 </tr>
                 {% endfor %}
                 {% if product.manufacturer %}
-                <tr><td>Виробник</td><td>{{ product.manufacturer }}</td></tr>
+                <tr><td>{% trans 'Виробник' %}</td><td>{{ product.manufacturer }}</td></tr>
                 {% endif %}
                 {% if product.country %}
-                <tr><td>Країна</td><td>{{ product.country }}</td></tr>
+                <tr><td>{% trans 'Країна' %}</td><td>{{ product.country }}</td></tr>
                 {% endif %}
                 {% if product.weight %}
-                <tr><td>Вага</td><td>{{ product.weight }} кг</td></tr>
+                <tr><td>{% trans 'Вага' %}</td><td>{{ product.weight }} {% trans 'кг' %}</td></tr>
                 {% endif %}
             </table>
             {% else %}
-            <p>Характеристики не вказані.</p>
+            <p>{% trans 'Характеристики не вказані.' %}</p>
             {% endif %}
         </div>
 
         <div class="product-tabs__panel" id="tab-order-info">
-            <p>Доставка здійснюється Новою Поштою по всій Україні.</p>
-            <p>Оплата: LiqPay, Monobank, накладений платіж.</p>
-            <p>Повернення можливе протягом 14 днів після отримання.</p>
+            <p>{% trans 'Доставка здійснюється Новою Поштою по всій Україні.' %}</p>
+            <p>{% trans 'Оплата: LiqPay, Monobank, накладений платіж.' %}</p>
+            <p>{% trans 'Повернення можливе протягом 14 днів після отримання.' %}</p>
         </div>
 
         <div class="product-tabs__panel" id="tab-reviews"
@@ -219,7 +219,7 @@
 
     {% if upsell_products %}
     <div class="upsell-section">
-        <h2 class="upsell-section__title">Додай до подарунку</h2>
+        <h2 class="upsell-section__title">{% trans 'Додай до подарунку' %}</h2>
         <div class="upsell-grid">
             {% for p in upsell_products %}
             {% include "includes/product_card.html" with product=p %}
@@ -230,7 +230,7 @@
 
     {% if related_products %}
     <div class="upsell-section">
-        <h2 class="upsell-section__title">Вам може сподобатись</h2>
+        <h2 class="upsell-section__title">{% trans 'Вам може сподобатись' %}</h2>
         <div class="upsell-grid">
             {% for p in related_products %}
             {% include "includes/product_card.html" with product=p %}
@@ -241,7 +241,7 @@
 
     {% if recently_viewed %}
     <div class="upsell-section">
-        <h2 class="upsell-section__title">Ви переглядали</h2>
+        <h2 class="upsell-section__title">{% trans 'Ви переглядали' %}</h2>
         <div class="upsell-grid">
             {% for p in recently_viewed %}
             {% include "includes/product_card.html" with product=p %}

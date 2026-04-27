@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -8,9 +8,9 @@
 
 {% block content %}
 <div class="container auth-page">
-    <h1 class="auth-page__title auth-page__title--centered">Підібрати подарунок</h1>
+    <h1 class="auth-page__title auth-page__title--centered">{% trans 'Підібрати подарунок' %}</h1>
     <p class="auth-page__subtitle">
-        Дайте відповідь на кілька запитань, і ми підберемо ідеальний подарунок
+        {% trans 'Дайте відповідь на кілька запитань, і ми підберемо ідеальний подарунок' %}
     </p>
 
     <div class="checkout-section" id="gift-wizard">
@@ -31,11 +31,11 @@
                 {% endfor %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn--primary btn--block">Підібрати</button>
+            <button type="submit" class="btn btn--primary btn--block">{% trans 'Підібрати' %}</button>
         </form>
         {% else %}
         <p class="empty-state">
-            Питання для підбору ще не налаштовані. Зверніться до адміністратора.
+            {% trans 'Питання для підбору ще не налаштовані. Зверніться до адміністратора.' %}
         </p>
         {% endif %}
     </div>

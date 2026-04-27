@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
@@ -10,7 +10,7 @@
     <div class="catalog-header">
         <h1 class="catalog-header__title">{{ page_title }}</h1>
         {% if search_query %}
-        <p class="catalog-header__desc">Результати пошуку для: &laquo;{{ search_query }}&raquo;</p>
+        <p class="catalog-header__desc">{% blocktrans with q=search_query %}Результати пошуку для: &laquo;{{ q }}&raquo;{% endblocktrans %}</p>
         {% endif %}
     </div>
 
@@ -33,10 +33,10 @@
         <div class="catalog-toolbar__sort">
             <select class="js-sort-redirect">
                 {% with base_url=request.path %}
-                <option value="{{ base_url }}?sort=default" {% if current_sort == 'default' %}selected{% endif %}>За порядком</option>
-                <option value="{{ base_url }}?sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>За зростанням ціни</option>
-                <option value="{{ base_url }}?sort=price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>За зниженням ціни</option>
-                <option value="{{ base_url }}?sort=newest" {% if current_sort == 'newest' %}selected{% endif %}>За новизною</option>
+                <option value="{{ base_url }}?sort=default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
+                <option value="{{ base_url }}?sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>
+                <option value="{{ base_url }}?sort=price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
+                <option value="{{ base_url }}?sort=newest" {% if current_sort == 'newest' %}selected{% endif %}>{% trans 'За новизною' %}</option>
                 {% endwith %}
             </select>
         </div>
@@ -69,8 +69,8 @@
     {% else %}
     <div class="cart-empty">
         <div class="cart-empty__icon">&#128269;</div>
-        <div class="cart-empty__text">Товарів не знайдено</div>
-        <a href="{% url 'products:catalog' %}" class="btn btn--primary">До каталогу</a>
+        <div class="cart-empty__text">{% trans 'Товарів не знайдено' %}</div>
+        <a href="{% url 'products:catalog' %}" class="btn btn--primary">{% trans 'До каталогу' %}</a>
     </div>
     {% endif %}
 </div>

@@ -1,4 +1,4 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 <div class="filter-panel">
     <form hx-get="{% url 'products:category' category.slug %}"
           hx-target="#product-grid"
@@ -7,38 +7,38 @@
           hx-include="[name='sort']">
 
         <div class="filter-group">
-            <div class="filter-group__title">Бюджет</div>
+            <div class="filter-group__title">{% trans 'Бюджет' %}</div>
             <div class="filter-group__range">
                 <input type="number" name="price_min" class="filter-group__input"
-                       placeholder="від" value="{{ filter_params.price_min|default:'' }}" min="0">
+                       placeholder="{% trans 'від' %}" value="{{ filter_params.price_min|default:'' }}" min="0">
                 <span class="filter-group__sep">&mdash;</span>
                 <input type="number" name="price_max" class="filter-group__input"
-                       placeholder="до" value="{{ filter_params.price_max|default:'' }}" min="0">
+                       placeholder="{% trans 'до' %}" value="{{ filter_params.price_max|default:'' }}" min="0">
             </div>
         </div>
 
         <div class="filter-group">
-            <div class="filter-group__title">Наявність</div>
+            <div class="filter-group__title">{% trans 'Наявність' %}</div>
             <label class="filter-checkbox">
                 <input type="checkbox" name="stock" value="in_stock"
                        {% if 'in_stock' in selected_stocks %}checked{% endif %}>
-                В наявності
+                {% trans 'В наявності' %}
             </label>
             <label class="filter-checkbox">
                 <input type="checkbox" name="stock" value="ready"
                        {% if 'ready' in selected_stocks %}checked{% endif %}>
-                Готово до відправки
+                {% trans 'Готово до відправки' %}
             </label>
             <label class="filter-checkbox">
                 <input type="checkbox" name="stock" value="order"
                        {% if 'order' in selected_stocks %}checked{% endif %}>
-                Під замовлення
+                {% trans 'Під замовлення' %}
             </label>
         </div>
 
         {% if subcategories %}
         <div class="filter-group">
-            <div class="filter-group__title">Тип</div>
+            <div class="filter-group__title">{% trans 'Тип' %}</div>
             {% for sub in subcategories %}
             <label class="filter-checkbox">
                 <input type="checkbox" name="subcategory" value="{{ sub.slug }}"
@@ -50,26 +50,26 @@
         {% endif %}
 
         <div class="filter-group">
-            <div class="filter-group__title">Мітки</div>
+            <div class="filter-group__title">{% trans 'Мітки' %}</div>
             <label class="filter-checkbox">
                 <input type="checkbox" name="badge" value="sale"
                        {% if filter_params.badge == 'sale' %}checked{% endif %}>
-                Акція
+                {% trans 'Акція' %}
             </label>
             <label class="filter-checkbox">
                 <input type="checkbox" name="badge" value="top"
                        {% if filter_params.badge == 'top' %}checked{% endif %}>
-                Топ продажів
+                {% trans 'Топ продажів' %}
             </label>
             <label class="filter-checkbox">
                 <input type="checkbox" name="badge" value="new"
                        {% if filter_params.badge == 'new' %}checked{% endif %}>
-                Новинка
+                {% trans 'Новинка' %}
             </label>
         </div>
 
         <button type="submit" class="btn btn--primary btn--block btn--sm filter-panel__submit">
-            Застосувати
+            {% trans 'Застосувати' %}
         </button>
     </form>
 </div>

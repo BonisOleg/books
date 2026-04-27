@@ -1,7 +1,7 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 
 {% if products %}
-<h3 class="gift-results__title">Рекомендовані подарунки:</h3>
+<h3 class="gift-results__title">{% trans 'Рекомендовані подарунки:' %}</h3>
 <div class="gift-results__grid">
     {% for product in products %}
     {% include "includes/product_card.html" with product=product %}
@@ -9,7 +9,7 @@
 </div>
 {% else %}
 <div class="gift-results__empty">
-    <p>На жаль, за вашими критеріями нічого не знайдено.</p>
-    <a href="{% url 'products:catalog' %}" class="btn btn--outline">Переглянути каталог</a>
+    <p>{% trans 'На жаль, за вашими критеріями нічого не знайдено.' %}</p>
+    <a href="{% url 'products:catalog' %}" class="btn btn--outline">{% trans 'Переглянути каталог' %}</a>
 </div>
 {% endif %}

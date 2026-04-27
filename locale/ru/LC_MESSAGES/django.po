@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: bookshop 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-26 13:22+0300\n"
-"PO-Revision-Date: 2026-04-26 13:22+0300\n"
+"POT-Creation-Date: 2026-04-27 14:59+0300\n"
+"PO-Revision-Date: 2026-04-27 14:00+0300\n"
 "Last-Translator: Bookshop Team\n"
 "Language-Team: Russian\n"
 "Language: ru\n"
@@ -14,92 +14,655 @@ msgstr ""
 "n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || "
 "(n%100>=11 && n%100<=14)? 2 : 3);\n"
 
-msgid "Адмінка"
-msgstr "Админка"
-
-msgid "Адмінка магазину"
-msgstr "Админка магазина"
-
-msgid "Категорії"
-msgstr "Категории"
-
-msgid "Усі товари"
-msgstr "Все товары"
-
-msgid "Контакти"
-msgstr "Контакты"
-
-msgid "Інформація"
-msgstr "Информация"
-
-msgid "Каталог"
-msgstr "Каталог"
-
-msgid "Статті"
-msgstr "Статьи"
-
-msgid "Новини"
-msgstr "Новости"
-
-msgid "Покупцям"
-msgstr "Покупателям"
-
-msgid "Реєстрація"
-msgstr "Регистрация"
-
+#: templates/accounts/login.html:10 templates/includes/footer.html:32
+#: templates/includes/mobile_menu.html:30
 msgid "Вхід"
 msgstr "Вход"
 
-msgid "Кошик"
-msgstr "Корзина"
+#: templates/accounts/login.html:27 templates/accounts/register.html:27
+#: templates/orders/checkout.html:29
+msgid "Увійти"
+msgstr "Войти"
 
-msgid "Підібрати подарунок"
-msgstr "Подобрать подарок"
+#: templates/accounts/login.html:30
+msgid "Немає акаунту?"
+msgstr "Нет аккаунта?"
 
-msgid "Графік роботи"
-msgstr "График работы"
+#: templates/accounts/login.html:30 templates/accounts/register.html:24
+msgid "Зареєструватися"
+msgstr "Зарегистрироваться"
 
-msgid "Всі права захищені."
-msgstr "Все права защищены."
+#: templates/accounts/password_reset.html:10
+msgid "Відновлення пароля"
+msgstr "Восстановление пароля"
 
-msgid "Політика конфіденційності"
-msgstr "Политика конфиденциальности"
+#: templates/accounts/password_reset.html:13
+msgid "Введіть email — ми надішлемо посилання для встановлення нового пароля."
+msgstr "Введите email — мы отправим ссылку для установки нового пароля."
 
-msgid "Меню"
-msgstr "Меню"
+#: templates/accounts/password_reset.html:23
+#: templates/products/partials/review_list.html:48
+msgid "Надіслати"
+msgstr "Отправить"
 
-msgid "Пошук товарів..."
-msgstr "Поиск товаров..."
+#: templates/accounts/password_reset_complete.html:10
+msgid "Пароль збережено"
+msgstr "Пароль сохранён"
 
-msgid "Шукати"
-msgstr "Искать"
+#: templates/accounts/password_reset_complete.html:12
+msgid "Тепер ви можете"
+msgstr "Теперь вы можете"
 
-msgid "Мова"
-msgstr "Язык"
+#: templates/accounts/password_reset_complete.html:12
+msgid "увійти в особистий кабінет"
+msgstr "войти в личный кабинет"
 
-msgid "Акаунт"
-msgstr "Аккаунт"
+#: templates/accounts/password_reset_confirm.html:11
+msgid "Встановлення пароля"
+msgstr "Установка пароля"
 
-msgid "Закрити"
-msgstr "Закрыть"
+#: templates/accounts/password_reset_confirm.html:22
+#: templates/accounts/profile.html:40
+msgid "Зберегти"
+msgstr "Сохранить"
 
-msgid "Головна"
-msgstr "Главная"
+#: templates/accounts/password_reset_confirm.html:26
+msgid "Посилання недійсне"
+msgstr "Ссылка недействительна"
 
+#: templates/accounts/password_reset_confirm.html:28
+msgid "Посилання застаріло або вже використане. Запросіть нове на сторінці"
+msgstr "Ссылка устарела или уже использована. Запросите новую на странице"
+
+#: templates/accounts/password_reset_confirm.html:28
+msgid "відновлення пароля"
+msgstr "восстановления пароля"
+
+#: templates/accounts/password_reset_done.html:10
+msgid "Лист надіслано"
+msgstr "Письмо отправлено"
+
+#: templates/accounts/password_reset_done.html:12
+msgid ""
+"Якщо акаунт із таким email існує — ми надіслали лист зі посиланням для "
+"відновлення пароля. Перевірте «Вхідні» та папку «Спам»."
+msgstr ""
+"Если аккаунт с таким email существует — мы отправили ссылку для "
+"восстановления пароля. Проверьте папку «Входящие» и «Спам»."
+
+#: templates/accounts/password_reset_email.html:2
+#, python-format
+msgid ""
+"Ви отримали цей лист, бо запросили відновлення пароля для свого акаунта на "
+"сайті %(site_name)s."
+msgstr ""
+
+#: templates/accounts/password_reset_email.html:4
+#, fuzzy
+#| msgid ""
+#| "Введіть email — ми надішлемо посилання для встановлення нового пароля."
+msgid "Будь ласка, перейдіть за посиланням, щоб встановити новий пароль:"
+msgstr "Введите email — мы отправим ссылку для установки нового пароля."
+
+#: templates/accounts/password_reset_email.html:7
+msgid "Якщо ви не запитували відновлення — просто проігноруйте цей лист."
+msgstr "Если вы не запрашивали восстановление — просто проигнорируйте это письмо."
+
+#: templates/accounts/password_reset_email.html:9
+msgid "З повагою,"
+msgstr "С уважением,"
+
+#: templates/accounts/password_reset_email.html:10
+msgid "команда"
+msgstr "команда"
+
+#: templates/accounts/password_reset_subject.txt:1
+#, fuzzy
+#| msgid "Відновлення пароля"
+msgid "Відновлення пароля для"
+msgstr "Восстановление пароля"
+
+#: templates/accounts/profile.html:10 templates/includes/mobile_menu.html:24
 msgid "Мій профіль"
 msgstr "Мой профиль"
 
-msgid "Вихід"
-msgstr "Выход"
+#: templates/accounts/profile.html:13
+msgid "Особисті дані"
+msgstr "Личные данные"
 
+#: templates/accounts/profile.html:18 templates/orders/checkout.html:41
+msgid "Прізвище"
+msgstr "Фамилия"
+
+#: templates/accounts/profile.html:22 templates/orders/checkout.html:46
+#: templates/products/partials/review_list.html:37
+msgid "Ім'я"
+msgstr "Имя"
+
+#: templates/accounts/profile.html:28 templates/orders/checkout.html:53
+msgid "По батькові"
+msgstr "Отчество"
+
+#: templates/accounts/profile.html:32 templates/orders/checkout.html:57
+msgid "Телефон"
+msgstr "Телефон"
+
+#: templates/accounts/profile.html:46
+msgid "Мої замовлення"
+msgstr "Мои заказы"
+
+#: templates/accounts/profile.html:52
+msgid "Дата"
+msgstr "Дата"
+
+#: templates/accounts/profile.html:53
+msgid "Сума"
+msgstr "Сумма"
+
+#: templates/accounts/profile.html:54
+msgid "Статус"
+msgstr "Статус"
+
+#: templates/accounts/profile.html:55
+msgid "Оплата"
+msgstr "Оплата"
+
+#: templates/accounts/register.html:10 templates/includes/footer.html:31
+#: templates/includes/mobile_menu.html:31
+msgid "Реєстрація"
+msgstr "Регистрация"
+
+#: templates/accounts/register.html:27
+msgid "Вже маєте акаунт?"
+msgstr "Уже есть аккаунт?"
+
+#: templates/admin/base_site.html:3
+msgid "Адмінка"
+msgstr "Админка"
+
+#: templates/admin/base_site.html:6
+msgid "Адмінка магазину"
+msgstr "Админка магазина"
+
+#: templates/admin/change_form_object_tools.html:5
+msgid "History"
+msgstr ""
+
+#: templates/admin/change_form_object_tools.html:12
+msgid "View on site"
+msgstr ""
+
+#: templates/base.html:11
+msgid ""
+"інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних "
+"товарів"
+msgstr ""
+"интернет-магазин элитных подарков, книг в коже, статуэток и эксклюзивных "
+"товаров"
+
+#: templates/blog/article_list.html:10 templates/home.html:92
+#: templates/includes/footer.html:19 templates/includes/mobile_menu.html:17
+msgid "Статті"
+msgstr "Статьи"
+
+#: templates/blog/article_list.html:26
+msgid "Статей поки немає."
+msgstr "Статей пока нет."
+
+#: templates/blog/news_list.html:10 templates/home.html:66
+#: templates/includes/footer.html:20 templates/includes/mobile_menu.html:18
+msgid "Новини"
+msgstr "Новости"
+
+#: templates/blog/news_list.html:29
+msgid "Новин поки немає."
+msgstr "Новостей пока нет."
+
+#: templates/cart/cart.html:10 templates/includes/footer.html:33
+#: templates/includes/header.html:62 templates/includes/mobile_menu.html:22
+msgid "Кошик"
+msgstr "Корзина"
+
+#: templates/cart/cart.html:19
+msgid "Кошик порожній"
+msgstr "Корзина пуста"
+
+#: templates/cart/cart.html:20 templates/products/category_list.html:73
+msgid "До каталогу"
+msgstr "В каталог"
+
+#: templates/cart/partials/cart_items.html:36
+msgid "Видалити"
+msgstr "Удалить"
+
+#: templates/cart/partials/cart_items.html:47
+#, python-format
+msgid "Товарів: %(count)s"
+msgstr "Товаров: %(count)s"
+
+#: templates/cart/partials/cart_items.html:50
+#: templates/orders/checkout.html:130
+msgid "Разом:"
+msgstr "Итого:"
+
+#: templates/cart/partials/cart_items.html:54
+msgid "Оформити замовлення"
+msgstr "Оформить заказ"
+
+#: templates/cart/partials/cart_items.html:55
+msgid "Продовжити покупки"
+msgstr "Продолжить покупки"
+
+#: templates/home.html:9
+msgid "елітні подарунки, книги в шкірі"
+msgstr "элитные подарки, книги в коже"
+
+#: templates/home.html:18
 msgid "Групи товарів"
 msgstr "Группы товаров"
 
+#: templates/home.html:38
 msgid "Новинки та Хіти продажу"
 msgstr "Новинки и хиты продаж"
 
+#: templates/home.html:44 templates/includes/category_nav.html:13
+msgid "Усі товари"
+msgstr "Все товары"
+
+#: templates/home.html:84
 msgid "Усі новини"
 msgstr "Все новости"
 
+#: templates/home.html:110
 msgid "Усі статті"
 msgstr "Все статьи"
+
+#: templates/includes/category_nav.html:3
+msgid "Категорії"
+msgstr "Категории"
+
+#: templates/includes/footer.html:6
+msgid "Контакти"
+msgstr "Контакты"
+
+#: templates/includes/footer.html:17
+msgid "Інформація"
+msgstr "Информация"
+
+#: templates/includes/footer.html:18 templates/includes/mobile_menu.html:15
+msgid "Каталог"
+msgstr "Каталог"
+
+#: templates/includes/footer.html:30
+msgid "Покупцям"
+msgstr "Покупателям"
+
+#: templates/includes/footer.html:34 templates/includes/mobile_menu.html:16
+#: templates/promotions/gift_picker.html:11
+msgid "Підібрати подарунок"
+msgstr "Подобрать подарок"
+
+#: templates/includes/footer.html:38 templates/products/product_detail.html:155
+msgid "Графік роботи"
+msgstr "График работы"
+
+#: templates/includes/footer.html:84
+msgid "Всі права захищені."
+msgstr "Все права защищены."
+
+#: templates/includes/footer.html:86
+msgid "Політика конфіденційності"
+msgstr "Политика конфиденциальности"
+
+#: templates/includes/header.html:4
+msgid "Меню"
+msgstr "Меню"
+
+#: templates/includes/header.html:23
+msgid "Пошук товарів..."
+msgstr "Поиск товаров..."
+
+#: templates/includes/header.html:25
+msgid "Шукати"
+msgstr "Искать"
+
+#: templates/includes/header.html:45
+msgid "Мова"
+msgstr "Язык"
+
+#: templates/includes/header.html:54
+msgid "Акаунт"
+msgstr "Аккаунт"
+
+#: templates/includes/mobile_menu.html:6
+#: templates/products/category_detail.html:110
+msgid "Закрити"
+msgstr "Закрыть"
+
+#: templates/includes/mobile_menu.html:14
+msgid "Головна"
+msgstr "Главная"
+
+#: templates/includes/mobile_menu.html:27
+msgid "Вихід"
+msgstr "Выход"
+
+#: templates/includes/product_card.html:49
+#: templates/products/product_detail.html:123
+msgid "Купити"
+msgstr "Купить"
+
+#: templates/includes/product_card.html:54
+msgid "Зателефонувати"
+msgstr "Позвонить"
+
+#: templates/includes/product_card.html:57
+msgid "Немає в наявності"
+msgstr "Нет в наличии"
+
+#: templates/orders/checkout.html:10
+msgid "Оформлення замовлення"
+msgstr "Оформление заказа"
+
+#: templates/orders/checkout.html:18
+msgid "Як ви бажаєте оформити замовлення?"
+msgstr "Как вы хотите оформить заказ?"
+
+#: templates/orders/checkout.html:28
+msgid "Маєте акаунт?"
+msgstr "Есть аккаунт?"
+
+#: templates/orders/checkout.html:30
+msgid "або"
+msgstr "или"
+
+#: templates/orders/checkout.html:30
+msgid "відновити пароль"
+msgstr "восстановить пароль"
+
+#: templates/orders/checkout.html:38
+msgid "Контактні дані"
+msgstr "Контактные данные"
+
+#: templates/orders/checkout.html:69
+msgid "Доставка (Нова Пошта)"
+msgstr "Доставка (Новая Почта)"
+
+#: templates/orders/checkout.html:71
+msgid "Місто"
+msgstr "Город"
+
+#: templates/orders/checkout.html:78
+msgid "Відділення"
+msgstr "Отделение"
+
+#: templates/orders/checkout.html:88
+msgid "Спосіб оплати"
+msgstr "Способ оплаты"
+
+#: templates/orders/checkout.html:93
+msgid "Накладений платіж"
+msgstr "Наложенный платёж"
+
+#: templates/orders/checkout.html:94
+msgid "Оплата при отриманні на пошті"
+msgstr "Оплата при получении на почте"
+
+#: templates/orders/checkout.html:101
+msgid "Оплата картою онлайн (ПриватБанк)"
+msgstr "Оплата картой онлайн (ПриватБанк)"
+
+#: templates/orders/checkout.html:108
+msgid "Оплата через Monobank"
+msgstr "Оплата через Monobank"
+
+#: templates/orders/checkout.html:115
+msgid "Коментар"
+msgstr "Комментарий"
+
+#: templates/orders/checkout.html:122
+msgid "Ваше замовлення"
+msgstr "Ваш заказ"
+
+#: templates/orders/checkout.html:134
+msgid "Підтвердити замовлення"
+msgstr "Подтвердить заказ"
+
+#: templates/orders/order_success.html:8
+msgid "Замовлення прийнято!"
+msgstr "Заказ принят!"
+
+#: templates/orders/order_success.html:9
+msgid "Номер замовлення:"
+msgstr "Номер заказа:"
+
+#: templates/orders/order_success.html:11
+msgid "Ми зв'яжемося з вами найближчим часом для підтвердження."
+msgstr "Мы свяжемся с вами в ближайшее время для подтверждения."
+
+#: templates/orders/order_success.html:13
+msgid "На головну"
+msgstr "На главную"
+
+#: templates/products/category_detail.html:58
+#: templates/products/category_list.html:36
+msgid "За порядком"
+msgstr "По умолчанию"
+
+#: templates/products/category_detail.html:59
+#: templates/products/category_list.html:37
+msgid "За зростанням ціни"
+msgstr "По возрастанию цены"
+
+#: templates/products/category_detail.html:60
+#: templates/products/category_list.html:38
+msgid "За зниженням ціни"
+msgstr "По убыванию цены"
+
+#: templates/products/category_detail.html:61
+#: templates/products/category_list.html:39
+msgid "За новизною"
+msgstr "По новизне"
+
+#: templates/products/category_detail.html:72
+#: templates/products/category_detail.html:109
+msgid "Фільтри"
+msgstr "Фильтры"
+
+#: templates/products/category_list.html:13
+#, python-format
+msgid "Результати пошуку для: &laquo;%(q)s&raquo;"
+msgstr "Результаты поиска для: &laquo;%(q)s&raquo;"
+
+#: templates/products/category_list.html:72
+msgid "Товарів не знайдено"
+msgstr "Товаров не найдено"
+
+#: templates/products/partials/filter_panel.html:10
+msgid "Бюджет"
+msgstr "Бюджет"
+
+#: templates/products/partials/filter_panel.html:13
+msgid "від"
+msgstr "от"
+
+#: templates/products/partials/filter_panel.html:16
+msgid "до"
+msgstr "до"
+
+#: templates/products/partials/filter_panel.html:21
+msgid "Наявність"
+msgstr "Наличие"
+
+#: templates/products/partials/filter_panel.html:25
+msgid "В наявності"
+msgstr "В наличии"
+
+#: templates/products/partials/filter_panel.html:30
+msgid "Готово до відправки"
+msgstr "Готово к отправке"
+
+#: templates/products/partials/filter_panel.html:35
+msgid "Під замовлення"
+msgstr "Под заказ"
+
+#: templates/products/partials/filter_panel.html:41
+msgid "Тип"
+msgstr "Тип"
+
+#: templates/products/partials/filter_panel.html:53
+msgid "Мітки"
+msgstr "Метки"
+
+#: templates/products/partials/filter_panel.html:57
+msgid "Акція"
+msgstr "Акция"
+
+#: templates/products/partials/filter_panel.html:62
+msgid "Топ продажів"
+msgstr "Топ продаж"
+
+#: templates/products/partials/filter_panel.html:67
+msgid "Новинка"
+msgstr "Новинка"
+
+#: templates/products/partials/filter_panel.html:72
+msgid "Застосувати"
+msgstr "Применить"
+
+#: templates/products/partials/review_list.html:5
+msgid "Дякуємо! Ваш відгук буде опублікований після модерації."
+msgstr "Спасибо! Ваш отзыв будет опубликован после модерации."
+
+#: templates/products/partials/review_list.html:27
+msgid "Відгуків поки немає. Будьте першим!"
+msgstr "Отзывов пока нет. Будьте первым!"
+
+#: templates/products/partials/review_list.html:31
+msgid "Залишити відгук"
+msgstr "Оставить отзыв"
+
+#: templates/products/partials/review_list.html:41
+msgid "Оцінка"
+msgstr "Оценка"
+
+#: templates/products/partials/review_list.html:45
+msgid "Відгук"
+msgstr "Отзыв"
+
+#: templates/products/product_detail.html:46
+msgid "Немає фото"
+msgstr "Нет фото"
+
+#: templates/products/product_detail.html:52
+msgid "Попереднє фото"
+msgstr "Предыдущее фото"
+
+#: templates/products/product_detail.html:57
+msgid "Наступне фото"
+msgstr "Следующее фото"
+
+#: templates/products/product_detail.html:77
+msgid "Відео"
+msgstr "Видео"
+
+#: templates/products/product_detail.html:87
+msgid "Код:"
+msgstr "Код:"
+
+#: templates/products/product_detail.html:128
+msgid "Купити в 1 клік"
+msgstr "Купить в 1 клик"
+
+#: templates/products/product_detail.html:132
+msgid "Товар тимчасово відсутній. Зателефонуйте для уточнення."
+msgstr "Товар временно отсутствует. Позвоните для уточнения."
+
+#: templates/products/product_detail.html:162
+msgid "Умови повернення та обміну"
+msgstr "Условия возврата и обмена"
+
+#: templates/products/product_detail.html:173
+msgid "Опис"
+msgstr "Описание"
+
+#: templates/products/product_detail.html:174
+msgid "Характеристики"
+msgstr "Характеристики"
+
+#: templates/products/product_detail.html:175
+msgid "Інформація для замовлення"
+msgstr "Информация для заказа"
+
+#: templates/products/product_detail.html:176
+#, python-format
+msgid "Відгуки (%(count)s)"
+msgstr "Отзывы (%(count)s)"
+
+#: templates/products/product_detail.html:193
+msgid "Виробник"
+msgstr "Производитель"
+
+#: templates/products/product_detail.html:196
+msgid "Країна"
+msgstr "Страна"
+
+#: templates/products/product_detail.html:199
+msgid "Вага"
+msgstr "Вес"
+
+#: templates/products/product_detail.html:199
+msgid "кг"
+msgstr "кг"
+
+#: templates/products/product_detail.html:203
+msgid "Характеристики не вказані."
+msgstr "Характеристики не указаны."
+
+#: templates/products/product_detail.html:208
+msgid "Доставка здійснюється Новою Поштою по всій Україні."
+msgstr "Доставка осуществляется Новой Почтой по всей Украине."
+
+#: templates/products/product_detail.html:209
+msgid "Оплата: LiqPay, Monobank, накладений платіж."
+msgstr "Оплата: LiqPay, Monobank, наложенный платёж."
+
+#: templates/products/product_detail.html:210
+msgid "Повернення можливе протягом 14 днів після отримання."
+msgstr "Возврат возможен в течение 14 дней после получения."
+
+#: templates/products/product_detail.html:222
+msgid "Додай до подарунку"
+msgstr "Добавь к подарку"
+
+#: templates/products/product_detail.html:233
+msgid "Вам може сподобатись"
+msgstr "Вам может понравиться"
+
+#: templates/products/product_detail.html:244
+msgid "Ви переглядали"
+msgstr "Вы просматривали"
+
+#: templates/promotions/gift_picker.html:13
+msgid "Дайте відповідь на кілька запитань, і ми підберемо ідеальний подарунок"
+msgstr "Ответьте на несколько вопросов, и мы подберём идеальный подарок"
+
+#: templates/promotions/gift_picker.html:34
+msgid "Підібрати"
+msgstr "Подобрать"
+
+#: templates/promotions/gift_picker.html:38
+msgid "Питання для підбору ще не налаштовані. Зверніться до адміністратора."
+msgstr "Вопросы для подбора ещё не настроены. Обратитесь к администратору."
+
+#: templates/promotions/gift_results.html:4
+msgid "Рекомендовані подарунки:"
+msgstr "Рекомендуемые подарки:"
+
+#: templates/promotions/gift_results.html:12
+msgid "На жаль, за вашими критеріями нічого не знайдено."
+msgstr "К сожалению, по вашим критериям ничего не найдено."
+
+#: templates/promotions/gift_results.html:13
+msgid "Переглянути каталог"
+msgstr "Посмотреть каталог"

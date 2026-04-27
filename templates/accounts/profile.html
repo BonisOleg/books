@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -7,29 +7,29 @@
 
 {% block content %}
 <div class="container auth-page auth-page--wide">
-    <h1 class="auth-page__title">Мій профіль</h1>
+    <h1 class="auth-page__title">{% trans 'Мій профіль' %}</h1>
 
     <div class="checkout-section checkout-section--spaced">
-        <div class="checkout-section__title">Особисті дані</div>
+        <div class="checkout-section__title">{% trans 'Особисті дані' %}</div>
         <form method="post">
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Прізвище</label>
+                    <label class="form-label">{% trans 'Прізвище' %}</label>
                     {{ form.last_name }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Ім'я</label>
+                    <label class="form-label">{% trans "Ім'я" %}</label>
                     {{ form.first_name }}
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">По батькові</label>
+                    <label class="form-label">{% trans 'По батькові' %}</label>
                     {{ form.patronymic }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Телефон</label>
+                    <label class="form-label">{% trans 'Телефон' %}</label>
                     {{ form.phone }}
                 </div>
             </div>
@@ -37,22 +37,22 @@
                 <label class="form-label">Email</label>
                 {{ form.email }}
             </div>
-            <button type="submit" class="btn btn--primary form-group__submit">Зберегти</button>
+            <button type="submit" class="btn btn--primary form-group__submit">{% trans 'Зберегти' %}</button>
         </form>
     </div>
 
     {% if user_orders %}
     <div class="checkout-section">
-        <div class="checkout-section__title">Мої замовлення</div>
+        <div class="checkout-section__title">{% trans 'Мої замовлення' %}</div>
         <div class="data-table--scroll">
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>№</th>
-                        <th>Дата</th>
-                        <th>Сума</th>
-                        <th>Статус</th>
-                        <th>Оплата</th>
+                        <th>{% trans 'Дата' %}</th>
+                        <th>{% trans 'Сума' %}</th>
+                        <th>{% trans 'Статус' %}</th>
+                        <th>{% trans 'Оплата' %}</th>
                     </tr>
                 </thead>
                 <tbody>

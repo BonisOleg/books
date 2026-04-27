@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="container checkout-page">
-    <h1 class="checkout-page__title">Оформлення замовлення</h1>
+    <h1 class="checkout-page__title">{% trans 'Оформлення замовлення' %}</h1>
 
     <form method="post" class="checkout-form">
         {% csrf_token %}
@@ -15,7 +15,7 @@
         <div>
             {% if not user.is_authenticated %}
             <div class="checkout-section checkout-mode">
-                <div class="checkout-section__title">Як ви бажаєте оформити замовлення?</div>
+                <div class="checkout-section__title">{% trans 'Як ви бажаєте оформити замовлення?' %}</div>
                 <div class="checkout-mode__options">
                     {% for radio in form.checkout_mode %}
                     <label class="payment-method payment-method--checkbox">
@@ -25,9 +25,9 @@
                     {% endfor %}
                 </div>
                 <p class="checkout-mode__hint">
-                    Маєте акаунт?
-                    <a href="{% url 'accounts:login' %}?next={{ request.path }}">Увійти</a>
-                    або <a href="{% url 'accounts:password_reset' %}">відновити пароль</a>.
+                    {% trans 'Маєте акаунт?' %}
+                    <a href="{% url 'accounts:login' %}?next={{ request.path }}">{% trans 'Увійти' %}</a>
+                    {% trans 'або' %} <a href="{% url 'accounts:password_reset' %}">{% trans 'відновити пароль' %}</a>.
                 </p>
             </div>
             {% else %}
@@ -35,26 +35,26 @@
             {% endif %}
 
             <div class="checkout-section">
-                <div class="checkout-section__title">Контактні дані</div>
+                <div class="checkout-section__title">{% trans 'Контактні дані' %}</div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label form-label--required">Прізвище</label>
+                        <label class="form-label form-label--required">{% trans 'Прізвище' %}</label>
                         {{ form.last_name }}
                         {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
                     </div>
                     <div class="form-group">
-                        <label class="form-label form-label--required">Ім'я</label>
+                        <label class="form-label form-label--required">{% trans "Ім'я" %}</label>
                         {{ form.first_name }}
                         {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">По батькові</label>
+                        <label class="form-label">{% trans 'По батькові' %}</label>
                         {{ form.patronymic }}
                     </div>
                     <div class="form-group">
-                        <label class="form-label form-label--required">Телефон</label>
+                        <label class="form-label form-label--required">{% trans 'Телефон' %}</label>
                         {{ form.phone }}
                         {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
                     </div>
@@ -66,16 +66,16 @@
             </div>
 
             <div class="checkout-section">
-                <div class="checkout-section__title">Доставка (Нова Пошта)</div>
+                <div class="checkout-section__title">{% trans 'Доставка (Нова Пошта)' %}</div>
                 <div class="form-group">
-                    <label class="form-label form-label--required">Місто</label>
+                    <label class="form-label form-label--required">{% trans 'Місто' %}</label>
                     <div class="warehouse-autocomplete">
                         {{ form.city }}
                         <div class="warehouse-autocomplete__results" id="city-results"></div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label form-label--required">Відділення</label>
+                    <label class="form-label form-label--required">{% trans 'Відділення' %}</label>
                     <div class="warehouse-autocomplete">
                         {{ form.warehouse }}
                         {{ form.warehouse_ref }}
@@ -85,41 +85,41 @@
             </div>
 
             <div class="checkout-section">
-                <div class="checkout-section__title">Спосіб оплати</div>
+                <div class="checkout-section__title">{% trans 'Спосіб оплати' %}</div>
                 <div class="payment-methods">
                     <label class="payment-method">
                         <input type="radio" name="payment_method" value="cod" checked>
                         <div>
-                            <div class="payment-method__label">Накладений платіж</div>
-                            <div class="payment-method__desc">Оплата при отриманні на пошті</div>
+                            <div class="payment-method__label">{% trans 'Накладений платіж' %}</div>
+                            <div class="payment-method__desc">{% trans 'Оплата при отриманні на пошті' %}</div>
                         </div>
                     </label>
                     <label class="payment-method">
                         <input type="radio" name="payment_method" value="liqpay">
                         <div>
                             <div class="payment-method__label">LiqPay</div>
-                            <div class="payment-method__desc">Оплата картою онлайн (ПриватБанк)</div>
+                            <div class="payment-method__desc">{% trans 'Оплата картою онлайн (ПриватБанк)' %}</div>
                         </div>
                     </label>
                     <label class="payment-method">
                         <input type="radio" name="payment_method" value="monobank">
                         <div>
                             <div class="payment-method__label">Monobank</div>
-                            <div class="payment-method__desc">Оплата через Monobank</div>
+                            <div class="payment-method__desc">{% trans 'Оплата через Monobank' %}</div>
                         </div>
                     </label>
                 </div>
             </div>
 
             <div class="checkout-section">
-                <div class="checkout-section__title">Коментар</div>
+                <div class="checkout-section__title">{% trans 'Коментар' %}</div>
                 {{ form.comment }}
             </div>
         </div>
 
         <div>
             <div class="checkout-total">
-                <div class="checkout-section__title">Ваше замовлення</div>
+                <div class="checkout-section__title">{% trans 'Ваше замовлення' %}</div>
                 {% for item in cart_items %}
                 <div class="checkout-total__row">
                     <span>{{ item.product.name|truncatewords:5 }} &times; {{ item.quantity }}</span>
@@ -127,11 +127,11 @@
                 </div>
                 {% endfor %}
                 <div class="checkout-total__row checkout-total__row--grand">
-                    <span>Разом:</span>
+                    <span>{% trans 'Разом:' %}</span>
                     <span>{{ cart_total|uah }}</span>
                 </div>
                 <button type="submit" class="btn btn--buy btn--block checkout-page__submit">
-                    Підтвердити замовлення
+                    {% trans 'Підтвердити замовлення' %}
                 </button>
             </div>
         </div>

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% load core_tags %}
+{% load core_tags i18n %}
 
 {% block content %}
 <div class="container">
     <div class="order-success">
         <div class="order-success__icon">&#10003;</div>
-        <h1 class="order-success__title">Замовлення прийнято!</h1>
-        <p class="order-success__number">Номер замовлення: #{{ order.order_number }}</p>
+        <h1 class="order-success__title">{% trans 'Замовлення прийнято!' %}</h1>
+        <p class="order-success__number">{% trans 'Номер замовлення:' %} #{{ order.order_number }}</p>
         <p class="order-success__hint">
-            Ми зв'яжемося з вами найближчим часом для підтвердження.
+            {% trans "Ми зв'яжемося з вами найближчим часом для підтвердження." %}
         </p>
-        <a href="{% url 'core:home' %}" class="btn btn--primary">На головну</a>
+        <a href="{% url 'core:home' %}" class="btn btn--primary">{% trans 'На головну' %}</a>
     </div>
 </div>
 {% endblock %}

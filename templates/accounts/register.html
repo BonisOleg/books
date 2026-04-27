@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="container auth-page">
-    <h1 class="auth-page__title auth-page__title--centered">Реєстрація</h1>
+    <h1 class="auth-page__title auth-page__title--centered">{% trans 'Реєстрація' %}</h1>
 
     <div class="checkout-section">
         <form method="post">
@@ -21,10 +21,10 @@
                 {% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn--primary btn--block checkout-page__submit">Зареєструватися</button>
+            <button type="submit" class="btn btn--primary btn--block checkout-page__submit">{% trans 'Зареєструватися' %}</button>
         </form>
         <p class="auth-redirect">
-            Вже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a>
+            {% trans 'Вже маєте акаунт?' %} <a href="{% url 'accounts:login' %}">{% trans 'Увійти' %}</a>
         </p>
     </div>
 </div>

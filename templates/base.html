@@ -1,20 +1,23 @@
-{% load static core_tags %}
+{% load static core_tags i18n %}
+{% get_current_language as CURRENT_LANG %}
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="{{ CURRENT_LANG }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <title>{% block title %}{% if page_title %}{{ page_title }} | {% endif %}{{ SITE_NAME }}{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}{% if page_meta_description %}{{ page_meta_description }}{% else %}{{ SITE_NAME }} - інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних товарів{% endif %}{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{% if page_meta_description %}{{ page_meta_description }}{% else %}{{ SITE_NAME }} - {% trans 'інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних товарів' %}{% endif %}{% endblock %}">
     <meta name="robots" content="{% block robots %}index, follow{% endblock %}">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:title" content="{% block og_title %}{{ page_title|default:SITE_NAME }}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{{ page_meta_description|default:'' }}{% endblock %}">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
     {% block og_image %}{% endblock %}
-    <meta property="og:locale" content="uk_UA">
+    {% if CURRENT_LANG == 'ru' %}<meta property="og:locale" content="ru_RU">
+    {% elif CURRENT_LANG == 'en' %}<meta property="og:locale" content="en_US">
+    {% else %}<meta property="og:locale" content="uk_UA">{% endif %}
     <meta property="og:site_name" content="{{ SITE_NAME }}">
     <link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
     {% block structured_data %}{% endblock %}

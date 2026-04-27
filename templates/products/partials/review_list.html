@@ -1,8 +1,8 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 
 {% if review_submitted %}
 <div class="review-success">
-    Дякуємо! Ваш відгук буде опублікований після модерації.
+    {% trans 'Дякуємо! Ваш відгук буде опублікований після модерації.' %}
 </div>
 {% endif %}
 
@@ -24,27 +24,27 @@
     {% endfor %}
 </div>
 {% else %}
-<p class="review-empty">Відгуків поки немає. Будьте першим!</p>
+<p class="review-empty">{% trans 'Відгуків поки немає. Будьте першим!' %}</p>
 {% endif %}
 
 <div class="review-form">
-    <h4 class="review-form__title">Залишити відгук</h4>
+    <h4 class="review-form__title">{% trans 'Залишити відгук' %}</h4>
     <form hx-post="{% url 'reviews:add_review' product.id %}"
           hx-target="#tab-reviews"
           hx-swap="innerHTML">
         {% csrf_token %}
         <div class="form-group">
-            <label class="form-label">Ім'я</label>
+            <label class="form-label">{% trans "Ім'я" %}</label>
             {{ review_form.author_name }}
         </div>
         <div class="form-group">
-            <label class="form-label">Оцінка</label>
+            <label class="form-label">{% trans 'Оцінка' %}</label>
             {{ review_form.rating }}
         </div>
         <div class="form-group">
-            <label class="form-label form-label--required">Відгук</label>
+            <label class="form-label form-label--required">{% trans 'Відгук' %}</label>
             {{ review_form.text }}
         </div>
-        <button type="submit" class="btn btn--primary btn--sm">Надіслати</button>
+        <button type="submit" class="btn btn--primary btn--sm">{% trans 'Надіслати' %}</button>
     </form>
 </div>

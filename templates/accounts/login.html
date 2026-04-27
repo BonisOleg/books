@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -7,7 +7,7 @@
 
 {% block content %}
 <div class="container auth-page auth-page--narrow">
-    <h1 class="auth-page__title auth-page__title--centered">Вхід</h1>
+    <h1 class="auth-page__title auth-page__title--centered">{% trans 'Вхід' %}</h1>
 
     <div class="checkout-section">
         <form method="post">
@@ -24,10 +24,10 @@
             {% if form.non_field_errors %}
             <div class="form-error form-error--standalone">{{ form.non_field_errors.0 }}</div>
             {% endif %}
-            <button type="submit" class="btn btn--primary btn--block checkout-page__submit">Увійти</button>
+            <button type="submit" class="btn btn--primary btn--block checkout-page__submit">{% trans 'Увійти' %}</button>
         </form>
         <p class="auth-redirect">
-            Немає акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a>
+            {% trans 'Немає акаунту?' %} <a href="{% url 'accounts:register' %}">{% trans 'Зареєструватися' %}</a>
         </p>
     </div>
 </div>
