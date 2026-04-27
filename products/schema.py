@@ -11,14 +11,23 @@ _DATA_ATTRS_RE = re.compile(
 
 
 def _plain_text(html_content: str, max_len: int = 500) -> str:
-    """Return plain text from an HTML string, safe for structured data."""
+    """Return plain text from an HTML string, safe for structured data and meta tags.
+
+    Handles both normal HTML and double-encoded HTML (e.g. content pasted via
+    TinyMCE source view or copied from AI tools that emit &lt;h1&gt; entities).
+    Also strips AI-injected data-start / data-end / data-section-id attributes.
+    """
     if not html_content:
         return ""
+    # first pass: &lt; → <, &amp; → &
     cleaned = html_module.unescape(html_content)
+    # second pass for double-encoding (&amp;lt; → &lt; → <)
     if "&lt;" in cleaned:
         cleaned = html_module.unescape(cleaned)
     cleaned = _DATA_ATTRS_RE.sub("", cleaned)
-    return strip_tags(cleaned)[:max_len]
+    # strip HTML tags, then resolve any remaining named entities (e.g. &mdash;)
+    plain = html_module.unescape(strip_tags(cleaned))
+    return plain[:max_len]
 
 
 def get_product_schema(product, request):

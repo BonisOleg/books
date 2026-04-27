@@ -88,7 +88,8 @@ class ProductDetailView(DetailView):
         ctx = super().get_context_data(**kwargs)
         product = self.object
         ctx['page_title'] = product.meta_title or product.name
-        ctx['page_meta_description'] = product.meta_description or product.short_description
+        raw_meta = product.meta_description or product.short_description
+        ctx['page_meta_description'] = _plain_text(raw_meta, max_len=300)
         ctx['product_schema'] = get_product_schema(product, self.request)
         ctx['reviews'] = product.reviews.filter(is_approved=True).order_by('-created_at')
 
