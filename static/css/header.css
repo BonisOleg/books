@@ -291,12 +291,19 @@
     display: none;
 }
 
+.category-nav__inner {
+    display: flex;
+    align-items: stretch;
+}
+
 .category-nav__list {
     display: flex;
     gap: 0;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    flex: 1;
+    min-width: 0;
 }
 
 .category-nav__list::-webkit-scrollbar {

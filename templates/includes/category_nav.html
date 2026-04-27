@@ -2,7 +2,7 @@
 {% if nav_categories %}
 <nav class="category-nav" aria-label="{% trans 'Категорії' %}">
     <div class="container">
-        <div class="category-nav__list">
+        <div class="category-nav__inner">
             <div class="category-nav__megamenu">
                 <a href="{% url 'products:catalog' %}" class="category-nav__link category-nav__link--all" aria-haspopup="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -41,9 +41,11 @@
                     </div>
                 </div>
             </div>
-            {% for cat in nav_categories %}
-            <a href="{{ cat.get_absolute_url }}" class="category-nav__link">{{ cat.name }}</a>
-            {% endfor %}
+            <div class="category-nav__list">
+                {% for cat in nav_categories %}
+                <a href="{{ cat.get_absolute_url }}" class="category-nav__link">{{ cat.name }}</a>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </nav>
