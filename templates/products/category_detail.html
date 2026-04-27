@@ -41,7 +41,7 @@
             {% endif %}
             <div class="category-card__name">{{ sub.name }}</div>
             {% if sub.description %}
-            <div class="category-card__desc">{{ sub.description|striptags|truncatewords:12 }}</div>
+            <div class="category-card__desc">{{ sub.description|striptags|truncatewords:12|safe }}</div>
             {% endif %}
         </a>
         {% endfor %}
