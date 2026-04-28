@@ -1,6 +1,6 @@
 {% if product.badge_obj %}
 <span class="badge" data-color="{{ product.badge_obj.color }}">{{ product.badge_obj.name }}</span>
-{% elif product.badge == 'sale' %}
+{% elif product.badge == 'sale' or product.active_promotions or promotion %}
 <span class="badge badge--sale">Акція</span>
 {% elif product.badge == 'top' %}
 <span class="badge badge--top">Топ</span>
