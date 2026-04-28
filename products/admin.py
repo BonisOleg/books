@@ -2,6 +2,7 @@ from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils.html import format_html
+from modeltranslation.admin import TabbedTranslationAdmin, TranslationTabularInline
 
 from .forms import BulkImageUploadForm
 from .models import (
@@ -60,20 +61,20 @@ class ProductVideoInline(admin.TabularInline):
         return _image_thumb(obj.poster, 'admin-thumb--lg')
 
 
-class ProductAttributeInline(admin.TabularInline):
+class ProductAttributeInline(TranslationTabularInline):
     model = ProductAttribute
     extra = 1
-    fields = ('name', 'value', 'order')
+    fields = ('name_uk', 'name_en', 'name_ru', 'value_uk', 'value_en', 'value_ru', 'order')
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(TabbedTranslationAdmin):
     list_display = ('image_thumb', 'name', 'parent', 'order', 'is_active')
     list_display_links = ('image_thumb', 'name')
     list_editable = ('order', 'is_active')
     list_filter = ('is_active', 'parent')
-    search_fields = ('name',)
-    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name_uk', 'name_en', 'name_ru')
+    prepopulated_fields = {'slug': ('name_uk',)}
     fieldsets = (
         (None, {'fields': ('name', 'slug', 'parent', 'description', 'image', 'order', 'is_active')}),
         ('SEO', {'fields': ('meta_title', 'meta_description'), 'classes': ('collapse',)}),
@@ -88,14 +89,14 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(TabbedTranslationAdmin):
     list_display = ('image_thumb', 'name', 'sku', 'category', 'price',
                     'stock_status', 'badge_obj', 'is_active')
     list_display_links = ('image_thumb', 'name')
     list_editable = ('price', 'stock_status', 'badge_obj', 'is_active')
     list_filter = ('stock_status', 'badge_obj', 'is_active', 'category')
-    search_fields = ('name', 'sku', 'sku_manufacturer', 'description')
-    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name_uk', 'name_en', 'name_ru', 'sku', 'sku_manufacturer')
+    prepopulated_fields = {'slug': ('name_uk',)}
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
     autocomplete_fields = ('badge_obj',)
     fieldsets = (
@@ -142,7 +143,6 @@ class ProductAdmin(admin.ModelAdmin):
             files = request.FILES.getlist('images')
             if files:
                 existing = ProductImage.objects.filter(product=product).count()
-                limit = ProductImage._meta.get_field
                 created = 0
                 next_order = (
                     ProductImage.objects.filter(product=product)
@@ -181,12 +181,12 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(Badge)
-class BadgeAdmin(admin.ModelAdmin):
+class BadgeAdmin(TabbedTranslationAdmin):
     list_display = ('name', 'slug', 'color', 'order', 'is_active', 'products_count')
     list_editable = ('order', 'is_active')
     list_filter = ('is_active', 'color')
-    search_fields = ('name', 'slug')
-    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name_uk', 'name_en', 'name_ru', 'slug')
+    prepopulated_fields = {'slug': ('name_uk',)}
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related('products')

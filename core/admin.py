@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from modeltranslation.admin import TabbedTranslationAdmin
 
-from .models import Banner, FAQ, Page, SEOTemplate, SiteSettings
+from .models import FAQ, Banner, Page, SEOTemplate, SiteSettings
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(admin.ModelAdmin):
+class SiteSettingsAdmin(TabbedTranslationAdmin):
     fieldsets = (
         ('Основне', {'fields': ('site_name', 'site_description', 'logo', 'favicon')}),
         ('Контакти', {'fields': ('email', 'address', 'phone_1', 'phone_2', 'phone_3',
@@ -42,12 +43,12 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(SEOTemplate)
-class SEOTemplateAdmin(admin.ModelAdmin):
+class SEOTemplateAdmin(TabbedTranslationAdmin):
     list_display = ('name', 'meta_title_template')
 
 
 @admin.register(Banner)
-class BannerAdmin(admin.ModelAdmin):
+class BannerAdmin(TabbedTranslationAdmin):
     list_display = ('image_thumb', 'title', 'position', 'order', 'is_active',
                     'start_date', 'end_date')
     list_display_links = ('image_thumb', 'title')
@@ -75,12 +76,12 @@ class BannerAdmin(admin.ModelAdmin):
 
 
 @admin.register(Page)
-class PageAdmin(admin.ModelAdmin):
+class PageAdmin(TabbedTranslationAdmin):
     list_display = ('title', 'slug', 'is_published', 'show_in_footer', 'footer_order', 'updated_at')
     list_editable = ('is_published', 'show_in_footer', 'footer_order')
     list_filter = ('is_published', 'show_in_footer')
-    search_fields = ('title', 'slug', 'content')
-    prepopulated_fields = {'slug': ('title',)}
+    search_fields = ('title_uk', 'title_en', 'title_ru', 'slug')
+    prepopulated_fields = {'slug': ('title_uk',)}
     fieldsets = (
         (None, {'fields': ('title', 'slug', 'content')}),
         ('Розташування', {'fields': ('show_in_footer', 'footer_order', 'is_published')}),
@@ -89,11 +90,11 @@ class PageAdmin(admin.ModelAdmin):
 
 
 @admin.register(FAQ)
-class FAQAdmin(admin.ModelAdmin):
+class FAQAdmin(TabbedTranslationAdmin):
     list_display = ('question', 'scope', 'order', 'is_published')
     list_editable = ('scope', 'order', 'is_published')
     list_filter = ('scope', 'is_published')
-    search_fields = ('question', 'answer')
+    search_fields = ('question_uk', 'question_en', 'question_ru')
     fieldsets = (
         (None, {'fields': ('question', 'answer', 'scope', 'order', 'is_published')}),
     )

@@ -13,6 +13,7 @@ DEBUG = False
 ALLOWED_HOSTS: list[str] = []
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -88,11 +89,15 @@ USE_TZ = True
 
 LANGUAGES = [
     ('uk', 'Українська'),
-    ('ru', 'Русский'),
     ('en', 'English'),
+    ('ru', 'Русский'),
 ]
 
 LOCALE_PATHS = [BASE_DIR / 'locale']
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'uk'
+MODELTRANSLATION_PREPOPULATE_LANGUAGE = 'uk'
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('uk',)
 
 LANGUAGE_COOKIE_NAME = 'bookshop_language'
 LANGUAGE_COOKIE_AGE = 60 * 60 * 24 * 365

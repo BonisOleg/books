@@ -23,5 +23,8 @@ ecdsa>=0.19
 # WYSIWYG editor for admin (Article/News/Product/Page rich content)
 django-tinymce>=4.1
 
+# Model-level translations (uk/en/ru per-field in admin)
+django-modeltranslation>=0.18
+
 # Observability (опційно — активується, якщо SENTRY_DSN задано)
 sentry-sdk[django]>=2.18
