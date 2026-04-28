@@ -1,4 +1,5 @@
 import json
+import re
 
 from django import template
 from django.db.models import Q
@@ -43,6 +44,28 @@ def calc_discount_percent(product):
     if product.old_price and product.old_price > 0:
         return int(((product.old_price - product.price) / product.old_price) * 100)
     return 0
+
+
+@register.filter
+def clean_richtext(value):
+    """
+    Strip inline margin/padding from TinyMCE HTML so frontend CSS controls layout.
+    Preserves other inline styles (color, font-weight, text-decoration, etc.).
+    """
+    if not value:
+        return value
+
+    _STRIP_PROPS = re.compile(
+        r'(?:^|(?<=;))\s*(?:margin|padding)(?:-\w+)?\s*:[^;]*;?',
+        re.IGNORECASE,
+    )
+
+    def _clean_style_attr(match):
+        cleaned = _STRIP_PROPS.sub('', match.group(1)).strip().strip(';')
+        return f'style="{cleaned}"' if cleaned else ''
+
+    result = re.sub(r'\bstyle="([^"]*)"', _clean_style_attr, value)
+    return mark_safe(result)
 
 
 @register.inclusion_tag('includes/banners.html')

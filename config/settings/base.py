@@ -147,9 +147,25 @@ TINYMCE_DEFAULT_CONFIG = {
         'bullist numlist outdent indent | link image | '
         'removeformat | code fullscreen'
     ),
+    # Paragraph blocks on Enter (not <br>)
+    'forced_root_block': 'p',
+    # Paste: strip margin/padding inline styles, keep text formatting
     'paste_as_text': False,
     'paste_data_images': True,
+    'paste_webkit_styles': 'color background-color font-weight font-style text-decoration text-align',
+    'paste_retain_style_properties': 'color background-color font-weight font-style text-decoration text-align',
+    # Only allow these inline styles on any element (strips margin, padding, etc.)
+    'valid_styles': {
+        '*': 'color,background-color,font-weight,font-style,text-decoration,text-align',
+    },
     'browser_spellcheck': True,
     'language': 'uk',
-    'content_style': 'body { font-family: Segoe UI, sans-serif; font-size: 14px; }',
+    # Mirror frontend CSS so admin preview matches the live site
+    'content_style': (
+        'body { font-family: Segoe UI, sans-serif; font-size: 14px; line-height: 1.6; } '
+        'p { margin: 0 0 10px 0; line-height: 1.6; font-size: 0.875rem; } '
+        'ul, ol { padding-left: 18px; margin-bottom: 8px; } '
+        'li { margin-bottom: 4px; } '
+        'h1, h2, h3, h4 { margin: 12px 0 6px; line-height: 1.3; }'
+    ),
 }

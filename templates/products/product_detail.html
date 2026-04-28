@@ -94,7 +94,7 @@
             </div>
 
             {% if product.short_description %}
-            <div class="product-info__short">{{ product.short_description|safe }}</div>
+            <div class="product-info__short">{{ product.short_description|clean_richtext }}</div>
             {% endif %}
 
             <div class="product-info__price-block">
@@ -177,7 +177,7 @@
         </div>
 
         <div class="product-tabs__panel is-active" id="tab-desc">
-            {{ product.description|safe }}
+            {{ product.description|clean_richtext }}
         </div>
 
         <div class="product-tabs__panel" id="tab-attrs">
