@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static i18n core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/promotions.css' %}">
+<link rel="stylesheet" href="{% static 'css/timer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container promotions-page">
+    <h1 class="promotions-page__title">{% trans 'Акції' %}</h1>
+
+    {% if promotions %}
+    <div class="promotions-grid">
+        {% for promo in promotions %}
+        <article class="promo-card">
+            <a href="{% url 'products:detail' promo.product.slug %}" class="promo-card__img-link">
+                {% with img=promo.product.images.first %}
+                {% if img %}
+                <img class="promo-card__img" src="{{ img.image.url }}"
+                     alt="{{ img.alt_text|default:promo.product.name }}" loading="lazy">
+                {% else %}
+                <div class="promo-card__img promo-card__img--empty"></div>
+                {% endif %}
+                {% endwith %}
+            </a>
+
+            <div class="promo-card__body">
+                <div class="promo-card__label">{{ promo.title }}</div>
+
+                <a href="{% url 'products:detail' promo.product.slug %}" class="promo-card__product-name">
+                    {{ promo.product.name }}
+                </a>
+
+                {% if promo.description %}
+                <p class="promo-card__desc">{{ promo.description }}</p>
+                {% endif %}
+
+                <div class="promo-card__timer-wrap">
+                    <div class="promo-card__timer-label">{% trans 'Акція діє до:' %}</div>
+                    <div class="promo-timer" data-countdown="{{ promo.end_date|date:'U' }}"></div>
+                </div>
+
+                <a href="{% url 'products:detail' promo.product.slug %}" class="btn btn--primary promo-card__btn">
+                    {% trans 'Переглянути товар' %}
+                </a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="promotions-empty">
+        <p class="promotions-empty__text">{% trans 'Наразі активних акцій немає.' %}</p>
+        <a href="{% url 'products:catalog' %}" class="btn btn--outline">{% trans 'До каталогу' %}</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/timer.js' %}"></script>
+{% endblock %}

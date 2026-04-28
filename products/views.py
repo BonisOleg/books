@@ -1,9 +1,22 @@
+from django.db.models import Prefetch
+from django.utils import timezone
 from django.utils.html import strip_tags
 from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
 from .models import Product, Category
 from .filters import filter_products
 from .schema import _plain_text, get_product_schema, get_breadcrumb_schema
+
+
+def _with_active_promotions(qs):
+    from promotions.models import Promotion
+    now = timezone.now()
+    active_qs = Promotion.objects.filter(
+        is_active=True, start_date__lte=now, end_date__gte=now
+    )
+    return qs.prefetch_related(
+        Prefetch('promotions', queryset=active_qs, to_attr='active_promotions')
+    )
 
 
 class CatalogView(ListView):
@@ -16,6 +29,7 @@ class CatalogView(ListView):
         qs = Product.objects.filter(is_active=True).select_related(
             'category'
         ).prefetch_related('images')
+        qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
     def get_context_data(self, **kwargs):
@@ -45,6 +59,7 @@ class CategoryDetailView(ListView):
         qs = Product.objects.filter(
             is_active=True, category_id__in=cat_ids
         ).select_related('category').prefetch_related('images')
+        qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
     def get_context_data(self, **kwargs):
@@ -157,6 +172,7 @@ class SearchView(ListView):
         qs = Product.objects.filter(is_active=True).select_related(
             'category'
         ).prefetch_related('images')
+        qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
     def get_context_data(self, **kwargs):

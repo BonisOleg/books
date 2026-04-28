@@ -1,7 +1,22 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.utils import timezone
 from products.models import Product
-from .models import GiftPickerQuestion
+from .models import GiftPickerQuestion, Promotion
+
+
+def promotion_list(request):
+    now = timezone.now()
+    promotions = (
+        Promotion.objects
+        .filter(is_active=True, start_date__lte=now, end_date__gte=now)
+        .select_related('product')
+        .prefetch_related('product__images')
+        .order_by('end_date')
+    )
+    return render(request, 'promotions/promotion_list.html', {
+        'promotions': promotions,
+        'page_title': 'Акції',
+    })
 
 
 def gift_picker(request):

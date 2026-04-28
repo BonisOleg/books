@@ -1,30 +1,79 @@
 {% if banners %}
-<div class="banners banners--{{ position }}">
-    {% for banner in banners %}
-    {% if banner.link %}
-    <a href="{{ banner.link }}" class="banner banner--{{ position }}"
-       {% if banner.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
-        {% if banner.image_mobile %}
-        <picture>
-            <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
-            <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
-        </picture>
-        {% else %}
-        <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
-        {% endif %}
-    </a>
-    {% else %}
-    <div class="banner banner--{{ position }}">
-        {% if banner.image_mobile %}
-        <picture>
-            <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
-            <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
-        </picture>
-        {% else %}
-        <img class="banner__img" src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}" loading="lazy">
-        {% endif %}
+<div class="banners banners--{{ position }}"
+     data-carousel
+     data-carousel-auto="5000"
+     role="region"
+     aria-roledescription="carousel"
+     aria-label="Банери">
+    <div class="banners__track">
+        {% for banner in banners %}
+        <div class="banners__slide"
+             role="group"
+             aria-roledescription="slide"
+             aria-label="{{ forloop.counter }}">
+            {% if banner.link %}
+            <a href="{{ banner.link }}" class="banner banner--{{ position }}"
+               {% if banner.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
+                {% if banner.image_mobile %}
+                <picture>
+                    <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
+                    <img class="banner__img" src="{{ banner.image.url }}"
+                         alt="{{ banner.alt_text|default:banner.title }}"
+                         loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                </picture>
+                {% else %}
+                <img class="banner__img" src="{{ banner.image.url }}"
+                     alt="{{ banner.alt_text|default:banner.title }}"
+                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                {% endif %}
+            </a>
+            {% else %}
+            <div class="banner banner--{{ position }}">
+                {% if banner.image_mobile %}
+                <picture>
+                    <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
+                    <img class="banner__img" src="{{ banner.image.url }}"
+                         alt="{{ banner.alt_text|default:banner.title }}"
+                         loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                </picture>
+                {% else %}
+                <img class="banner__img" src="{{ banner.image.url }}"
+                     alt="{{ banner.alt_text|default:banner.title }}"
+                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if banners|length > 1 %}
+    <button class="banners__btn banners__btn--prev" type="button" aria-label="Попередній банер">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+    </button>
+    <button class="banners__btn banners__btn--next" type="button" aria-label="Наступний банер">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>
+    </button>
+    <div class="banners__dots" role="tablist" aria-label="Слайди банерів">
+        {% for banner in banners %}
+        <button class="banners__dot{% if forloop.first %} banners__dot--active{% endif %}"
+                role="tab"
+                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                aria-label="Банер {{ forloop.counter }}"
+                data-index="{{ forloop.counter0 }}"
+                type="button"></button>
+        {% endfor %}
     </div>
     {% endif %}
-    {% endfor %}
 </div>
 {% endif %}

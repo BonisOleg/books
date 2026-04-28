@@ -39,6 +39,15 @@
             <span class="price">{{ product.price|uah }}</span>
         </div>
 
+        {% with promo=product.active_promotions.0 %}
+        {% if promo %}
+        <div class="product-card__promo-timer">
+            <div class="product-card__promo-label">{{ promo.title }}</div>
+            <div data-countdown="{{ promo.end_date|date:'U' }}"></div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
         <div class="product-card__actions">
             {% if product.stock_status != 'out' %}
             <button class="btn btn--buy btn--block btn--sm"
