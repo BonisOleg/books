@@ -2,7 +2,7 @@ from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils.html import format_html
-from modeltranslation.admin import TabbedTranslationAdmin, TranslationTabularInline
+from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from .forms import BulkImageUploadForm
 from .models import (
@@ -28,7 +28,8 @@ def _image_thumb(image_field, size_class=''):
 
 
 class AdminPreviewMedia:
-    css = {'all': ('css/admin-previews.css',)}
+    css = {'all': ('css/admin-previews.css', 'css/admin_lang_panels.css')}
+    js = ('js/admin_lang_panels.js',)
 
 
 class ProductImageInline(admin.TabularInline):
@@ -38,8 +39,8 @@ class ProductImageInline(admin.TabularInline):
     fields = ('preview', 'image', 'alt_text', 'order')
     readonly_fields = ('preview',)
 
-    class Media(AdminPreviewMedia):
-        pass
+    class Media:
+        css = {'all': ('css/admin-previews.css',)}
 
     @admin.display(description='Прев\'ю')
     def preview(self, obj):
@@ -53,8 +54,8 @@ class ProductVideoInline(admin.TabularInline):
     fields = ('poster_preview', 'video_url', 'video_file', 'poster', 'order')
     readonly_fields = ('poster_preview',)
 
-    class Media(AdminPreviewMedia):
-        pass
+    class Media:
+        css = {'all': ('css/admin-previews.css',)}
 
     @admin.display(description='Постер')
     def poster_preview(self, obj):
@@ -68,7 +69,7 @@ class ProductAttributeInline(TranslationTabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(TabbedTranslationAdmin):
+class CategoryAdmin(TranslationAdmin):
     list_display = ('image_thumb', 'name', 'parent', 'order', 'is_active')
     list_display_links = ('image_thumb', 'name')
     list_editable = ('order', 'is_active')
@@ -76,8 +77,22 @@ class CategoryAdmin(TabbedTranslationAdmin):
     search_fields = ('name_uk', 'name_en', 'name_ru')
     prepopulated_fields = {'slug': ('name_uk',)}
     fieldsets = (
-        (None, {'fields': ('name', 'slug', 'parent', 'description', 'image', 'order', 'is_active')}),
-        ('SEO', {'fields': ('meta_title', 'meta_description'), 'classes': ('collapse',)}),
+        ('Загальне', {
+            'fields': ('slug', 'parent', 'image', 'order', 'is_active'),
+        }),
+        # ── Language panels ──────────────────────────────────────────────
+        ('🇺🇦 Українська', {
+            'fields': ('name_uk', 'description_uk', 'meta_title_uk', 'meta_description_uk'),
+            'classes': ('lang-panel', 'lang-uk'),
+        }),
+        ('🇬🇧 English', {
+            'fields': ('name_en', 'description_en', 'meta_title_en', 'meta_description_en'),
+            'classes': ('lang-panel', 'lang-en'),
+        }),
+        ('🇷🇺 Русский', {
+            'fields': ('name_ru', 'description_ru', 'meta_title_ru', 'meta_description_ru'),
+            'classes': ('lang-panel', 'lang-ru'),
+        }),
     )
 
     class Media(AdminPreviewMedia):
@@ -89,7 +104,7 @@ class CategoryAdmin(TabbedTranslationAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(TabbedTranslationAdmin):
+class ProductAdmin(TranslationAdmin):
     list_display = ('image_thumb', 'name', 'sku', 'category', 'price',
                     'stock_status', 'badge_obj', 'is_active')
     list_display_links = ('image_thumb', 'name')
@@ -100,16 +115,40 @@ class ProductAdmin(TabbedTranslationAdmin):
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
     autocomplete_fields = ('badge_obj',)
     fieldsets = (
-        (None, {'fields': ('name', 'slug', 'sku', 'sku_manufacturer', 'category')}),
-        ('Опис', {'fields': ('description', 'short_description')}),
-        ('Ціна та наявність', {'fields': (
-            'price', 'old_price', 'discount_percent', 'stock_status',
-            'badge_obj', 'badge',
-        )}),
-        ('Додатково', {'fields': (
-            'manufacturer', 'country', 'weight', 'is_active'
-        )}),
-        ('SEO', {'fields': ('meta_title', 'meta_description'), 'classes': ('collapse',)}),
+        ('Ідентифікація', {
+            'fields': ('slug', 'sku', 'sku_manufacturer', 'category'),
+        }),
+        ('Ціна та наявність', {
+            'fields': (
+                'price', 'old_price', 'discount_percent', 'stock_status',
+                'badge_obj', 'badge',
+            ),
+        }),
+        ('Додатково', {
+            'fields': ('manufacturer', 'country', 'weight', 'is_active'),
+        }),
+        # ── Language panels ──────────────────────────────────────────────
+        ('🇺🇦 Українська', {
+            'fields': (
+                'name_uk', 'description_uk', 'short_description_uk',
+                'meta_title_uk', 'meta_description_uk',
+            ),
+            'classes': ('lang-panel', 'lang-uk'),
+        }),
+        ('🇬🇧 English', {
+            'fields': (
+                'name_en', 'description_en', 'short_description_en',
+                'meta_title_en', 'meta_description_en',
+            ),
+            'classes': ('lang-panel', 'lang-en'),
+        }),
+        ('🇷🇺 Русский', {
+            'fields': (
+                'name_ru', 'description_ru', 'short_description_ru',
+                'meta_title_ru', 'meta_description_ru',
+            ),
+            'classes': ('lang-panel', 'lang-ru'),
+        }),
     )
     save_on_top = True
     change_form_template = 'admin/products/product/change_form.html'
@@ -181,12 +220,31 @@ class ProductAdmin(TabbedTranslationAdmin):
 
 
 @admin.register(Badge)
-class BadgeAdmin(TabbedTranslationAdmin):
+class BadgeAdmin(TranslationAdmin):
     list_display = ('name', 'slug', 'color', 'order', 'is_active', 'products_count')
     list_editable = ('order', 'is_active')
     list_filter = ('is_active', 'color')
     search_fields = ('name_uk', 'name_en', 'name_ru', 'slug')
     prepopulated_fields = {'slug': ('name_uk',)}
+    fieldsets = (
+        ('Загальне', {'fields': ('slug', 'color', 'order', 'is_active')}),
+        # ── Language panels ──────────────────────────────────────────────
+        ('🇺🇦 Українська', {
+            'fields': ('name_uk',),
+            'classes': ('lang-panel', 'lang-uk'),
+        }),
+        ('🇬🇧 English', {
+            'fields': ('name_en',),
+            'classes': ('lang-panel', 'lang-en'),
+        }),
+        ('🇷🇺 Русский', {
+            'fields': ('name_ru',),
+            'classes': ('lang-panel', 'lang-ru'),
+        }),
+    )
+
+    class Media(AdminPreviewMedia):
+        pass
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related('products')

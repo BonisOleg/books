@@ -1,0 +1,91 @@
+/* =========================================================
+   Three-language-panel layout for Django admin
+   Three separate visible windows: UK | EN | RU
+   ========================================================= */
+
+.lang-panels-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 0 0 16px;
+    align-items: start;
+}
+
+/* Each language fieldset inside the container */
+.lang-panels-container .module.lang-panel {
+    margin: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Language panel headers */
+.lang-panel > h2 {
+    padding: 8px 12px;
+    font-size: 12px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+/* Ukrainian panel */
+.lang-panel.lang-uk > h2 {
+    background: #2c5282;
+    color: #fff;
+    border-left: 4px solid #ffd700;
+}
+
+/* English panel */
+.lang-panel.lang-en > h2 {
+    background: #234e77;
+    color: #fff;
+    border-left: 4px solid #cf142b;
+}
+
+/* Russian panel */
+.lang-panel.lang-ru > h2 {
+    background: #424242;
+    color: #fff;
+    border-left: 4px solid #cc0000;
+}
+
+/* Uniform field label width inside panels */
+.lang-panels-container .form-row label {
+    min-width: 80px;
+    max-width: 120px;
+    font-size: 11px;
+}
+
+/* TinyMCE container inside panels — allow full width */
+.lang-panels-container .mce-tinymce,
+.lang-panels-container .tox-tinymce {
+    width: 100%;
+}
+
+/* Tablet: 2 + 1 columns */
+@media (max-width: 1280px) {
+    .lang-panels-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .lang-panels-container .module.lang-panel:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Mobile / narrow tablet: stacked */
+@media (max-width: 768px) {
+    .lang-panels-container {
+        grid-template-columns: 1fr;
+    }
+
+    .lang-panels-container .module.lang-panel:last-child {
+        grid-column: auto;
+    }
+}
+
+/* iOS Safari safe area padding for admin on mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .lang-panels-container {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
