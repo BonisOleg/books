@@ -6,7 +6,7 @@ from tinymce.models import HTMLField
 
 class SiteSettings(models.Model):
     site_name = models.CharField('Назва сайту', max_length=200, default='Магазин книжок')
-    site_description = models.TextField('Опис сайту', blank=True)
+    site_description = HTMLField('Опис сайту (головна)', blank=True)
     logo = models.ImageField(
         'Логотип', upload_to='site/', blank=True,
         help_text='Рекомендований розмір: 200×80 px (PNG/SVG, прозорий фон).'
