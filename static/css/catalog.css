@@ -216,7 +216,6 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     flex: 1;
-    align-items: start;
 }
 
 .product-card {
@@ -311,6 +310,7 @@
 
 .product-card__actions {
     padding-top: 4px;
+    margin-top: auto;
 }
 
 .catalog-pagination {
