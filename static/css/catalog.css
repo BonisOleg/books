@@ -303,11 +303,11 @@
 }
 
 .product-card__price {
+    margin-top: auto;
     margin-bottom: 4px;
 }
 
 .product-card__actions {
-    margin-top: auto;
     padding-top: 4px;
 }
 
