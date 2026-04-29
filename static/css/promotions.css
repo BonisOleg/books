@@ -116,39 +116,48 @@
     margin-bottom: 24px;
 }
 
-/* ── product card mini timer ── */
+/* ── product card image overlay timer ── */
 .product-card__promo-timer {
-    padding: 6px 0 2px;
-    border-top: 1px solid var(--color-border, #eee);
-    margin-top: 4px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.68);
+    padding: 6px 8px 7px;
+    z-index: 3;
 }
 
 .product-card__promo-label {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--color-badge-sale, #e53935);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    color: #fff;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     margin-bottom: 4px;
+    text-align: center;
 }
 
-/* compact timer for card */
 .product-card__promo-timer .timer {
     gap: 4px;
-    justify-content: flex-start;
+    justify-content: center;
 }
 
 .product-card__promo-timer .timer__block {
-    padding: 4px 6px;
-    min-width: 32px;
+    padding: 3px 5px;
+    min-width: 28px;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
 }
 
 .product-card__promo-timer .timer__num {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
+    color: #fff;
 }
 
 .product-card__promo-timer .timer__label {
-    font-size: 0.5625rem;
+    font-size: 0.5rem;
+    color: rgba(255, 255, 255, 0.75);
 }
 
 /* ── responsive ── */
