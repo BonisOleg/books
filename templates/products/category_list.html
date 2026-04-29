@@ -33,7 +33,7 @@
 
     <div class="catalog-toolbar">
         <div class="catalog-toolbar__sort">
-            <select class="js-sort-redirect">
+            <select class="js-sort-redirect" data-custom-select>
                 {% with base_url=request.path %}
                 <option value="{{ base_url }}?sort=default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
                 <option value="{{ base_url }}?sort=price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>

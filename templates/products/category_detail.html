@@ -56,7 +56,8 @@
                     hx-target="#product-grid"
                     hx-swap="innerHTML"
                     hx-include="[name='price_min'],[name='price_max'],[name='stock'],[name='subcategory']"
-                    name="sort">
+                    name="sort"
+                    data-custom-select>
                 <option value="default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
                 <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>
                 <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>

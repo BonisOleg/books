@@ -42,7 +42,7 @@
             <form action="{% url 'set_language' %}" method="post" class="header__lang">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ path_without_lang }}">
-                <select name="language" class="header__lang-select" data-auto-submit aria-label="{% trans 'Мова' %}">
+                <select name="language" class="header__lang-select" data-auto-submit data-custom-select aria-label="{% trans 'Мова' %}">
                     {% get_current_language as CURRENT_LANG %}
                     {% for code, name in available_languages %}
                     <option value="{{ code }}" {% if code == CURRENT_LANG %}selected{% endif %}>{{ code|upper }}</option>

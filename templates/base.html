@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="{% static 'css/header.css' %}">
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/dropdowns.css' %}">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 
     <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
@@ -78,6 +79,7 @@
     {% include "includes/messenger_buttons.html" %}
 
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/dropdowns.js' %}"></script>
     <script src="{% static 'js/carousel.js' %}"></script>
     <script src="{% static 'js/oneclick-modal.js' %}"></script>
     {% block extra_js %}{% endblock %}
