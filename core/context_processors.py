@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils.translation import get_language_from_path
 
 from .models import Page, SiteSettings
 
@@ -39,11 +40,19 @@ def site_settings(request):
         if site.enable_en:
             available_languages.append(('en', 'English'))
 
+    lang_prefix = get_language_from_path(request.path)
+    if lang_prefix:
+        _stripped = request.path[len(lang_prefix) + 1:]
+        path_without_lang = _stripped if _stripped.startswith('/') else '/' + _stripped
+    else:
+        path_without_lang = request.path
+
     return {
         'site_settings': site,
         'nav_categories': nav_categories,
         'footer_pages': footer_pages,
         'available_languages': available_languages,
+        'path_without_lang': path_without_lang,
         'SITE_NAME': getattr(settings, 'SITE_NAME', 'Магазин книжок'),
         'PHONE_NUMBERS': getattr(settings, 'PHONE_NUMBERS', []),
         'TELEGRAM_BOT_USERNAME': getattr(settings, 'TELEGRAM_BOT_USERNAME', ''),
