@@ -96,13 +96,12 @@ msgid ""
 "Ви отримали цей лист, бо запросили відновлення пароля для свого акаунта на "
 "сайті %(site_name)s."
 msgstr ""
+"Вы получили это письмо, так как запросили восстановление пароля для своего "
+"аккаунта на сайте %(site_name)s."
 
 #: templates/accounts/password_reset_email.html:4
-#, fuzzy
-#| msgid ""
-#| "Введіть email — ми надішлемо посилання для встановлення нового пароля."
 msgid "Будь ласка, перейдіть за посиланням, щоб встановити новий пароль:"
-msgstr "Введите email — мы отправим ссылку для установки нового пароля."
+msgstr "Пожалуйста, перейдите по ссылке, чтобы установить новый пароль:"
 
 #: templates/accounts/password_reset_email.html:7
 msgid "Якщо ви не запитували відновлення — просто проігноруйте цей лист."
@@ -117,10 +116,8 @@ msgid "команда"
 msgstr "команда"
 
 #: templates/accounts/password_reset_subject.txt:1
-#, fuzzy
-#| msgid "Відновлення пароля"
 msgid "Відновлення пароля для"
-msgstr "Восстановление пароля"
+msgstr "Восстановление пароля для"
 
 #: templates/accounts/profile.html:10 templates/includes/mobile_menu.html:24
 msgid "Мій профіль"
@@ -666,3 +663,144 @@ msgstr "К сожалению, по вашим критериям ничего �
 #: templates/promotions/gift_results.html:13
 msgid "Переглянути каталог"
 msgstr "Посмотреть каталог"
+
+#: templates/cart/partials/mini_cart.html
+msgid "Перейти до кошика"
+msgstr "Перейти в корзину"
+
+#: templates/orders/partials/oneclick_modal.html
+msgid "Ваше ім'я"
+msgstr "Ваше имя"
+
+#: templates/orders/partials/oneclick_modal.html
+msgid "Замовити"
+msgstr "Заказать"
+
+#: templates/orders/partials/oneclick_success.html
+msgid "Дякуємо!"
+msgstr "Спасибо!"
+
+#: templates/orders/partials/oneclick_success.html
+msgid "Ми зв'яжемося з вами найближчим часом для уточнення."
+msgstr "Мы свяжемся с вами в ближайшее время для уточнения."
+
+#: templates/includes/product_badges.html
+msgid "Топ"
+msgstr "Топ"
+
+#: templates/orders/pay_liqpay.html
+msgid "Оплата замовлення"
+msgstr "Оплата заказа"
+
+#: templates/orders/pay_liqpay.html templates/orders/emails/order_confirmation.html
+msgid "Сума:"
+msgstr "Сумма:"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Замовлення"
+msgstr "Заказ"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Дякуємо за замовлення!"
+msgstr "Спасибо за заказ!"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Доброго дня,"
+msgstr "Здравствуйте,"
+
+#: templates/orders/emails/order_confirmation.html
+#, python-format
+msgid "Замовлення <strong>#%(num)s</strong> прийнято в обробку."
+msgstr "Заказ <strong>#%(num)s</strong> принят в обработку."
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Деталі замовлення"
+msgstr "Детали заказа"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Оплата:"
+msgstr "Оплата:"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Доставка:"
+msgstr "Доставка:"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Склад замовлення"
+msgstr "Состав заказа"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "Товар"
+msgstr "Товар"
+
+#: templates/orders/emails/order_confirmation.html
+msgid "К-сть"
+msgstr "Кол-во"
+
+#: templates/products/product_detail.html templates/includes/product_card.html templates/promotions/promotion_list.html
+msgid "Акція завершена"
+msgstr "Акция завершена"
+
+#: templates/products/product_detail.html templates/includes/product_card.html templates/promotions/promotion_list.html
+msgid "дн"
+msgstr "дн"
+
+#: templates/products/product_detail.html templates/includes/product_card.html templates/promotions/promotion_list.html
+msgid "год"
+msgstr "ч"
+
+#: templates/products/product_detail.html templates/includes/product_card.html templates/promotions/promotion_list.html
+msgid "хв"
+msgstr "мин"
+
+#: templates/products/product_detail.html templates/includes/product_card.html templates/promotions/promotion_list.html
+msgid "сек"
+msgstr "сек"
+
+#: templates/products/product_detail.html
+msgid "Попереднє"
+msgstr "Предыдущее"
+
+#: templates/products/product_detail.html
+msgid "Наступне"
+msgstr "Следующее"
+
+#: orders/forms.py
+msgid "Я новий покупець (без реєстрації)"
+msgstr "Я новый покупатель (без регистрации)"
+
+#: orders/forms.py
+msgid "Зареєструвати мене після оформлення"
+msgstr "Зарегистрировать меня после оформления"
+
+#: orders/forms.py
+msgid "У мене вже є акаунт"
+msgstr "У меня уже есть аккаунт"
+
+#: orders/forms.py
+msgid "Режим оформлення"
+msgstr "Режим оформления"
+
+#: orders/forms.py
+msgid "Відділення Нової Пошти"
+msgstr "Отделение Новой Почты"
+
+#: orders/forms.py
+msgid "Коментар до замовлення"
+msgstr "Комментарий к заказу"
+
+#: orders/forms.py
+msgid "Для реєстрації потрібен email."
+msgstr "Для регистрации необходим email."
+
+#: accounts/forms.py
+msgid "Логін"
+msgstr "Логин"
+
+#: accounts/forms.py
+msgid "Підтвердження"
+msgstr "Подтверждение"
+
+#: accounts/forms.py
+msgid "Логін або email"
+msgstr "Логин или email"

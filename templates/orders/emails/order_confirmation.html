@@ -1,27 +1,27 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Замовлення #{{ order.order_number }}</title>
+    <title>{% trans "Замовлення" %} #{{ order.order_number }}</title>
 </head>
 <body>
     <div>
-        <h2>Дякуємо за замовлення!</h2>
-        <p>Доброго дня, {{ order.first_name }}!</p>
-        <p>Замовлення <strong>#{{ order.order_number }}</strong> прийнято в обробку.</p>
+        <h2>{% trans "Дякуємо за замовлення!" %}</h2>
+        <p>{% trans "Доброго дня," %} {{ order.first_name }}!</p>
+        <p>{% blocktrans with num=order.order_number %}Замовлення <strong>#{{ num }}</strong> прийнято в обробку.{% endblocktrans %}</p>
 
-        <h3>Деталі замовлення</h3>
+        <h3>{% trans "Деталі замовлення" %}</h3>
         <ul>
-            <li><strong>Сума:</strong> {{ order.total|uah }}</li>
-            <li><strong>Оплата:</strong> {{ order.get_payment_method_display }}</li>
-            <li><strong>Доставка:</strong> {{ order.city }}, {{ order.warehouse }}</li>
+            <li><strong>{% trans "Сума:" %}</strong> {{ order.total|uah }}</li>
+            <li><strong>{% trans "Оплата:" %}</strong> {{ order.get_payment_method_display }}</li>
+            <li><strong>{% trans "Доставка:" %}</strong> {{ order.city }}, {{ order.warehouse }}</li>
         </ul>
 
-        <h3>Склад замовлення</h3>
+        <h3>{% trans "Склад замовлення" %}</h3>
         <table border="1" cellpadding="6" cellspacing="0">
             <thead>
-                <tr><th>Товар</th><th>К-сть</th><th>Сума</th></tr>
+                <tr><th>{% trans "Товар" %}</th><th>{% trans "К-сть" %}</th><th>{% trans "Сума" %}</th></tr>
             </thead>
             <tbody>
                 {% for item in order.items.all %}
@@ -34,8 +34,8 @@
             </tbody>
         </table>
 
-        <p>Ми зв'яжемося з вами найближчим часом для підтвердження.</p>
-        <p>З повагою,<br>команда {{ site_name }}<br><a href="{{ site_url }}">{{ site_url }}</a></p>
+        <p>{% trans "Ми зв'яжемося з вами найближчим часом для підтвердження." %}</p>
+        <p>{% trans "З повагою," %}<br>{% trans "команда" %} {{ site_name }}<br><a href="{{ site_url }}">{{ site_url }}</a></p>
     </div>
 </body>
 </html>

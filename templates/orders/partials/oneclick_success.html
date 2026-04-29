@@ -1,8 +1,8 @@
-{% load core_tags %}
+{% load core_tags i18n %}
 <div class="modal" id="oneclick-modal">
     <div class="modal__dialog">
-        <button type="button" class="modal__close" data-modal-close aria-label="Закрити">&times;</button>
-        <h3 class="modal__title">Дякуємо!</h3>
-        <p class="modal__text">Ми зв'яжемося з вами найближчим часом для уточнення.</p>
+        <button type="button" class="modal__close" data-modal-close aria-label="{% trans 'Закрити' %}">&times;</button>
+        <h3 class="modal__title">{% trans "Дякуємо!" %}</h3>
+        <p class="modal__text">{% trans "Ми зв'яжемося з вами найближчим часом для уточнення." %}</p>
     </div>
 </div>

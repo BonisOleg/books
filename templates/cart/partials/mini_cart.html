@@ -1,5 +1,5 @@
-{% load core_tags %}
-<div class="mini-cart__header">Кошик</div>
+{% load core_tags i18n %}
+<div class="mini-cart__header">{% trans "Кошик" %}</div>
 <div class="mini-cart__items">
     {% for item in cart_items %}
     <div class="mini-cart__item">
@@ -16,13 +16,13 @@
         </div>
     </div>
     {% empty %}
-    <div class="mini-cart__empty">Кошик порожній</div>
+    <div class="mini-cart__empty">{% trans "Кошик порожній" %}</div>
     {% endfor %}
 </div>
 <div class="mini-cart__footer">
     <div class="mini-cart__total">
-        <span>Разом:</span>
+        <span>{% trans "Разом:" %}</span>
         <span>{{ cart_total|uah }}</span>
     </div>
-    <a href="{% url 'cart:detail' %}" class="btn btn--primary btn--block btn--sm">Перейти до кошика</a>
+    <a href="{% url 'cart:detail' %}" class="btn btn--primary btn--block btn--sm">{% trans "Перейти до кошика" %}</a>
 </div>

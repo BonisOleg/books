@@ -1,18 +1,19 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from .models import Order
 
 
 CHECKOUT_MODE_CHOICES = [
-    ('guest', 'Я новий покупець (без реєстрації)'),
-    ('register', 'Зареєструвати мене після оформлення'),
-    ('account', 'У мене вже є акаунт'),
+    ('guest', _('Я новий покупець (без реєстрації)')),
+    ('register', _('Зареєструвати мене після оформлення')),
+    ('account', _('У мене вже є акаунт')),
 ]
 
 
 class CheckoutForm(forms.ModelForm):
     checkout_mode = forms.ChoiceField(
-        label='Режим оформлення',
+        label=_('Режим оформлення'),
         choices=CHECKOUT_MODE_CHOICES,
         initial='guest',
         widget=forms.RadioSelect(attrs={'class': 'checkout-mode__input'}),
@@ -27,13 +28,13 @@ class CheckoutForm(forms.ModelForm):
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': 'Ім\'я',
+                'class': 'form-input', 'placeholder': _('Ім\'я'),
             }),
             'last_name': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': 'Прізвище',
+                'class': 'form-input', 'placeholder': _('Прізвище'),
             }),
             'patronymic': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': 'По батькові',
+                'class': 'form-input', 'placeholder': _('По батькові'),
             }),
             'phone': forms.TextInput(attrs={
                 'class': 'form-input', 'placeholder': '+380...',
@@ -43,18 +44,18 @@ class CheckoutForm(forms.ModelForm):
                 'class': 'form-input', 'placeholder': 'email@example.com',
             }),
             'city': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': 'Місто',
+                'class': 'form-input', 'placeholder': _('Місто'),
                 'id': 'city-input',
             }),
             'warehouse': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': 'Відділення Нової Пошти',
+                'class': 'form-input', 'placeholder': _('Відділення Нової Пошти'),
                 'id': 'warehouse-input',
                 'autocomplete': 'off',
             }),
             'warehouse_ref': forms.HiddenInput(),
             'comment': forms.Textarea(attrs={
                 'class': 'form-textarea', 'rows': 3,
-                'placeholder': 'Коментар до замовлення',
+                'placeholder': _('Коментар до замовлення'),
             }),
             'payment_method': forms.RadioSelect(),
         }
@@ -69,7 +70,7 @@ class CheckoutForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
         if cleaned.get('checkout_mode') == 'register' and not cleaned.get('email'):
-            self.add_error('email', 'Для реєстрації потрібен email.')
+            self.add_error('email', _('Для реєстрації потрібен email.'))
         return cleaned
 
 
@@ -84,6 +85,6 @@ class OneClickForm(forms.Form):
     name = forms.CharField(
         max_length=150, required=False,
         widget=forms.TextInput(attrs={
-            'class': 'form-input', 'placeholder': 'Ваше ім\'я',
+            'class': 'form-input', 'placeholder': _('Ваше ім\'я'),
         })
     )

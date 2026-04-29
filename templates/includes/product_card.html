@@ -20,7 +20,12 @@
         {% if promo %}
         <div class="product-card__promo-timer">
             <div class="product-card__promo-label">{{ promo.title }}</div>
-            <div data-countdown="{{ promo.end_date|date:'U' }}"></div>
+            <div data-countdown="{{ promo.end_date|date:'U' }}"
+                 data-expired-label="{% trans 'Акція завершена' %}"
+                 data-label-days="{% trans 'дн' %}"
+                 data-label-hours="{% trans 'год' %}"
+                 data-label-minutes="{% trans 'хв' %}"
+                 data-label-seconds="{% trans 'сек' %}"></div>
         </div>
         {% endif %}
         {% endwith %}

@@ -38,7 +38,10 @@
                 {% include "includes/product_badges.html" with product=product %}
             </div>
 
-            <div class="product-gallery__main" id="gallery-main">
+            <div class="product-gallery__main" id="gallery-main"
+                 data-label-close="{% trans 'Закрити' %}"
+                 data-label-prev="{% trans 'Попереднє' %}"
+                 data-label-next="{% trans 'Наступне' %}">
                 {% with first_img=product.images.first %}
                 {% if first_img %}
                 <img src="{{ first_img.image.url }}" alt="{{ first_img.alt_text|default:product.name }}" id="gallery-current">
@@ -111,7 +114,12 @@
             <div class="product-info__promotion">
                 <span class="promotion-badge">{% trans 'АКЦІЯ' %}</span>
                 <div class="promotion-label">{{ promotion.title }}</div>
-                <div class="promotion-timer" data-countdown="{{ promotion.end_date|date:'U' }}"></div>
+                <div class="promotion-timer" data-countdown="{{ promotion.end_date|date:'U' }}"
+                     data-expired-label="{% trans 'Акція завершена' %}"
+                     data-label-days="{% trans 'дн' %}"
+                     data-label-hours="{% trans 'год' %}"
+                     data-label-minutes="{% trans 'хв' %}"
+                     data-label-seconds="{% trans 'сек' %}"></div>
             </div>
             {% endif %}
 

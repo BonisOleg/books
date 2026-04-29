@@ -105,6 +105,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var lightboxIndex = 0;
 
     function buildLightbox() {
+        var labelClose = mainContainer ? (mainContainer.dataset.labelClose || '×') : '×';
+        var labelPrev = mainContainer ? (mainContainer.dataset.labelPrev || '‹') : '‹';
+        var labelNext = mainContainer ? (mainContainer.dataset.labelNext || '›') : '›';
+
         lightbox = document.createElement('div');
         lightbox.className = 'lightbox';
         lightbox.setAttribute('role', 'dialog');
@@ -112,11 +116,11 @@ document.addEventListener('DOMContentLoaded', function () {
         lightbox.innerHTML =
             '<div class="lightbox__stage">' +
             '<img class="lightbox__img" alt="">' +
-            '<button type="button" class="lightbox__close" aria-label="Закрити">×</button>' +
-            '<button type="button" class="lightbox__nav lightbox__nav--prev" aria-label="Попереднє">' +
+            '<button type="button" class="lightbox__close" aria-label="' + labelClose + '">×</button>' +
+            '<button type="button" class="lightbox__nav lightbox__nav--prev" aria-label="' + labelPrev + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
             '</button>' +
-            '<button type="button" class="lightbox__nav lightbox__nav--next" aria-label="Наступне">' +
+            '<button type="button" class="lightbox__nav lightbox__nav--next" aria-label="' + labelNext + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>' +
             '</button>' +
             '<div class="lightbox__counter"></div>' +
