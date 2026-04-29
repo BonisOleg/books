@@ -1,5 +1,6 @@
 .checkout-page {
-    padding: 24px 0 40px;
+    padding-top: 24px;
+    padding-bottom: 40px;
 }
 
 .checkout-page__title {
@@ -295,7 +296,8 @@
 }
 
 .pay-page {
-    padding: 48px 0;
+    padding-top: 48px;
+    padding-bottom: 48px;
     text-align: center;
 }
 

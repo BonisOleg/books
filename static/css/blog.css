@@ -1,5 +1,6 @@
 .blog-page {
-    padding: 24px 0;
+    padding-top: 24px;
+    padding-bottom: 24px;
 }
 
 .blog-page__title {
@@ -74,7 +75,8 @@
 }
 
 .blog-detail {
-    padding: 24px 0;
+    padding-top: 24px;
+    padding-bottom: 24px;
 }
 
 .blog-detail__header {

@@ -1,5 +1,6 @@
 .cart-page {
-    padding: 24px 0;
+    padding-top: 24px;
+    padding-bottom: 24px;
 }
 
 .cart-page__title {
