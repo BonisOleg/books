@@ -105,15 +105,3 @@
     margin-top: auto;
 }
 
-/* =====================================================
-   MODIFIER: compact — прибирає пусту зону між ціною
-   та кнопкою. Застосовується через клас на картці.
-   ===================================================== */
-
-.product-card--compact .product-card__body {
-    flex: 0 0 auto;
-}
-
-.product-card--compact .product-card__actions {
-    margin-top: 4px;
-}
