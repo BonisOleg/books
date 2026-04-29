@@ -1,6 +1,6 @@
 from modeltranslation.translator import TranslationOptions, register
 
-from .models import FAQ, Banner, Page, SEOTemplate, SiteSettings
+from .models import FAQ, Banner, Page, ProfileCabinetTexts, SEOTemplate, SiteSettings
 
 
 @register(SiteSettings)
@@ -26,3 +26,13 @@ class PageTranslationOptions(TranslationOptions):
 @register(SEOTemplate)
 class SEOTemplateTranslationOptions(TranslationOptions):
     fields = ('meta_title_template', 'meta_description_template')
+
+
+@register(ProfileCabinetTexts)
+class ProfileCabinetTextsTranslationOptions(TranslationOptions):
+    fields = (
+        'page_title', 'section_personal', 'label_last_name', 'label_first_name',
+        'label_patronymic', 'label_phone', 'label_email', 'email_placeholder',
+        'button_save', 'section_orders', 'table_number', 'table_date',
+        'table_amount', 'table_status', 'table_payment', 'message_saved',
+    )

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags i18n %}
+{% load static core_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
@@ -7,52 +7,52 @@
 
 {% block content %}
 <div class="container auth-page auth-page--wide">
-    <h1 class="auth-page__title">{% trans 'Мій профіль' %}</h1>
+    <h1 class="auth-page__title">{{ profile_cabinet.page_title }}</h1>
 
     <div class="checkout-section checkout-section--spaced">
-        <div class="checkout-section__title">{% trans 'Особисті дані' %}</div>
+        <div class="checkout-section__title">{{ profile_cabinet.section_personal }}</div>
         <form method="post">
             {% csrf_token %}
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">{% trans 'Прізвище' %}</label>
+                    <label class="form-label">{{ profile_cabinet.label_last_name }}</label>
                     {{ form.last_name }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">{% trans "Ім'я" %}</label>
+                    <label class="form-label">{{ profile_cabinet.label_first_name }}</label>
                     {{ form.first_name }}
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">{% trans 'По батькові' %}</label>
+                    <label class="form-label">{{ profile_cabinet.label_patronymic }}</label>
                     {{ form.patronymic }}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">{% trans 'Телефон' %}</label>
+                    <label class="form-label">{{ profile_cabinet.label_phone }}</label>
                     {{ form.phone }}
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Email</label>
+                <label class="form-label">{{ profile_cabinet.label_email }}</label>
                 {{ form.email }}
             </div>
-            <button type="submit" class="btn btn--primary form-group__submit">{% trans 'Зберегти' %}</button>
+            <button type="submit" class="btn btn--primary form-group__submit">{{ profile_cabinet.button_save }}</button>
         </form>
     </div>
 
     {% if user_orders %}
     <div class="checkout-section">
-        <div class="checkout-section__title">{% trans 'Мої замовлення' %}</div>
+        <div class="checkout-section__title">{{ profile_cabinet.section_orders }}</div>
         <div class="data-table--scroll">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>№</th>
-                        <th>{% trans 'Дата' %}</th>
-                        <th>{% trans 'Сума' %}</th>
-                        <th>{% trans 'Статус' %}</th>
-                        <th>{% trans 'Оплата' %}</th>
+                        <th>{{ profile_cabinet.table_number }}</th>
+                        <th>{{ profile_cabinet.table_date }}</th>
+                        <th>{{ profile_cabinet.table_amount }}</th>
+                        <th>{{ profile_cabinet.table_status }}</th>
+                        <th>{{ profile_cabinet.table_payment }}</th>
                     </tr>
                 </thead>
                 <tbody>

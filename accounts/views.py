@@ -3,7 +3,16 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
+
+from core.models import ProfileCabinetTexts
+
 from .forms import RegisterForm, LoginForm, ProfileForm
+
+
+def _apply_profile_cabinet_form_labels(form, merged):
+    ph = (merged.get('email_placeholder') or '').strip()
+    if ph:
+        form.fields['email'].widget.attrs['placeholder'] = ph
 
 
 def register_view(request):
@@ -49,18 +58,21 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
+    merged = ProfileCabinetTexts.get_merged_safe()
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=request.user)
+        _apply_profile_cabinet_form_labels(form, merged)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Профіль оновлено.')
+            messages.success(request, merged['message_saved'])
             return redirect('accounts:profile')
     else:
         form = ProfileForm(instance=request.user)
+        _apply_profile_cabinet_form_labels(form, merged)
 
     orders = request.user.orders.all().order_by('-created_at')[:10]
     return render(request, 'accounts/profile.html', {
         'form': form,
         'user_orders': orders,
-        'page_title': 'Мій профіль',
+        'page_title': merged['page_title'],
     })

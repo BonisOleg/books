@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.utils.translation import get_language_from_path
 
-from .models import Page, SiteSettings
+from .models import Page, ProfileCabinetTexts, SiteSettings
 
 
 def site_settings(request):
@@ -57,4 +57,5 @@ def site_settings(request):
         'PHONE_NUMBERS': getattr(settings, 'PHONE_NUMBERS', []),
         'TELEGRAM_BOT_USERNAME': getattr(settings, 'TELEGRAM_BOT_USERNAME', ''),
         'VIBER_BOT_URI': getattr(settings, 'VIBER_BOT_URI', ''),
+        'profile_cabinet': ProfileCabinetTexts.get_merged_safe(),
     }

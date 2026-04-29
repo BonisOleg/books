@@ -21,7 +21,7 @@
         {% endfor %}
         <a href="{% url 'cart:detail' %}" class="mobile-menu__link">{% trans 'Кошик' %}</a>
         {% if user.is_authenticated %}
-        <a href="{% url 'accounts:profile' %}" class="mobile-menu__link">{% trans 'Мій профіль' %}</a>
+        <a href="{% url 'accounts:profile' %}" class="mobile-menu__link">{{ profile_cabinet.page_title }}</a>
         <form action="{% url 'accounts:logout' %}" method="post" class="mobile-menu__logout-form">
             {% csrf_token %}
             <button type="submit" class="mobile-menu__link mobile-menu__link--button">{% trans 'Вихід' %}</button>

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin
 
-from .models import FAQ, Banner, Page, SEOTemplate, SiteSettings
+from .models import FAQ, Banner, Page, ProfileCabinetTexts, SEOTemplate, SiteSettings
 
 
 class LangPanelMedia:
@@ -73,6 +73,49 @@ class SiteSettingsAdmin(TranslationAdmin):
 
     def has_add_permission(self, request):
         return not SiteSettings.objects.exists()
+
+
+_PROFILE_COPY_FIELDS_UK = (
+    'page_title_uk', 'section_personal_uk',
+    'label_last_name_uk', 'label_first_name_uk', 'label_patronymic_uk',
+    'label_phone_uk', 'label_email_uk', 'email_placeholder_uk',
+    'button_save_uk', 'section_orders_uk',
+    'table_number_uk', 'table_date_uk', 'table_amount_uk', 'table_status_uk',
+    'table_payment_uk', 'message_saved_uk',
+)
+_PROFILE_COPY_FIELDS_EN = tuple(f.replace('_uk', '_en') for f in _PROFILE_COPY_FIELDS_UK)
+_PROFILE_COPY_FIELDS_RU = tuple(f.replace('_uk', '_ru') for f in _PROFILE_COPY_FIELDS_UK)
+
+
+@admin.register(ProfileCabinetTexts)
+class ProfileCabinetTextsAdmin(TranslationAdmin):
+    """Єдиний запис — тексти /accounts/profile/ (три мови)."""
+
+    fieldsets = (
+        ('🇺🇦 Українська', {
+            'fields': _PROFILE_COPY_FIELDS_UK,
+            'classes': ('lang-panel', 'lang-uk'),
+            'description': 'Сторінка особистого кабінету. Порожні значення на сайті '
+                           'замінюються стандартними підписами (див. код _FALLBACK).',
+        }),
+        ('🇬🇧 English', {
+            'fields': _PROFILE_COPY_FIELDS_EN,
+            'classes': ('lang-panel', 'lang-en'),
+        }),
+        ('🇷🇺 Русский', {
+            'fields': _PROFILE_COPY_FIELDS_RU,
+            'classes': ('lang-panel', 'lang-ru'),
+        }),
+    )
+
+    class Media(LangPanelMedia):
+        pass
+
+    def has_add_permission(self, request):
+        return not ProfileCabinetTexts.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(SEOTemplate)

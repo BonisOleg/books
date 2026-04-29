@@ -211,3 +211,75 @@ class SEOTemplate(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ProfileCabinetTexts(models.Model):
+    """
+    Єдиний запис: усі підписи сторінки особистого кабінету (/accounts/profile/).
+    Три мови — через modeltranslation (панелі в адмінці як у «Налаштуваннях сайту»).
+    """
+
+    _FALLBACK = {
+        'page_title': 'Мій профіль',
+        'section_personal': 'Особисті дані',
+        'label_last_name': 'Прізвище',
+        'label_first_name': "Ім'я",
+        'label_patronymic': 'По батькові',
+        'label_phone': 'Телефон',
+        'label_email': 'Email',
+        'email_placeholder': '',
+        'button_save': 'Зберегти',
+        'section_orders': 'Мої замовлення',
+        'table_number': '№',
+        'table_date': 'Дата',
+        'table_amount': 'Сума',
+        'table_status': 'Статус',
+        'table_payment': 'Оплата',
+        'message_saved': 'Профіль оновлено.',
+    }
+
+    page_title = models.CharField('Заголовок сторінки (H1, title)', max_length=120, blank=True)
+    section_personal = models.CharField('Блок: заголовок «особисті дані»', max_length=120, blank=True)
+    label_last_name = models.CharField('Підпис: прізвище', max_length=80, blank=True)
+    label_first_name = models.CharField('Підпис: ім’я', max_length=80, blank=True)
+    label_patronymic = models.CharField('Підпис: по батькові', max_length=80, blank=True)
+    label_phone = models.CharField('Підпис: телефон', max_length=80, blank=True)
+    label_email = models.CharField('Підпис: email', max_length=80, blank=True)
+    email_placeholder = models.CharField('Плейсхолдер поля email', max_length=120, blank=True)
+    button_save = models.CharField('Кнопка «Зберегти»', max_length=80, blank=True)
+    section_orders = models.CharField('Блок: заголовок «мої замовлення»', max_length=120, blank=True)
+    table_number = models.CharField('Таблиця: колонка №', max_length=20, blank=True)
+    table_date = models.CharField('Таблиця: дата', max_length=80, blank=True)
+    table_amount = models.CharField('Таблиця: сума', max_length=80, blank=True)
+    table_status = models.CharField('Таблиця: статус', max_length=80, blank=True)
+    table_payment = models.CharField('Таблиця: оплата', max_length=80, blank=True)
+    message_saved = models.CharField('Повідомлення після збереження профілю', max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = 'Тексти особистого кабінету'
+        verbose_name_plural = 'Тексти особистого кабінету'
+
+    def __str__(self):
+        return 'Тексти сторінки профілю'
+
+    @classmethod
+    def get_merged(cls):
+        """Повертає dict підписів з урахуванням мови та fallback, якщо поле в БД порожнє."""
+        obj = cls.objects.first()
+        out = {}
+        for key, default in cls._FALLBACK.items():
+            if not obj:
+                out[key] = default
+                continue
+            raw = getattr(obj, key, None)
+            text = (raw or '').strip() if isinstance(raw, str) else ''
+            out[key] = text if text else default
+        return out
+
+    @classmethod
+    def get_merged_safe(cls):
+        """Те саме, що get_merged(), але без винятку при недоступній БД (деплой, міграції)."""
+        try:
+            return cls.get_merged()
+        except Exception:
+            return dict(cls._FALLBACK)
