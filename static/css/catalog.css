@@ -245,18 +245,22 @@
 .product-card__img-wrap {
     position: relative;
     overflow: hidden;
+    flex: 1;
+    min-height: 120px;
 }
 
 .product-card__img-wrap a {
     display: block;
+    height: 100%;
 }
 
 .product-card__img {
     width: 100%;
-    aspect-ratio: 1;
+    height: 100%;
     object-fit: cover;
     background: var(--color-border-light);
     transition: transform 0.3s ease;
+    display: block;
 }
 
 .product-card:hover .product-card__img {
@@ -267,7 +271,6 @@
     padding: 6px 8px;
     display: flex;
     flex-direction: column;
-    flex: 1;
 }
 
 .product-card__sku {
@@ -288,7 +291,6 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     min-width: 0;
-    flex: 1;
 }
 
 .product-card__name a {
