@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
+from core.admin_mixins import LangFilteredFieldsets
+
 from .forms import BulkImageUploadForm
 from .models import (
     Badge,
@@ -73,7 +75,7 @@ class ProductAttributeInline(TranslationTabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(TranslationAdmin):
+class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('image_thumb', 'name', 'parent', 'order', 'is_active')
     list_display_links = ('image_thumb', 'name')
     list_editable = ('order', 'is_active')
@@ -108,7 +110,7 @@ class CategoryAdmin(TranslationAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(TranslationAdmin):
+class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
     actions = ['set_sale_end_date_action', 'clear_sale_end_date_action']
     list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
                     'stock_status', 'badge_obj', 'is_active')
@@ -331,7 +333,7 @@ class FilterOptionInline(TranslationTabularInline):
 
 
 @admin.register(FilterGroup)
-class FilterGroupAdmin(TranslationAdmin):
+class FilterGroupAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('name', 'filter_type', 'order', 'is_active', 'get_categories', 'options_count')
     list_editable = ('order', 'is_active')
     list_filter = ('filter_type', 'is_active')
@@ -376,7 +378,7 @@ class FilterGroupAdmin(TranslationAdmin):
 
 
 @admin.register(Badge)
-class BadgeAdmin(TranslationAdmin):
+class BadgeAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('name', 'slug', 'color', 'order', 'is_active', 'products_count')
     list_editable = ('order', 'is_active')
     list_filter = ('is_active', 'color')

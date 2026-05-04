@@ -30,6 +30,7 @@
         groups.forEach(function (group) {
             var wrapper = document.createElement('div');
             wrapper.className = 'lang-panels-container';
+            wrapper.dataset.count = group.length;
             group[0].parentNode.insertBefore(wrapper, group[0]);
             group.forEach(function (fs) {
                 wrapper.appendChild(fs);

@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
+from core.admin_mixins import LangFilteredFieldsets
+
 from .models import GiftPickerOption, GiftPickerQuestion, Promotion, UpsellGroup
 
 
@@ -11,7 +13,7 @@ class LangPanelMedia:
 
 
 @admin.register(Promotion)
-class PromotionAdmin(TranslationAdmin):
+class PromotionAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('title', 'product', 'start_date', 'end_date', 'is_active', 'is_running_display')
     list_filter = ('is_active',)
     list_editable = ('is_active',)
@@ -58,7 +60,7 @@ class GiftPickerOptionInline(TranslationTabularInline):
 
 
 @admin.register(GiftPickerQuestion)
-class GiftPickerQuestionAdmin(TranslationAdmin):
+class GiftPickerQuestionAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('text', 'order', 'is_active')
     list_editable = ('order', 'is_active')
     search_fields = ('text_uk', 'text_en', 'text_ru')

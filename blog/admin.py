@@ -1,6 +1,8 @@
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 
+from core.admin_mixins import LangFilteredFieldsets
+
 from .models import Article, News
 
 
@@ -10,7 +12,7 @@ class LangPanelMedia:
 
 
 @admin.register(Article)
-class ArticleAdmin(TranslationAdmin):
+class ArticleAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('title', 'is_published', 'created_at')
     list_filter = ('is_published', 'created_at')
     search_fields = ('title_uk', 'title_en', 'title_ru')
@@ -41,7 +43,7 @@ class ArticleAdmin(TranslationAdmin):
 
 
 @admin.register(News)
-class NewsAdmin(TranslationAdmin):
+class NewsAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('title', 'is_published', 'created_at')
     list_filter = ('is_published', 'created_at')
     search_fields = ('title_uk', 'title_en', 'title_ru')

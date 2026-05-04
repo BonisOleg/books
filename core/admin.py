@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin
 
+from .admin_mixins import LangFilteredFieldsets
 from .models import FAQ, Banner, Page, ProfileCabinetTexts, SEOTemplate, SiteSettings
 
 
@@ -11,7 +12,7 @@ class LangPanelMedia:
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(TranslationAdmin):
+class SiteSettingsAdmin(LangFilteredFieldsets, TranslationAdmin):
     fieldsets = (
         ('Основне', {'fields': ('site_name', 'logo', 'favicon')}),
         ('Контакти', {
@@ -88,7 +89,7 @@ _PROFILE_COPY_FIELDS_RU = tuple(f.replace('_uk', '_ru') for f in _PROFILE_COPY_F
 
 
 @admin.register(ProfileCabinetTexts)
-class ProfileCabinetTextsAdmin(TranslationAdmin):
+class ProfileCabinetTextsAdmin(LangFilteredFieldsets, TranslationAdmin):
     """Єдиний запис — тексти /accounts/profile/ (три мови)."""
 
     fieldsets = (
@@ -119,7 +120,7 @@ class ProfileCabinetTextsAdmin(TranslationAdmin):
 
 
 @admin.register(SEOTemplate)
-class SEOTemplateAdmin(TranslationAdmin):
+class SEOTemplateAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('name', 'meta_title_template')
     fieldsets = (
         (None, {'fields': ('name',)}),
@@ -142,7 +143,7 @@ class SEOTemplateAdmin(TranslationAdmin):
 
 
 @admin.register(Banner)
-class BannerAdmin(TranslationAdmin):
+class BannerAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('image_thumb', 'title', 'position', 'order', 'is_active',
                     'start_date', 'end_date')
     list_display_links = ('image_thumb', 'title')
@@ -184,7 +185,7 @@ class BannerAdmin(TranslationAdmin):
 
 
 @admin.register(Page)
-class PageAdmin(TranslationAdmin):
+class PageAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('title', 'slug', 'is_published', 'show_in_footer', 'footer_order', 'updated_at')
     list_editable = ('is_published', 'show_in_footer', 'footer_order')
     list_filter = ('is_published', 'show_in_footer')
@@ -212,7 +213,7 @@ class PageAdmin(TranslationAdmin):
 
 
 @admin.register(FAQ)
-class FAQAdmin(TranslationAdmin):
+class FAQAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = ('question', 'scope', 'order', 'is_published')
     list_editable = ('scope', 'order', 'is_published')
     list_filter = ('scope', 'is_published')
