@@ -148,11 +148,12 @@ TINYMCE_DEFAULT_CONFIG = {
         'insertdatetime media table help wordcount'
     ),
     'toolbar': (
-        'undo redo | blocks | bold italic underline | '
+        'undo redo | blocks fontsize | bold italic underline | '
         'alignleft aligncenter alignright | '
         'bullist numlist outdent indent | link image | '
         'removeformat | code fullscreen'
     ),
+    'font_size_formats': '10px 12px 13px 14px 16px 18px 20px 24px 28px 32px 36px 48px',
     'images_upload_url': '/admin/tinymce-upload/',
     'images_upload_credentials': True,
     'automatic_uploads': True,
@@ -163,7 +164,7 @@ TINYMCE_DEFAULT_CONFIG = {
     'smart_paste': True,
     # Only allow these inline styles on any element (strips margin, padding, etc.)
     'valid_styles': {
-        '*': 'color,background-color,font-weight,font-style,text-decoration,text-align',
+        '*': 'color,background-color,font-weight,font-style,text-decoration,text-align,font-size',
     },
     'browser_spellcheck': True,
     'language': 'uk',
