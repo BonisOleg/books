@@ -96,8 +96,8 @@
 
 .blog-detail__img {
     width: 100%;
-    max-height: 360px;
-    object-fit: cover;
+    height: auto;
+    display: block;
     border-radius: var(--radius-md);
     margin-bottom: 20px;
 }
