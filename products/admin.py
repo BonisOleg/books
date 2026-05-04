@@ -2,6 +2,7 @@ from django.contrib import admin, messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
+from django.utils import timezone
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
@@ -106,6 +107,7 @@ class CategoryAdmin(TranslationAdmin):
 
 @admin.register(Product)
 class ProductAdmin(TranslationAdmin):
+    actions = ['set_sale_end_date_action', 'clear_sale_end_date_action']
     list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
                     'stock_status', 'badge_obj', 'is_active')
     list_display_links = ('image_thumb', 'name')
@@ -124,7 +126,7 @@ class ProductAdmin(TranslationAdmin):
         ('Ціна та наявність', {
             'fields': (
                 'price', 'old_price', 'discount_percent', 'stock_status',
-                'badge_obj', 'badge',
+                'badge_obj', 'badge', 'sale_end_date',
             ),
         }),
         ('Додатково', {
@@ -276,6 +278,48 @@ class ProductAdmin(TranslationAdmin):
             'has_change_permission': True,
         }
         return render(request, 'admin/products/product/bulk_upload.html', context)
+
+    # ── Sale end date bulk actions ────────────────────────────────────────────
+
+    @admin.action(description='⏱ Встановити таймер акції (масово)')
+    def set_sale_end_date_action(self, request, queryset):
+        selected_ids = list(queryset.values_list('id', flat=True))
+        if 'apply' in request.POST:
+            raw = request.POST.get('sale_end_date', '').strip()
+            if raw:
+                from django.utils.dateparse import parse_datetime
+                dt = parse_datetime(raw)
+                if dt and timezone.is_naive(dt):
+                    dt = timezone.make_aware(dt)
+                if dt:
+                    queryset.update(sale_end_date=dt)
+                    self.message_user(
+                        request,
+                        f'Таймер акції встановлено для {queryset.count()} товарів.',
+                        messages.SUCCESS,
+                    )
+                    return redirect('admin:products_product_changelist')
+            self.message_user(request, 'Вкажіть коректну дату та час.', messages.ERROR)
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Встановити таймер акції',
+            'queryset': queryset,
+            'selected_ids': selected_ids,
+            'action': 'set_sale_end_date_action',
+            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/products/product/set_sale_end_date.html', context)
+
+    @admin.action(description='✖ Зняти таймер акції (масово)')
+    def clear_sale_end_date_action(self, request, queryset):
+        updated = queryset.update(sale_end_date=None)
+        self.message_user(
+            request,
+            f'Таймер знято з {updated} товарів.',
+            messages.SUCCESS,
+        )
 
 
 @admin.register(Badge)

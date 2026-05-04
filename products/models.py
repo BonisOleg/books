@@ -125,6 +125,12 @@ class Product(models.Model):
         related_name='products'
     )
     discount_percent = models.PositiveIntegerField('Знижка %', default=0)
+    sale_end_date = models.DateTimeField(
+        'Кінець акції (таймер)',
+        null=True, blank=True,
+        help_text='Встановіть дату завершення — таймер запуститься автоматично. '
+                  'Очистіть поле, коли акція закінчується.',
+    )
     manufacturer = models.CharField('Виробник', max_length=200, blank=True)
     country = models.CharField('Країна', max_length=100, blank=True)
     weight = models.DecimalField(
@@ -151,6 +157,11 @@ class Product(models.Model):
     @property
     def main_image(self):
         return self.images.first()
+
+    @property
+    def sale_timer_active(self):
+        from django.utils import timezone
+        return bool(self.sale_end_date and self.sale_end_date > timezone.now())
 
     @property
     def has_discount(self):

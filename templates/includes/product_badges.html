@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if product.badge_obj %}
 <span class="badge" data-color="{{ product.badge_obj.color }}">{{ product.badge_obj.name }}</span>
-{% elif product.badge == 'sale' or product.active_promotions or promotion %}
+{% elif product.badge == 'sale' or product.active_promotions or product.sale_timer_active %}
 <span class="badge badge--sale">{% trans "Акція" %}</span>
 {% elif product.badge == 'top' %}
 <span class="badge badge--top">{% trans "Топ" %}</span>

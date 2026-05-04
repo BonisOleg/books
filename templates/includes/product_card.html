@@ -19,8 +19,17 @@
         {% with promo=product.active_promotions.0 %}
         {% if promo %}
         <div class="product-card__promo-timer">
-            <div class="product-card__promo-label">{{ promo.title }}</div>
+            {% if promo.title %}<div class="product-card__promo-label">{{ promo.title }}</div>{% endif %}
             <div data-countdown="{{ promo.end_date|date:'U' }}"
+                 data-expired-label="{% trans 'Акція завершена' %}"
+                 data-label-days="{% trans 'дн' %}"
+                 data-label-hours="{% trans 'год' %}"
+                 data-label-minutes="{% trans 'хв' %}"
+                 data-label-seconds="{% trans 'сек' %}"></div>
+        </div>
+        {% elif product.sale_timer_active %}
+        <div class="product-card__promo-timer">
+            <div data-countdown="{{ product.sale_end_date|date:'U' }}"
                  data-expired-label="{% trans 'Акція завершена' %}"
                  data-label-days="{% trans 'дн' %}"
                  data-label-hours="{% trans 'год' %}"

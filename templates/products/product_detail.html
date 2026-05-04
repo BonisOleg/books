@@ -35,7 +35,7 @@
     <div class="product-detail">
         <div class="product-gallery" id="product-gallery">
             <div class="product-gallery__badges">
-                {% include "includes/product_badges.html" with product=product %}
+                {% include "includes/product_badges.html" with product=product only %}
             </div>
 
             <div class="product-gallery__main" id="gallery-main"
@@ -110,11 +110,12 @@
                 {% endif %}
             </div>
 
-            {% if promotion %}
+            {% if timer_end %}
             <div class="product-info__promotion">
-                <span class="promotion-badge">{% trans 'АКЦІЯ' %}</span>
+                {% if promotion and promotion.title %}
                 <div class="promotion-label">{{ promotion.title }}</div>
-                <div class="promotion-timer" data-countdown="{{ promotion.end_date|date:'U' }}"
+                {% endif %}
+                <div class="promotion-timer" data-countdown="{{ timer_end|date:'U' }}"
                      data-expired-label="{% trans 'Акція завершена' %}"
                      data-label-days="{% trans 'дн' %}"
                      data-label-hours="{% trans 'год' %}"

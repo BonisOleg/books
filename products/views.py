@@ -95,9 +95,10 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).prefetch_related(
             'images', 'videos', 'attributes', 'categories'
         )
+        return _with_active_promotions(qs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -158,6 +159,10 @@ class ProductDetailView(DetailView):
                 end_date__gte=now,
             ).first()
             ctx['promotion'] = promotion
+            if promotion:
+                ctx['timer_end'] = promotion.end_date
+            elif product.sale_timer_active:
+                ctx['timer_end'] = product.sale_end_date
         except Exception:
             pass
 

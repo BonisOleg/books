@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Адмінка</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:products_product_changelist' %}">{{ opts.verbose_name_plural }}</a>
+    &rsaquo; Встановити таймер акції
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Встановити таймер акції</h1>
+<p>Вибрано товарів: <strong>{{ queryset.count }}</strong></p>
+<ul>
+    {% for p in queryset %}
+    <li>{{ p.name }} ({{ p.sku }})</li>
+    {% endfor %}
+</ul>
+
+<form method="post">
+    {% csrf_token %}
+    {% for id in selected_ids %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ id }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="{{ action }}">
+    <input type="hidden" name="apply" value="1">
+
+    <p>
+        <label for="id_sale_end_date"><strong>Дата та час завершення акції:</strong></label><br>
+        <input type="datetime-local" name="sale_end_date" id="id_sale_end_date" required
+               style="padding:6px 10px;font-size:14px;border:1px solid #ccc;border-radius:4px;">
+        <span style="color:#666;font-size:12px;margin-left:8px;">формат: РРРР-ММ-ДД ГГ:ХХ</span>
+    </p>
+    <button type="submit" class="default">Встановити таймер</button>
+    <a href="{% url 'admin:products_product_changelist' %}" class="button cancel-link">Скасувати</a>
+</form>
+{% endblock %}
