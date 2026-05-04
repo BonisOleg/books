@@ -472,6 +472,14 @@
 
 .upsell-grid .product-card {
     flex: 0 0 160px;
+    height: 320px;
+}
+
+.upsell-grid .product-card__name {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .product-tabs--top {

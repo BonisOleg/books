@@ -3,9 +3,22 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 from django.views.generic import ListView, DetailView
 from django.shortcuts import get_object_or_404
-from .models import Product, Category
+from .models import FilterGroup, FilterOption, Product, Category
 from .filters import filter_products
 from .schema import _plain_text, get_product_schema, get_breadcrumb_schema
+
+
+def _get_filter_groups(category=None):
+    """Return active FilterGroups visible for given category (or all if None)."""
+    groups = FilterGroup.objects.filter(is_active=True).prefetch_related(
+        'options', 'categories'
+    ).order_by('order')
+    result = []
+    for g in groups:
+        cats = list(g.categories.all())
+        if not cats or (category and category in cats):
+            result.append(g)
+    return result
 
 
 def _with_active_promotions(qs):
@@ -81,6 +94,7 @@ class CategoryDetailView(ListView):
         breadcrumbs.append((self.category.name, None))
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
+        ctx['filter_groups'] = _get_filter_groups(self.category)
         return ctx
 
     def get_template_names(self):

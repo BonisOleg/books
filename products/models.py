@@ -254,3 +254,61 @@ class ProductAttribute(models.Model):
 
     def __str__(self):
         return f"{self.name}: {self.value}"
+
+
+class FilterGroup(models.Model):
+    FILTER_TYPE_CHOICES = [
+        ('price_range', 'Діапазон ціни'),
+        ('stock', 'Наявність'),
+        ('badge', 'Мітки (бейджі)'),
+        ('subcategory', 'Підкатегорії'),
+    ]
+
+    name = models.CharField(
+        'Назва групи', max_length=100,
+        help_text='Заголовок блоку фільтру на сайті. Наприклад: «Бюджет», «Наявність».',
+    )
+    filter_type = models.CharField(
+        'Тип фільтру', max_length=20, choices=FILTER_TYPE_CHOICES,
+        help_text='Визначає, як цей фільтр застосовується до товарів.',
+    )
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Активний', default=True)
+    categories = models.ManyToManyField(
+        Category, verbose_name='Категорії', blank=True,
+        related_name='filter_groups',
+        help_text='Залиш пустим — фільтр показується у всіх категоріях.',
+    )
+
+    class Meta:
+        verbose_name = 'Група фільтрів'
+        verbose_name_plural = 'Групи фільтрів'
+        ordering = ['order']
+
+    def __str__(self):
+        return self.name
+
+
+class FilterOption(models.Model):
+    group = models.ForeignKey(
+        FilterGroup, verbose_name='Група',
+        related_name='options', on_delete=models.CASCADE,
+    )
+    label = models.CharField(
+        'Підпис', max_length=100,
+        help_text='Текст, що бачить відвідувач. Наприклад: «В наявності», «Акція».',
+    )
+    value = models.CharField(
+        'Значення (value)', max_length=100,
+        help_text='Технічний ключ без пробілів. Наприклад: in_stock, sale, new.',
+    )
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Активна', default=True)
+
+    class Meta:
+        verbose_name = 'Варіант фільтру'
+        verbose_name_plural = 'Варіанти фільтру'
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.group.name}: {self.label}"

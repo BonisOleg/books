@@ -10,6 +10,8 @@ from .forms import BulkImageUploadForm
 from .models import (
     Badge,
     Category,
+    FilterGroup,
+    FilterOption,
     Product,
     ProductAttribute,
     ProductImage,
@@ -320,6 +322,57 @@ class ProductAdmin(TranslationAdmin):
             f'Таймер знято з {updated} товарів.',
             messages.SUCCESS,
         )
+
+
+class FilterOptionInline(TranslationTabularInline):
+    model = FilterOption
+    extra = 1
+    fields = ('label_uk', 'label_en', 'label_ru', 'value', 'order', 'is_active')
+
+
+@admin.register(FilterGroup)
+class FilterGroupAdmin(TranslationAdmin):
+    list_display = ('name', 'filter_type', 'order', 'is_active', 'get_categories', 'options_count')
+    list_editable = ('order', 'is_active')
+    list_filter = ('filter_type', 'is_active')
+    filter_horizontal = ('categories',)
+    inlines = [FilterOptionInline]
+    fieldsets = (
+        ('Загальне', {
+            'fields': ('filter_type', 'categories', 'order', 'is_active'),
+            'description': (
+                'Тип «Діапазон ціни» — варіанти не потрібні. '
+                'Тип «Підкатегорії» — варіанти беруться автоматично з дочірніх категорій. '
+                'Для «Наявність» і «Мітки» — додайте варіанти нижче.'
+            ),
+        }),
+        ('🇺🇦 Українська', {
+            'fields': ('name_uk',),
+            'classes': ('lang-panel', 'lang-uk'),
+        }),
+        ('🇬🇧 English', {
+            'fields': ('name_en',),
+            'classes': ('lang-panel', 'lang-en'),
+        }),
+        ('🇷🇺 Русский', {
+            'fields': ('name_ru',),
+            'classes': ('lang-panel', 'lang-ru'),
+        }),
+    )
+
+    class Media(AdminPreviewMedia):
+        pass
+
+    @admin.display(description='Категорії')
+    def get_categories(self, obj):
+        cats = list(obj.categories.all())
+        if not cats:
+            return '— всі —'
+        return ', '.join(c.name for c in cats[:3]) + (f' +{len(cats) - 3}' if len(cats) > 3 else '')
+
+    @admin.display(description='Варіантів')
+    def options_count(self, obj):
+        return obj.options.count()
 
 
 @admin.register(Badge)

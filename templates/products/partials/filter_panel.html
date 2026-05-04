@@ -6,8 +6,11 @@
           hx-trigger="change"
           hx-include="[name='sort']">
 
+        {% for group in filter_groups %}
+
+        {% if group.filter_type == 'price_range' %}
         <div class="filter-group">
-            <div class="filter-group__title">{% trans 'Бюджет' %}</div>
+            <div class="filter-group__title">{{ group.name }}</div>
             <div class="filter-group__range">
                 <input type="number" name="price_min" class="filter-group__input"
                        placeholder="{% trans 'від' %}" value="{{ filter_params.price_min|default:'' }}" min="0">
@@ -17,28 +20,38 @@
             </div>
         </div>
 
+        {% elif group.filter_type == 'stock' %}
         <div class="filter-group">
-            <div class="filter-group__title">{% trans 'Наявність' %}</div>
+            <div class="filter-group__title">{{ group.name }}</div>
+            {% for opt in group.options.all %}
+            {% if opt.is_active %}
             <label class="filter-checkbox">
-                <input type="checkbox" name="stock" value="in_stock"
-                       {% if 'in_stock' in selected_stocks %}checked{% endif %}>
-                {% trans 'В наявності' %}
+                <input type="checkbox" name="stock" value="{{ opt.value }}"
+                       {% if opt.value in selected_stocks %}checked{% endif %}>
+                {{ opt.label }}
             </label>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="stock" value="ready"
-                       {% if 'ready' in selected_stocks %}checked{% endif %}>
-                {% trans 'Готово до відправки' %}
-            </label>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="stock" value="order"
-                       {% if 'order' in selected_stocks %}checked{% endif %}>
-                {% trans 'Під замовлення' %}
-            </label>
+            {% endif %}
+            {% endfor %}
         </div>
 
+        {% elif group.filter_type == 'badge' %}
+        <div class="filter-group">
+            <div class="filter-group__title">{{ group.name }}</div>
+            {% for opt in group.options.all %}
+            {% if opt.is_active %}
+            <label class="filter-checkbox">
+                <input type="checkbox" name="badge" value="{{ opt.value }}"
+                       {% if filter_params.badge == opt.value %}checked{% endif %}>
+                {{ opt.label }}
+            </label>
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        {% elif group.filter_type == 'subcategory' %}
         {% if subcategories %}
         <div class="filter-group">
-            <div class="filter-group__title">{% trans 'Тип' %}</div>
+            <div class="filter-group__title">{{ group.name }}</div>
             {% for sub in subcategories %}
             <label class="filter-checkbox">
                 <input type="checkbox" name="subcategory" value="{{ sub.slug }}"
@@ -49,24 +62,8 @@
         </div>
         {% endif %}
 
-        <div class="filter-group">
-            <div class="filter-group__title">{% trans 'Мітки' %}</div>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="badge" value="sale"
-                       {% if filter_params.badge == 'sale' %}checked{% endif %}>
-                {% trans 'Акція' %}
-            </label>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="badge" value="top"
-                       {% if filter_params.badge == 'top' %}checked{% endif %}>
-                {% trans 'Топ продажів' %}
-            </label>
-            <label class="filter-checkbox">
-                <input type="checkbox" name="badge" value="new"
-                       {% if filter_params.badge == 'new' %}checked{% endif %}>
-                {% trans 'Новинка' %}
-            </label>
-        </div>
+        {% endif %}
+        {% endfor %}
 
         <button type="submit" class="btn btn--primary btn--block btn--sm filter-panel__submit">
             {% trans 'Застосувати' %}

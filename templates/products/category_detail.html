@@ -55,7 +55,7 @@
             <select hx-get="{% url 'products:category' category.slug %}"
                     hx-target="#product-grid"
                     hx-swap="innerHTML"
-                    hx-include="[name='price_min'],[name='price_max'],[name='stock'],[name='subcategory']"
+                    hx-include=".filter-panel input[name], .filter-panel select[name]"
                     name="sort"
                     data-custom-select>
                 <option value="default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
