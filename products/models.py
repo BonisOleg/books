@@ -221,6 +221,12 @@ class ProductVideo(models.Model):
     def __str__(self):
         return f"Відео для {self.product.name}"
 
+    def clean(self):
+        if not self.video_url and not self.video_file:
+            raise ValidationError(
+                'Вкажіть URL відео (YouTube/Vimeo) або завантажте файл відео.'
+            )
+
 
 class ProductAttribute(models.Model):
     product = models.ForeignKey(

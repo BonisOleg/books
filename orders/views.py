@@ -66,7 +66,7 @@ def checkout(request):
                 return redirect('orders:pay_liqpay', order_id=order.id)
             elif order.payment_method == 'monobank':
                 return redirect('orders:pay_mono', order_id=order.id)
-            else:
+            elif order.payment_method in ('cod', 'manager'):
                 from .payments.cod_service import process_cod_order
                 process_cod_order(order)
 

@@ -1,4 +1,5 @@
 from django.contrib import admin, messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils.html import format_html
@@ -185,6 +186,27 @@ class ProductAdmin(TranslationAdmin):
         """Prefetch images to avoid N+1 queries when rendering image_thumb
         for every row in the changelist."""
         return super().get_queryset(request).prefetch_related('images')
+
+    def save_formset(self, request, form, formset, change):
+        """Catch storage / upload errors in the video inline so they surface
+        as admin messages instead of an unhandled 500.  All other inlines use
+        the default implementation unchanged."""
+        if formset.model is not ProductVideo:
+            super().save_formset(request, form, formset, change)
+            return
+
+        sid = transaction.savepoint()
+        try:
+            super().save_formset(request, form, formset, change)
+            transaction.savepoint_commit(sid)
+        except Exception as exc:
+            transaction.savepoint_rollback(sid)
+            self.message_user(
+                request,
+                f'Відео не збережено: {exc}. '
+                'Перевірте формат файлу, розмір або налаштування Cloudinary.',
+                level=messages.ERROR,
+            )
 
     # ── Column helpers ───────────────────────────────────────────────────────
 

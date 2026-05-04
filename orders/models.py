@@ -15,6 +15,7 @@ class Order(models.Model):
         ('liqpay', 'LiqPay'),
         ('monobank', 'Monobank'),
         ('cod', 'Накладений платіж'),
+        ('manager', 'Зв\'яжіться з менеджером'),
     ]
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Очікує оплати'),
