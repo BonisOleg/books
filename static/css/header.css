@@ -450,6 +450,14 @@
     body {
         padding-top: calc(var(--header-height) + env(safe-area-inset-top));
     }
+    @media (min-width: 768px) {
+        .category-nav {
+            top: calc(var(--header-height) + env(safe-area-inset-top));
+        }
+        body {
+            padding-top: calc(var(--header-height) + var(--category-nav-height) + env(safe-area-inset-top));
+        }
+    }
 }
 
 .header__cart-wrap {
