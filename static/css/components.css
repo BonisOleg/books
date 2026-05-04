@@ -199,8 +199,29 @@
     margin-bottom: 8px;
 }
 
-.gift-question .payment-method + .payment-method {
+.gift-option {
     margin-top: 6px;
+    transition: border-color var(--transition), background var(--transition);
+}
+
+.gift-option--selected {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.gift-wizard__nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.gift-wizard__back {
+    flex: 1;
+}
+
+.gift-wizard__submit {
+    flex: 2;
+    justify-content: center;
 }
 
 .gift-results {

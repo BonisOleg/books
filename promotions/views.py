@@ -31,14 +31,17 @@ def gift_picker(request):
 
 
 def gift_picker_results(request):
-    selected_options = request.GET.getlist('option')
+    selected_option_ids = [
+        v for k, v in request.GET.items()
+        if k.startswith('q') and k[1:].isdigit() and v
+    ]
     category_ids = set()
     price_min = None
     price_max = None
 
     from .models import GiftPickerOption
     options = GiftPickerOption.objects.filter(
-        id__in=selected_options
+        id__in=selected_option_ids
     ).prefetch_related('categories')
 
     for opt in options:

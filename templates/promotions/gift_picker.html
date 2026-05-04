@@ -19,19 +19,26 @@
               hx-target="#gift-results"
               hx-swap="innerHTML">
             {% for question in questions %}
-            <div class="form-group gift-question">
+            <div class="form-group gift-question" data-step="{{ forloop.counter0 }}">
                 <label class="form-label gift-question__label">
                     {{ forloop.counter }}. {{ question.text }}
                 </label>
                 {% for option in question.options.all %}
-                <label class="payment-method payment-method--checkbox">
-                    <input type="checkbox" name="option" value="{{ option.id }}">
+                <label class="payment-method gift-option">
+                    <input type="radio" name="q{{ question.id }}" value="{{ option.id }}">
                     <div class="payment-method__label">{{ option.text }}</div>
                 </label>
                 {% endfor %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn--primary btn--block">{% trans 'Підібрати' %}</button>
+            <div class="gift-wizard__nav">
+                <button type="button" class="btn btn--outline gift-wizard__back" style="display:none">
+                    {% trans 'Назад' %}
+                </button>
+                <button type="submit" class="btn btn--primary gift-wizard__submit" style="display:none">
+                    {% trans 'Підібрати' %}
+                </button>
+            </div>
         </form>
         {% else %}
         <p class="empty-state">
