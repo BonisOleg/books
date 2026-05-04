@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from core.views import tinymce_upload_image
 from core.sitemaps import (
     ArticleSitemap,
     CategorySitemap,
@@ -26,6 +27,7 @@ sitemaps = {
 urlpatterns = [
     path('healthz', lambda request: HttpResponse('ok', content_type='text/plain'), name='healthz'),
     path('admin/import-export/', include('import_export_app.urls')),
+    path('admin/tinymce-upload/', tinymce_upload_image, name='tinymce_upload_image'),
     path('admin/', admin.site.urls),
     path('tinymce/', include('tinymce.urls')),
     path('i18n/', include('django.conf.urls.i18n')),

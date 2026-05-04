@@ -8,8 +8,15 @@ class Promotion(models.Model):
         Product, verbose_name='Товар',
         related_name='promotions', on_delete=models.CASCADE
     )
-    title = models.CharField('Назва акції', max_length=200)
+    title = models.CharField(
+        'Назва акції', max_length=200, blank=True, default='',
+        help_text='Необов\'язково. Якщо залишити порожнім — таймер покажеться без заголовку.',
+    )
     description = models.TextField('Опис', blank=True)
+    auto_synced = models.BooleanField(
+        'Авто-синхронізовано', default=False,
+        help_text='Встановлено автоматично з поля «Кінець акції (таймер)» товару.',
+    )
     start_date = models.DateTimeField(
         'Початок', help_text='Дата і час, коли акція починається.'
     )
@@ -29,7 +36,7 @@ class Promotion(models.Model):
         ordering = ['-end_date']
 
     def __str__(self):
-        return self.title
+        return self.title or f'Акція для: {self.product}'
 
     @property
     def is_running(self):

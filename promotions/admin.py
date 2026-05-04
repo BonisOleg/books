@@ -14,13 +14,14 @@ class LangPanelMedia:
 
 @admin.register(Promotion)
 class PromotionAdmin(LangFilteredFieldsets, TranslationAdmin):
-    list_display = ('title', 'product', 'start_date', 'end_date', 'is_active', 'is_running_display')
-    list_filter = ('is_active',)
+    list_display = ('title', 'product', 'start_date', 'end_date', 'is_active', 'is_running_display', 'auto_synced_display')
+    list_filter = ('is_active', 'auto_synced')
     list_editable = ('is_active',)
     date_hierarchy = 'end_date'
     search_fields = ('title_uk', 'title_en', 'title_ru', 'product__name_uk')
+    readonly_fields = ('auto_synced',)
     fieldsets = (
-        ('Загальне', {'fields': ('product', 'start_date', 'end_date', 'is_active')}),
+        ('Загальне', {'fields': ('product', 'start_date', 'end_date', 'is_active', 'auto_synced')}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'description_uk'),
@@ -44,6 +45,12 @@ class PromotionAdmin(LangFilteredFieldsets, TranslationAdmin):
             return format_html('<span style="color:#2e7d32;font-weight:600;">&#10003; Діє</span>')
         return format_html('<span style="color:#c62828;">&#10005; Не діє</span>')
     is_running_display.short_description = 'Статус'
+
+    def auto_synced_display(self, obj):
+        if obj.auto_synced:
+            return format_html('<span style="color:#1565c0;">⚙ Авто</span>')
+        return '—'
+    auto_synced_display.short_description = 'Джерело'
 
 
 @admin.register(UpsellGroup)

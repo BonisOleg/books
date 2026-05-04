@@ -152,6 +152,10 @@ TINYMCE_DEFAULT_CONFIG = {
         'bullist numlist outdent indent | link image | '
         'removeformat | code fullscreen'
     ),
+    'images_upload_url': '/admin/tinymce-upload/',
+    'images_upload_credentials': True,
+    'automatic_uploads': True,
+    'images_reuse_filename': False,
     # Paragraph blocks on Enter (not <br>)
     'forced_root_block': 'p',
     # Paste: strip margin/padding inline styles, keep text formatting
