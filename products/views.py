@@ -26,9 +26,9 @@ class CatalogView(ListView):
     paginate_by = 24
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).select_related(
-            'category'
-        ).prefetch_related('images')
+        qs = Product.objects.filter(is_active=True).prefetch_related(
+            'images', 'categories'
+        )
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
@@ -57,8 +57,8 @@ class CategoryDetailView(ListView):
         cat_ids.extend(children.values_list('id', flat=True))
 
         qs = Product.objects.filter(
-            is_active=True, category_id__in=cat_ids
-        ).select_related('category').prefetch_related('images')
+            is_active=True, categories__id__in=cat_ids
+        ).prefetch_related('images', 'categories').distinct()
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
@@ -95,9 +95,9 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).select_related(
-            'category'
-        ).prefetch_related('images', 'videos', 'attributes')
+        return Product.objects.filter(is_active=True).prefetch_related(
+            'images', 'videos', 'attributes', 'categories'
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -124,18 +124,19 @@ class ProductDetailView(DetailView):
         self.request.session['viewed_products'] = new_history[:24]
 
         breadcrumbs = [('Головна', '/'), ('Каталог', '/catalog/')]
-        if product.category:
-            for anc in product.category.get_ancestors():
+        primary_category = product.categories.first()
+        if primary_category:
+            for anc in primary_category.get_ancestors():
                 breadcrumbs.append((anc.name, anc.get_absolute_url()))
-            breadcrumbs.append((product.category.name, product.category.get_absolute_url()))
+            breadcrumbs.append((primary_category.name, primary_category.get_absolute_url()))
         breadcrumbs.append((product.name, None))
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
 
-        if product.category:
+        if primary_category:
             ctx['related_products'] = Product.objects.filter(
-                category=product.category, is_active=True
-            ).exclude(id=product.id).prefetch_related('images')[:8]
+                categories=primary_category, is_active=True
+            ).exclude(id=product.id).prefetch_related('images').distinct()[:8]
 
         from promotions.models import UpsellGroup, Promotion
         from django.utils import timezone
@@ -169,9 +170,9 @@ class SearchView(ListView):
     paginate_by = 24
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).select_related(
-            'category'
-        ).prefetch_related('images')
+        qs = Product.objects.filter(is_active=True).prefetch_related(
+            'images', 'categories'
+        )
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 

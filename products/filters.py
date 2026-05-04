@@ -42,7 +42,7 @@ def filter_products(queryset, params):
         slug_list = subcategory if isinstance(subcategory, list) else [subcategory]
         slug_list = [s for s in slug_list if s]
         if slug_list:
-            queryset = queryset.filter(category__slug__in=slug_list)
+            queryset = queryset.filter(categories__slug__in=slug_list).distinct()
 
     sort_map = {
         'price_asc': 'price',

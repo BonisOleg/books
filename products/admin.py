@@ -106,19 +106,20 @@ class CategoryAdmin(TranslationAdmin):
 
 @admin.register(Product)
 class ProductAdmin(TranslationAdmin):
-    list_display = ('image_thumb', 'name', 'sku', 'category', 'price',
+    list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
                     'stock_status', 'badge_obj', 'is_active')
     list_display_links = ('image_thumb', 'name')
     list_editable = ('price', 'stock_status', 'badge_obj', 'is_active')
-    list_filter = ('stock_status', 'badge_obj', 'is_active', 'category')
+    list_filter = ('stock_status', 'badge_obj', 'is_active', 'categories')
     search_fields = ('name_uk', 'name_en', 'name_ru', 'sku', 'sku_manufacturer')
     prepopulated_fields = {'slug': ('name_uk',)}
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
     autocomplete_fields = ('badge_obj',)
+    filter_horizontal = ('categories',)
     fieldsets = (
 
         ('Ідентифікація', {
-            'fields': ('slug', 'sku', 'sku_manufacturer', 'category'),
+            'fields': ('slug', 'sku', 'sku_manufacturer', 'categories'),
         }),
         ('Ціна та наявність', {
             'fields': (
@@ -183,9 +184,8 @@ class ProductAdmin(TranslationAdmin):
         return form
 
     def get_queryset(self, request):
-        """Prefetch images to avoid N+1 queries when rendering image_thumb
-        for every row in the changelist."""
-        return super().get_queryset(request).prefetch_related('images')
+        """Prefetch images and categories to avoid N+1 queries in changelist."""
+        return super().get_queryset(request).prefetch_related('images', 'categories')
 
     def save_formset(self, request, form, formset, change):
         """Catch storage / upload errors in the video inline so they surface
@@ -209,6 +209,11 @@ class ProductAdmin(TranslationAdmin):
             )
 
     # ── Column helpers ───────────────────────────────────────────────────────
+
+    @admin.display(description='Категорії')
+    def get_categories(self, obj):
+        names = [c.name for c in obj.categories.all()]
+        return ', '.join(names) if names else '—'
 
     @admin.display(description='Фото')
     def image_thumb(self, obj):

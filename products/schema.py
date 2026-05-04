@@ -63,8 +63,9 @@ def get_product_schema(product, request):
             "name": product.manufacturer,
         }
 
-    if product.category:
-        schema["category"] = product.category.name
+    primary_cat = product.categories.first()
+    if primary_cat:
+        schema["category"] = primary_cat.name
 
     reviews = product.reviews.filter(is_approved=True)
     if reviews.exists():

@@ -100,10 +100,9 @@ class Product(models.Model):
         'Артикул виробника', max_length=100, blank=True,
         help_text='Заводський / код постачальника. Бачать лише адміністратори.'
     )
-    category = models.ForeignKey(
-        Category, verbose_name='Категорія',
-        on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='products'
+    categories = models.ManyToManyField(
+        Category, verbose_name='Категорії',
+        blank=True, related_name='products'
     )
     description = HTMLField('Опис')
     short_description = HTMLField('Короткий опис', blank=True)

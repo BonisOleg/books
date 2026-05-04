@@ -17,12 +17,13 @@ FIELDS = [
 
 
 def _get_rows():
-    products = Product.objects.select_related('category').all()
+    products = Product.objects.prefetch_related('categories').all()
     rows = []
     for p in products:
+        cats = ', '.join(c.name for c in p.categories.all())
         rows.append([
             p.id, p.sku, p.sku_manufacturer, p.name,
-            p.category.name if p.category else '',
+            cats,
             str(p.price), str(p.old_price or ''),
             p.stock_status, p.badge, p.discount_percent,
             p.manufacturer, p.country,
@@ -62,7 +63,7 @@ def export_excel(request):
 
 def export_xml(request):
     root = Element('products')
-    products = Product.objects.select_related('category').prefetch_related('images').all()
+    products = Product.objects.prefetch_related('categories', 'images').all()
     base_url = f"{getattr(settings, 'SITE_PROTOCOL', 'http')}://{getattr(settings, 'SITE_DOMAIN', 'localhost')}"
 
     for p in products:
@@ -70,7 +71,7 @@ def export_xml(request):
         SubElement(item, 'id').text = str(p.id)
         SubElement(item, 'sku').text = p.sku
         SubElement(item, 'name').text = p.name
-        SubElement(item, 'category').text = p.category.name if p.category else ''
+        SubElement(item, 'category').text = ', '.join(c.name for c in p.categories.all())
         SubElement(item, 'price').text = str(p.price)
         SubElement(item, 'old_price').text = str(p.old_price or '')
         SubElement(item, 'stock_status').text = p.stock_status

@@ -14,9 +14,9 @@ def google_merchant_feed(request):
     SubElement(channel, 'link').text = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}"
     SubElement(channel, 'description').text = 'Каталог товарів'
 
-    products = Product.objects.filter(is_active=True).select_related(
-        'category'
-    ).prefetch_related('images')
+    products = Product.objects.filter(is_active=True).prefetch_related(
+        'categories', 'images'
+    )
 
     base_url = f"{settings.SITE_PROTOCOL}://{settings.SITE_DOMAIN}"
 
@@ -60,8 +60,9 @@ def google_merchant_feed(request):
 
         SubElement(item, 'g:mpn').text = product.sku
 
-        if product.category:
-            SubElement(item, 'g:product_type').text = product.category.name
+        primary_cat = product.categories.first()
+        if primary_cat:
+            SubElement(item, 'g:product_type').text = primary_cat.name
 
     xml_str = tostring(root, encoding='unicode', xml_declaration=False)
     response = HttpResponse(

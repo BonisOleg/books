@@ -12,13 +12,14 @@ def _process_row(row_dict):
     if not sku or not name:
         return None, 'Відсутній SKU або назва'
 
-    category_name = row_dict.get('category', '').strip()
-    category = None
-    if category_name:
-        category, _ = Category.objects.get_or_create(
-            name=category_name,
-            defaults={'slug': slugify(category_name, allow_unicode=True) or sku.lower()}
+    raw_categories = row_dict.get('category', '').strip()
+    category_objs = []
+    for cat_name in (c.strip() for c in raw_categories.replace(';', ',').split(',') if c.strip()):
+        cat, _ = Category.objects.get_or_create(
+            name=cat_name,
+            defaults={'slug': slugify(cat_name, allow_unicode=True) or sku.lower()}
         )
+        category_objs.append(cat)
 
     try:
         price = Decimal(row_dict.get('price', '0'))
@@ -56,7 +57,6 @@ def _process_row(row_dict):
     defaults = {
         'name': name,
         'slug': slug,
-        'category': category,
         'price': price,
         'old_price': old_price,
         'stock_status': row_dict.get('stock_status', 'in_stock').strip() or 'in_stock',
@@ -75,6 +75,8 @@ def _process_row(row_dict):
     }
 
     product, created = Product.objects.update_or_create(sku=sku, defaults=defaults)
+    if category_objs:
+        product.categories.set(category_objs)
     return product, 'створено' if created else 'оновлено'
 
 

@@ -51,13 +51,13 @@ def gift_picker_results(request):
 
     qs = Product.objects.filter(is_active=True)
     if category_ids:
-        qs = qs.filter(category_id__in=category_ids)
+        qs = qs.filter(categories__id__in=category_ids).distinct()
     if price_min is not None:
         qs = qs.filter(price__gte=price_min)
     if price_max is not None:
         qs = qs.filter(price__lte=price_max)
 
-    products = qs.select_related('category').prefetch_related('images')[:20]
+    products = qs.prefetch_related('categories', 'images')[:20]
 
     return render(request, 'promotions/gift_results.html', {
         'products': products,

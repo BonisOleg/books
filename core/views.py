@@ -19,7 +19,7 @@ class HomeView(TemplateView):
 
         context['hit_products'] = Product.objects.filter(
             is_active=True
-        ).select_related('category').prefetch_related('images').order_by('-created_at')[:20]
+        ).prefetch_related('categories', 'images').order_by('-created_at')[:20]
 
         context['latest_news'] = News.objects.filter(
             is_published=True
