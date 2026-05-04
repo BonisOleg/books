@@ -141,13 +141,14 @@ PHONE_NUMBERS = [
 TINYMCE_DEFAULT_CONFIG = {
     'height': 360,
     'menubar': False,
+    # TinyMCE 7: 'paste' plugin removed (built-in), 'formatselect' → 'blocks'
     'plugins': (
         'advlist autolink lists link image charmap preview anchor '
         'searchreplace visualblocks code fullscreen '
-        'insertdatetime media table paste help wordcount'
+        'insertdatetime media table help wordcount'
     ),
     'toolbar': (
-        'undo redo | formatselect | bold italic underline | '
+        'undo redo | blocks | bold italic underline | '
         'alignleft aligncenter alignright | '
         'bullist numlist outdent indent | link image | '
         'removeformat | code fullscreen'
@@ -156,13 +157,10 @@ TINYMCE_DEFAULT_CONFIG = {
     'images_upload_credentials': True,
     'automatic_uploads': True,
     'images_reuse_filename': False,
-    # Paragraph blocks on Enter (not <br>)
     'forced_root_block': 'p',
-    # Paste: strip margin/padding inline styles, keep text formatting
-    'paste_as_text': False,
+    # TinyMCE 7 built-in paste options (replaces removed paste plugin)
     'paste_data_images': True,
-    'paste_webkit_styles': 'color background-color font-weight font-style text-decoration text-align',
-    'paste_retain_style_properties': 'color background-color font-weight font-style text-decoration text-align',
+    'smart_paste': True,
     # Only allow these inline styles on any element (strips margin, padding, etc.)
     'valid_styles': {
         '*': 'color,background-color,font-weight,font-style,text-decoration,text-align',
