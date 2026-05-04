@@ -398,13 +398,17 @@
 .megamenu__title {
     display: flex;
     align-items: center;
-    gap: 10px;
     color: var(--color-accent);
     font-size: 0.9375rem;
     font-weight: 700;
-    margin-bottom: 6px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--color-border-light);
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.megamenu__title:hover {
+    background: var(--color-bg);
+    color: var(--color-accent);
 }
 
 .megamenu__title-img {

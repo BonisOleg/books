@@ -10,17 +10,11 @@ def site_settings(request):
     except Exception:
         site = None
 
-    from django.db.models import Prefetch
     from products.models import Category
     try:
         nav_categories = list(
             Category.objects.filter(
                 parent__isnull=True, is_active=True
-            ).prefetch_related(
-                Prefetch(
-                    'children',
-                    queryset=Category.objects.filter(is_active=True).order_by('order'),
-                )
             ).order_by('order')[:12]
         )
     except Exception:

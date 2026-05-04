@@ -18,25 +18,7 @@
                 <div class="megamenu" role="menu">
                     <div class="megamenu__grid">
                         {% for cat in nav_categories %}
-                        <div class="megamenu__column">
-                            <a href="{{ cat.get_absolute_url }}" class="megamenu__title">
-                                {% if cat.image %}
-                                <img class="megamenu__title-img" src="{{ cat.image.url }}" alt="" loading="lazy">
-                                {% endif %}
-                                <span>{{ cat.name }}</span>
-                            </a>
-                            {% with subs=cat.children.all %}
-                            {% if subs %}
-                            <ul class="megamenu__list">
-                                {% for sub in subs %}
-                                <li>
-                                    <a href="{{ sub.get_absolute_url }}" class="megamenu__link">{{ sub.name }}</a>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% endif %}
-                            {% endwith %}
-                        </div>
+                        <a href="{{ cat.get_absolute_url }}" class="megamenu__title">{{ cat.name }}</a>
                         {% endfor %}
                     </div>
                 </div>
