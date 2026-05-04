@@ -115,6 +115,7 @@ class ProductAdmin(TranslationAdmin):
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
     autocomplete_fields = ('badge_obj',)
     fieldsets = (
+
         ('Ідентифікація', {
             'fields': ('slug', 'sku', 'sku_manufacturer', 'category'),
         }),
@@ -156,9 +157,40 @@ class ProductAdmin(TranslationAdmin):
     class Media(AdminPreviewMedia):
         pass
 
+    # ── Fixes ────────────────────────────────────────────────────────────────
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        """Decimal fields with USE_L10N=True (uk locale) use comma as decimal
+        separator. Without localize=True Django's DecimalField rejects comma
+        values submitted from <input type="number">, causing silent save failures."""
+        if db_field.name in ('price', 'old_price'):
+            kwargs['localize'] = True
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+    def get_changelist_form(self, request, **kwargs):
+        """AutocompleteSelect widget (from autocomplete_fields) does not
+        initialize correctly inside list_editable formset rows — badge_obj
+        never submits a value, so it always saves as empty.
+        Use the plain ModelChoiceField/Select in the changelist context only;
+        the change-form keeps the autocomplete widget via autocomplete_fields."""
+        _orig = self.autocomplete_fields
+        self.autocomplete_fields = ()
+        try:
+            form = super().get_changelist_form(request, **kwargs)
+        finally:
+            self.autocomplete_fields = _orig
+        return form
+
+    def get_queryset(self, request):
+        """Prefetch images to avoid N+1 queries when rendering image_thumb
+        for every row in the changelist."""
+        return super().get_queryset(request).prefetch_related('images')
+
+    # ── Column helpers ───────────────────────────────────────────────────────
+
     @admin.display(description='Фото')
     def image_thumb(self, obj):
-        first_image = obj.images.first()
+        first_image = next(iter(obj.images.all()), None)
         if not first_image:
             return format_html('<span class="admin-thumb-empty">—</span>')
         return _image_thumb(first_image.image, 'admin-thumb--sm')
