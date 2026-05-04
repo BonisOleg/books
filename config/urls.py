@@ -25,6 +25,7 @@ sitemaps = {
 
 urlpatterns = [
     path('healthz', lambda request: HttpResponse('ok', content_type='text/plain'), name='healthz'),
+    path('admin/import-export/', include('import_export_app.urls')),
     path('admin/', admin.site.urls),
     path('tinymce/', include('tinymce.urls')),
     path('i18n/', include('django.conf.urls.i18n')),
@@ -44,7 +45,6 @@ urlpatterns += i18n_patterns(
     path('promotions/', include('promotions.urls')),
     path('shipping/', include('shipping.urls')),
     path('reviews/', include('reviews.urls')),
-    path('import-export/', include('import_export_app.urls')),
     prefix_default_language=False,
 )
 

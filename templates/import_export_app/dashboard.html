@@ -1,48 +1,123 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/checkout.css' %}">
+{% block title %}Імпорт / Експорт товарів | {% trans "Administration" %}{% endblock %}
+
+{% block extrahead %}
+<style>
+.ie-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.ie-section h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #333;
+}
+.ie-hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 14px;
+}
+.ie-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ie-actions a,
+.ie-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid #79aec8;
+    background: #79aec8;
+    color: #fff;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+.ie-actions a:hover,
+.ie-btn:hover {
+    background: #417690;
+    border-color: #417690;
+}
+.ie-btn--outline {
+    background: #fff;
+    color: #417690;
+}
+.ie-btn--outline:hover {
+    background: #f0f0f0;
+    color: #417690;
+}
+.ie-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.ie-file-row input[type="file"] {
+    font-size: 0.85rem;
+}
+@media (max-width: 600px) {
+    .ie-actions { flex-direction: column; }
+    .ie-file-row { flex-direction: column; align-items: flex-start; }
+}
+</style>
 {% endblock %}
 
+{% block content_title %}<h1>Імпорт / Експорт товарів</h1>{% endblock %}
+
 {% block content %}
-<div class="container auth-page">
-    <h1 class="auth-page__title">Імпорт / Експорт товарів</h1>
+{% if messages %}
+<ul class="messagelist">
+    {% for message in messages %}
+    <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
-    <div class="checkout-section checkout-section--spaced">
-        <div class="checkout-section__title">Експорт товарів</div>
-        <p class="import-export__hint">
-            Завантажте список усіх товарів у зручному форматі:
-        </p>
-        <div class="import-export__actions">
-            <a href="{% url 'import_export_app:export' %}?format=csv" class="btn btn--outline btn--sm">CSV</a>
-            <a href="{% url 'import_export_app:export' %}?format=excel" class="btn btn--outline btn--sm">Excel</a>
-            <a href="{% url 'import_export_app:export' %}?format=xml" class="btn btn--outline btn--sm">XML</a>
-        </div>
+<div class="ie-section">
+    <h2>Експорт товарів</h2>
+    <p class="ie-hint">Завантажте список усіх товарів у зручному форматі.</p>
+    <div class="ie-actions">
+        <a href="{% url 'import_export_app:export' %}?format=csv">CSV</a>
+        <a href="{% url 'import_export_app:export' %}?format=excel">Excel (.xlsx)</a>
+        <a href="{% url 'import_export_app:export' %}?format=xml">XML</a>
     </div>
+</div>
 
-    <div class="checkout-section checkout-section--spaced">
-        <div class="checkout-section__title">Google Merchant Feed</div>
-        <p class="import-export__hint import-export__hint--tight">
-            XML фід для Google Merchant Center:
-        </p>
-        <a href="{% url 'products:google_merchant_feed' %}" class="btn btn--primary btn--sm" target="_blank">
+<div class="ie-section">
+    <h2>Google Merchant Feed</h2>
+    <p class="ie-hint">XML-фід для Google Merchant Center.</p>
+    <div class="ie-actions">
+        <a href="{% url 'products:google_merchant_feed' %}" target="_blank" rel="noopener">
             Відкрити Google Merchant XML
         </a>
     </div>
-
-    <div class="checkout-section">
-        <div class="checkout-section__title">Імпорт товарів</div>
-        <p class="import-export__hint">
-            Завантажте файл CSV або Excel з товарами. Товари з однаковим SKU будуть оновлені.
-        </p>
-        <form method="post" action="{% url 'import_export_app:import_action' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group">
-                <input type="file" name="file" accept=".csv,.xlsx" class="form-input">
-            </div>
-            <button type="submit" class="btn btn--primary btn--sm">Імпортувати</button>
-        </form>
-    </div>
 </div>
+
+<div class="ie-section">
+    <h2>Імпорт товарів</h2>
+    <p class="ie-hint">
+        Завантажте файл CSV або XLSX із товарами. Товари з однаковим SKU будуть оновлені, нові — створені.
+    </p>
+    <form method="post" action="{% url 'import_export_app:import_action' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="ie-file-row">
+            <input type="file" name="file" accept=".csv,.xlsx" required>
+            <button type="submit" class="ie-btn">Імпортувати</button>
+        </div>
+    </form>
+</div>
+
+<p style="margin-top:8px;">
+    <a href="{% url 'admin:index' %}" class="ie-btn ie-btn--outline">&larr; До адмінки</a>
+</p>
 {% endblock %}
