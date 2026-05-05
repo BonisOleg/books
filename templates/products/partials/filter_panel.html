@@ -41,7 +41,7 @@
             {% if opt.is_active %}
             <label class="filter-checkbox">
                 <input type="checkbox" name="badge" value="{{ opt.value }}"
-                       {% if filter_params.badge == opt.value %}checked{% endif %}>
+                       {% if opt.value in selected_badges %}checked{% endif %}>
                 {{ opt.label }}
             </label>
             {% endif %}

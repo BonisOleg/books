@@ -5,7 +5,7 @@ def filter_products(queryset, params):
     price_min = params.get('price_min')
     price_max = params.get('price_max')
     stock = params.getlist('stock') if hasattr(params, 'getlist') else params.get('stock')
-    badge = params.get('badge')
+    badge = params.getlist('badge') if hasattr(params, 'getlist') else params.get('badge')
     subcategory = params.getlist('subcategory') if hasattr(params, 'getlist') else params.get('subcategory')
     sort = params.get('sort', 'default')
     q = params.get('q', '').strip()
@@ -34,9 +34,12 @@ def filter_products(queryset, params):
             queryset = queryset.filter(stock_status__in=stock_list)
 
     if badge:
-        queryset = queryset.filter(
-            Q(badge=badge) | Q(badge_obj__slug=badge)
-        )
+        badge_list = badge if isinstance(badge, list) else [badge]
+        badge_list = [b for b in badge_list if b]
+        if badge_list:
+            queryset = queryset.filter(
+                Q(badge__in=badge_list) | Q(badge_obj__slug__in=badge_list)
+            ).distinct()
 
     if subcategory:
         slug_list = subcategory if isinstance(subcategory, list) else [subcategory]

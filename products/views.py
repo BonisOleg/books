@@ -54,6 +54,7 @@ class CatalogView(ListView):
         ctx['current_sort'] = self.request.GET.get('sort', 'default')
         ctx['filter_params'] = self.request.GET
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
+        ctx['selected_badges'] = self.request.GET.getlist('badge')
         ctx['selected_subcategories'] = self.request.GET.getlist('subcategory')
         return ctx
 
@@ -86,6 +87,7 @@ class CategoryDetailView(ListView):
         ctx['current_sort'] = self.request.GET.get('sort', 'default')
         ctx['filter_params'] = self.request.GET
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
+        ctx['selected_badges'] = self.request.GET.getlist('badge')
         ctx['selected_subcategories'] = self.request.GET.getlist('subcategory')
 
         breadcrumbs = [('Головна', '/'), ('Каталог', '/catalog/')]
