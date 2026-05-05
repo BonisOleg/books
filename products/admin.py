@@ -8,7 +8,7 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from core.admin_mixins import LangFilteredFieldsets
 
-from .forms import BulkImageUploadForm
+from .forms import BulkImageUploadForm, FilterOptionForm
 from .models import (
     Badge,
     Category,
@@ -326,10 +326,22 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         )
 
 
+def _make_filter_option_form(filter_type):
+    class _Form(FilterOptionForm):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, filter_type=filter_type, **kwargs)
+    return _Form
+
+
 class FilterOptionInline(TranslationTabularInline):
     model = FilterOption
     extra = 1
     fields = ('label_uk', 'label_en', 'label_ru', 'value', 'order', 'is_active')
+
+    def get_formset(self, request, obj=None, **kwargs):
+        filter_type = obj.filter_type if obj else None
+        kwargs['form'] = _make_filter_option_form(filter_type)
+        return super().get_formset(request, obj, **kwargs)
 
 
 @admin.register(FilterGroup)
@@ -343,9 +355,10 @@ class FilterGroupAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('Загальне', {
             'fields': ('filter_type', 'categories', 'order', 'is_active'),
             'description': (
-                'Тип «Діапазон ціни» — варіанти не потрібні. '
-                'Тип «Підкатегорії» — варіанти беруться автоматично з дочірніх категорій. '
-                'Для «Наявність» і «Мітки» — додайте варіанти нижче.'
+                'Типи «Діапазон ціни» та «Підкатегорії» — варіанти не потрібні, '
+                'все підтягується автоматично. '
+                'Для типів «Наявність» і «Мітки» — додайте варіанти нижче; '
+                'поле «Значення» стане випадаючим списком із готовими варіантами.'
             ),
         }),
         ('🇺🇦 Українська', {
