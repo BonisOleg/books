@@ -11,29 +11,124 @@
 {% endblock %}
 
 {% block content %}
-<h1>Встановити таймер акції</h1>
-<p>Вибрано товарів: <strong>{{ queryset.count }}</strong></p>
-<ul>
-    {% for p in queryset %}
-    <li>{{ p.name }} ({{ p.sku }})</li>
-    {% endfor %}
-</ul>
+<style>
+.sale-timer-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 32px 36px;
+    max-width: 560px;
+    margin: 24px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+.sale-timer-card h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+    color: #1a1a1a;
+}
+.sale-timer-card .subtitle {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 24px;
+}
+.sale-timer-card .product-list {
+    background: #f8f8f8;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #444;
+    max-height: 160px;
+    overflow-y: auto;
+}
+.sale-timer-card .product-list li {
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+    list-style: disc;
+    margin-left: 16px;
+}
+.sale-timer-card .product-list li:last-child { border-bottom: none; }
+.sale-timer-field label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #333;
+}
+.sale-timer-field input[type="datetime-local"] {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: border-color .2s;
+}
+.sale-timer-field input[type="datetime-local"]:focus {
+    border-color: #417690;
+    outline: none;
+}
+.sale-timer-hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+}
+.sale-timer-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+}
+.btn-set-timer {
+    background: #417690;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .2s;
+}
+.btn-set-timer:hover { background: #2c5a6e; }
+.btn-cancel-timer {
+    color: #417690;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 10px 0;
+}
+.btn-cancel-timer:hover { text-decoration: underline; }
+</style>
 
-<form method="post">
-    {% csrf_token %}
-    {% for id in selected_ids %}
-    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ id }}">
-    {% endfor %}
-    <input type="hidden" name="action" value="{{ action }}">
-    <input type="hidden" name="apply" value="1">
+<div class="sale-timer-card">
+    <h1>⏱ Встановити таймер акції</h1>
+    <p class="subtitle">Вибрано товарів: <strong>{{ queryset.count }}</strong></p>
 
-    <p>
-        <label for="id_sale_end_date"><strong>Дата та час завершення акції:</strong></label><br>
-        <input type="datetime-local" name="sale_end_date" id="id_sale_end_date" required
-               style="padding:6px 10px;font-size:14px;border:1px solid #ccc;border-radius:4px;">
-        <span style="color:#666;font-size:12px;margin-left:8px;">формат: РРРР-ММ-ДД ГГ:ХХ</span>
-    </p>
-    <button type="submit" class="default">Встановити таймер</button>
-    <a href="{% url 'admin:products_product_changelist' %}" class="button cancel-link">Скасувати</a>
-</form>
+    <ul class="product-list">
+        {% for p in queryset %}
+        <li>{{ p.name }} <span style="color:#999;">({{ p.sku }})</span></li>
+        {% endfor %}
+    </ul>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for id in selected_ids %}
+        <input type="hidden" name="{{ action_checkbox_name }}" value="{{ id }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="{{ action }}">
+        <input type="hidden" name="apply" value="1">
+
+        <div class="sale-timer-field">
+            <label for="id_sale_end_date">Дата та час завершення акції</label>
+            <input type="datetime-local" name="sale_end_date" id="id_sale_end_date" required>
+            <p class="sale-timer-hint">Таймер запуститься автоматично на всіх вибраних товарах одразу після збереження.</p>
+        </div>
+
+        <div class="sale-timer-actions">
+            <button type="submit" class="btn-set-timer">Встановити таймер</button>
+            <a href="{% url 'admin:products_product_changelist' %}" class="btn-cancel-timer">Скасувати</a>
+        </div>
+    </form>
+</div>
 {% endblock %}
