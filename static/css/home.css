@@ -24,6 +24,8 @@
 .hits-scroll .product-card {
     flex: 0 0 160px;
     scroll-snap-align: start;
+    height: auto;
+    align-self: stretch;
 }
 
 .seo-text {
