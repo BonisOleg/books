@@ -1,9 +1,20 @@
 import csv
 import io
 from decimal import Decimal, InvalidOperation
+
 from django.utils.text import slugify
-from products.models import Product, Category
 from openpyxl import load_workbook
+
+from products.models import Category, Product
+
+from . import importers_prom
+
+ALLOWED_LANGUAGES = ('uk', 'ru')
+DEFAULT_LANGUAGE = 'uk'
+
+
+def _normalize_language(language):
+    return language if language in ALLOWED_LANGUAGES else DEFAULT_LANGUAGE
 
 _COLUMN_ALIASES = {
     # sku
@@ -163,25 +174,59 @@ def _process_row(row_dict):
     return product, 'створено' if created else 'оновлено'
 
 
-def import_csv(file_obj):
-    results = []
-    content = file_obj.read().decode('utf-8-sig')
-    reader = csv.DictReader(io.StringIO(content))
-    for i, row in enumerate(reader, start=2):
-        row_dict = _normalize_row(dict(row))
-        product, status = _process_row(row_dict)
-        results.append({'row': i, 'sku': row_dict.get('sku', ''), 'status': status})
-    return results
+def _row_to_str_dict(headers, row):
+    return {k: ('' if v is None else str(v).strip()) for k, v in zip(headers, row)}
 
 
-def import_excel(file_obj):
-    results = []
-    wb = load_workbook(file_obj, read_only=True)
-    ws = wb.active
-    headers = [str(cell.value).strip() if cell.value is not None else '' for cell in ws[1]]
-    for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        raw = {k: (str(v).strip() if v is not None else '') for k, v in zip(headers, row)}
+def _process_one(headers_raw, headers_lower, row_values, *, fmt, language, fetch_images):
+    if fmt == 'prom':
+        row_dict = importers_prom.build_prom_row(headers_lower, row_values, language)
+        attributes = importers_prom.parse_prom_attributes(headers_lower, row_values)
+        image_urls = importers_prom.parse_image_urls(row_dict.pop('_image_urls', ''))
+        product, status = importers_prom.process_prom_row(
+            row_dict, attributes, image_urls, fetch_images=fetch_images,
+        )
+        sku = row_dict.get('sku', '')
+    else:
+        raw = _row_to_str_dict(headers_raw, row_values)
         row_dict = _normalize_row(raw)
         product, status = _process_row(row_dict)
-        results.append({'row': i, 'sku': row_dict.get('sku', ''), 'status': status})
+        sku = row_dict.get('sku', '')
+    return sku, status
+
+
+def _import_rows(headers_raw, body_rows, *, language, fetch_images):
+    headers_lower = [str(h).strip().lower() for h in headers_raw]
+    fmt = 'prom' if importers_prom.is_prom_format(headers_lower) else 'legacy'
+    results = []
+    for i, row in enumerate(body_rows, start=2):
+        try:
+            sku, status = _process_one(
+                headers_raw, headers_lower, row,
+                fmt=fmt, language=language, fetch_images=fetch_images,
+            )
+        except Exception as exc:
+            sku = ''
+            status = f'Помилка: {exc}'
+        results.append({'row': i, 'sku': sku, 'status': status})
     return results
+
+
+def import_csv(file_obj, *, language=DEFAULT_LANGUAGE, fetch_images=True):
+    language = _normalize_language(language)
+    content = file_obj.read().decode('utf-8-sig')
+    reader = csv.reader(io.StringIO(content))
+    rows = list(reader)
+    if not rows:
+        return []
+    headers_raw = [str(h).strip() for h in rows[0]]
+    return _import_rows(headers_raw, rows[1:], language=language, fetch_images=fetch_images)
+
+
+def import_excel(file_obj, *, language=DEFAULT_LANGUAGE, fetch_images=True):
+    language = _normalize_language(language)
+    wb = load_workbook(file_obj, read_only=True, data_only=True)
+    ws = wb.active
+    headers_raw = [str(cell.value).strip() if cell.value is not None else '' for cell in ws[1]]
+    body = list(ws.iter_rows(min_row=2, values_only=True))
+    return _import_rows(headers_raw, body, language=language, fetch_images=fetch_images)

@@ -37,11 +37,16 @@ def import_view(request):
         messages.error(request, 'Оберіть файл для імпорту.')
         return redirect('import_export_app:dashboard')
 
+    language = request.POST.get('language', 'uk')
+    if language not in ('uk', 'ru'):
+        language = 'uk'
+    fetch_images = request.POST.get('fetch_images') == 'on'
+
     filename = file_obj.name.lower()
     if filename.endswith('.csv'):
-        results = import_csv(file_obj)
+        results = import_csv(file_obj, language=language, fetch_images=fetch_images)
     elif filename.endswith('.xlsx'):
-        results = import_excel(file_obj)
+        results = import_excel(file_obj, language=language, fetch_images=fetch_images)
     else:
         messages.error(request, 'Непідтримуваний формат. Використовуйте CSV або XLSX.')
         return redirect('import_export_app:dashboard')
