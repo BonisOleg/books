@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
+    var root = document.getElementById('novaposhta-root');
+    var citiesUrl = root ? root.dataset.citiesUrl : '/shipping/api/cities/';
+    var warehousesUrl = root ? root.dataset.warehousesUrl : '/shipping/api/warehouses/';
+
     var cityInput = document.getElementById('city-input');
     var cityResults = document.getElementById('city-results');
     var warehouseInput = document.getElementById('warehouse-input');
@@ -15,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var q = cityInput.value.trim();
                 if (q.length < 2) { cityResults.classList.remove('is-visible'); return; }
 
-                fetch('/shipping/api/cities/?q=' + encodeURIComponent(q))
+                fetch(citiesUrl + '?q=' + encodeURIComponent(q))
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         cityResults.innerHTML = '';
@@ -52,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!selectedCityRef) return;
                 var q = warehouseInput.value.trim();
 
-                fetch('/shipping/api/warehouses/?city_ref=' + encodeURIComponent(selectedCityRef) + '&q=' + encodeURIComponent(q))
+                fetch(warehousesUrl + '?city_ref=' + encodeURIComponent(selectedCityRef) + '&q=' + encodeURIComponent(q))
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         warehouseResults.innerHTML = '';

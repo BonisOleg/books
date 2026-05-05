@@ -15,6 +15,7 @@ from core.sitemaps import (
     ProductSitemap,
     StaticSitemap,
 )
+from orders.views import liqpay_callback, mono_callback
 
 sitemaps = {
     'static': StaticSitemap,
@@ -35,6 +36,10 @@ urlpatterns = [
     path('robots.txt', TemplateView.as_view(
         template_name='robots.txt', content_type='text/plain'
     ), name='robots'),
+    # Payment callbacks — outside i18n_patterns so external servers always
+    # hit a language-neutral URL regardless of the user's language session.
+    path('orders/callback/liqpay/', liqpay_callback, name='liqpay_webhook'),
+    path('orders/callback/mono/', mono_callback, name='mono_webhook'),
 ]
 
 urlpatterns += i18n_patterns(

@@ -4,6 +4,7 @@ import base64
 import ecdsa
 import requests
 from django.conf import settings
+from django.urls import reverse
 
 
 MONO_API_URL = 'https://api.monobank.ua/api/merchant/invoice/create'
@@ -49,8 +50,8 @@ def create_mono_invoice(order, request):
     if not token:
         return None
 
-    callback_url = request.build_absolute_uri('/orders/callback/mono/')
-    result_url = request.build_absolute_uri(f'/orders/success/{order.id}/')
+    callback_url = request.build_absolute_uri(reverse('mono_webhook'))
+    result_url = request.build_absolute_uri(reverse('orders:success', args=[order.id]))
 
     payload = {
         'amount': int(round(order.total * 100)),

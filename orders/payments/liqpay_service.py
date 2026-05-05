@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 from django.conf import settings
+from django.urls import reverse
 
 
 def create_liqpay_form(order, request):
@@ -9,10 +10,10 @@ def create_liqpay_form(order, request):
     private_key = settings.LIQPAY_PRIVATE_KEY
 
     if not public_key or not private_key:
-        return '<p>LiqPay не налаштовано. Зверніться до адміністратора.</p>'
+        return None
 
-    callback_url = request.build_absolute_uri('/orders/callback/liqpay/')
-    result_url = request.build_absolute_uri(f'/orders/success/{order.id}/')
+    callback_url = request.build_absolute_uri(reverse('liqpay_webhook'))
+    result_url = request.build_absolute_uri(reverse('orders:success', args=[order.id]))
 
     params = {
         'version': '3',

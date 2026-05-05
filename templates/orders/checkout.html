@@ -65,7 +65,10 @@
                 </div>
             </div>
 
-            <div class="checkout-section">
+            <div class="checkout-section"
+                 id="novaposhta-root"
+                 data-cities-url="{% url 'shipping:api_cities' %}"
+                 data-warehouses-url="{% url 'shipping:api_warehouses' %}">
                 <div class="checkout-section__title">{% trans 'Доставка (Нова Пошта)' %}</div>
                 <div class="form-group">
                     <label class="form-label form-label--required">{% trans 'Місто' %}</label>

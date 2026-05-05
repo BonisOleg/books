@@ -143,7 +143,7 @@ def pay_liqpay(request, order_id):
     form_html = create_liqpay_form(order, request)
     return render(request, 'orders/pay_liqpay.html', {
         'order': order,
-        'liqpay_form': form_html,
+        'liqpay_form': form_html,  # None when keys are not configured
         'page_title': 'Оплата LiqPay',
     })
 

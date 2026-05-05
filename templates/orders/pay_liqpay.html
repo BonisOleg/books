@@ -9,12 +9,21 @@
 <div class="container pay-page">
     <h1 class="pay-page__title">{% trans "Оплата замовлення" %} #{{ order.order_number }}</h1>
     <p class="pay-page__amount">{% trans "Сума:" %} {{ order.total|uah }}</p>
-    <p class="pay-page__redirect-note">{% trans "Зачекайте, відбувається перехід на сторінку оплати…" %}</p>
-    <div id="liqpay-form-container" style="display:none">{{ liqpay_form|safe }}</div>
+
+    {% if liqpay_form %}
+        <p class="pay-page__redirect-note">{% trans "Зачекайте, відбувається перехід на сторінку оплати…" %}</p>
+        <div id="liqpay-form-container" style="display:none">{{ liqpay_form|safe }}</div>
+    {% else %}
+        <div class="pay-page__error">
+            <p>{% trans "Онлайн-оплата тимчасово недоступна. Будь ласка, оберіть інший спосіб оплати або зв'яжіться з менеджером." %}</p>
+            <a href="{% url 'orders:checkout' %}" class="btn btn--secondary">{% trans "Повернутись до оформлення" %}</a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{% if liqpay_form %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var container = document.getElementById('liqpay-form-container');
@@ -25,4 +34,5 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+{% endif %}
 {% endblock %}
