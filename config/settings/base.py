@@ -150,7 +150,7 @@ TINYMCE_DEFAULT_CONFIG = {
     'toolbar': (
         'undo redo | blocks fontsize | bold italic underline | '
         'alignleft aligncenter alignright | '
-        'bullist numlist outdent indent | link image | '
+        'bullist numlist outdent indent | link image | table | '
         'removeformat | code fullscreen'
     ),
     'font_size_formats': '10px 12px 13px 14px 16px 18px 20px 24px 28px 32px 36px 48px',
@@ -164,7 +164,9 @@ TINYMCE_DEFAULT_CONFIG = {
     'smart_paste': True,
     # Only allow these inline styles on any element (strips margin, padding, etc.)
     'valid_styles': {
-        '*': 'color,background-color,font-weight,font-style,text-decoration,text-align,font-size',
+        '*': 'color,background-color,font-weight,font-style,text-decoration,text-align,font-size,vertical-align',
+        'table': 'width,border-collapse,border-color,background-color,border',
+        'td,th': 'width,vertical-align,border-color,background-color,text-align,border',
     },
     'browser_spellcheck': True,
     'language': 'uk',
@@ -174,6 +176,10 @@ TINYMCE_DEFAULT_CONFIG = {
         'p { margin: 0 0 10px 0; line-height: 1.6; font-size: 0.875rem; } '
         'ul, ol { padding-left: 18px; margin-bottom: 8px; } '
         'li { margin-bottom: 4px; } '
-        'h1, h2, h3, h4 { margin: 12px 0 6px; line-height: 1.3; }'
+        'h1, h2, h3, h4 { margin: 12px 0 6px; line-height: 1.3; } '
+        'table { border-collapse: collapse; width: 100%; margin-bottom: 12px; } '
+        'table td, table th { border: 1px solid #d0d0d0; padding: 8px 12px; font-size: 0.875rem; line-height: 1.5; vertical-align: top; } '
+        'table th { background-color: #f0f0f0; font-weight: 600; text-align: left; } '
+        'table tr:nth-child(even) td { background-color: #fafafa; }'
     ),
 }

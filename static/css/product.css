@@ -353,6 +353,45 @@
     font-weight: 600;
 }
 
+/* ---- Tables from TinyMCE rich-text ---- */
+.product-tabs__panel,
+.product-info__short {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.product-tabs__panel table,
+.product-info__short table {
+    width: 100%;
+    min-width: 320px;
+    border-collapse: collapse;
+    margin-bottom: 12px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.product-tabs__panel table td,
+.product-tabs__panel table th,
+.product-info__short table td,
+.product-info__short table th {
+    border: 1px solid var(--color-border);
+    padding: 8px 12px;
+    vertical-align: top;
+    text-align: left;
+    color: var(--color-text);
+}
+
+.product-tabs__panel table th,
+.product-info__short table th {
+    background-color: var(--color-primary-light);
+    font-weight: 600;
+}
+
+.product-tabs__panel table tr:nth-child(even) td,
+.product-info__short table tr:nth-child(even) td {
+    background-color: var(--color-bg);
+}
+
 .product-attrs {
     width: 100%;
     border-collapse: collapse;
