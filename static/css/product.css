@@ -364,6 +364,8 @@
 .product-info__short table {
     width: 100%;
     border-collapse: collapse;
+    border: none;
+    outline: none;
     margin-bottom: 12px;
     font-size: 0.875rem;
     line-height: 1.6;

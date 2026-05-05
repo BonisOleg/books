@@ -165,8 +165,8 @@ TINYMCE_DEFAULT_CONFIG = {
     # Only allow these inline styles on any element (strips margin, padding, etc.)
     'valid_styles': {
         '*': 'color,background-color,font-weight,font-style,text-decoration,text-align,font-size,vertical-align',
-        'table': 'width,border-collapse,border-color,background-color,border',
-        'td,th': 'width,vertical-align,border-color,background-color,text-align,border',
+        'table': 'width,border-collapse,background-color',
+        'td,th': 'width,vertical-align,background-color,text-align',
     },
     'browser_spellcheck': True,
     'language': 'uk',

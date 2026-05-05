@@ -102,8 +102,9 @@
 
 .catalog-header__desc table {
     width: 100%;
-    min-width: 320px;
     border-collapse: collapse;
+    border: none;
+    outline: none;
     margin-bottom: 10px;
     font-size: 0.875rem;
     line-height: 1.5;
