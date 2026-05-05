@@ -296,10 +296,15 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
                 if dt and timezone.is_naive(dt):
                     dt = timezone.make_aware(dt)
                 if dt:
-                    queryset.update(sale_end_date=dt)
+                    # queryset.update() не тригерить post_save сигнал,
+                    # тому ітеруємо й зберігаємо по одному — сигнал синхронізує Promotion
+                    products = list(queryset)
+                    for product in products:
+                        product.sale_end_date = dt
+                        product.save(update_fields=['sale_end_date'])
                     self.message_user(
                         request,
-                        f'Таймер акції встановлено для {queryset.count()} товарів.',
+                        f'Таймер акції встановлено для {len(products)} товарів.',
                         messages.SUCCESS,
                     )
                     return redirect('admin:products_product_changelist')
@@ -318,10 +323,15 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
 
     @admin.action(description='✖ Зняти таймер акції (масово)')
     def clear_sale_end_date_action(self, request, queryset):
-        updated = queryset.update(sale_end_date=None)
+        # queryset.update() не тригерить post_save сигнал,
+        # тому ітеруємо й зберігаємо по одному — сигнал деактивує Promotion
+        products = list(queryset)
+        for product in products:
+            product.sale_end_date = None
+            product.save(update_fields=['sale_end_date'])
         self.message_user(
             request,
-            f'Таймер знято з {updated} товарів.',
+            f'Таймер знято з {len(products)} товарів.',
             messages.SUCCESS,
         )
 

@@ -112,7 +112,7 @@
 
             {% if timer_end %}
             <div class="product-info__promotion">
-                {% if promotion and promotion.title %}
+                {% if promotion and promotion.title and promotion.title|lower != "акція" and promotion.title|lower != "акция" and promotion.title|lower != "акція:" %}
                 <div class="promotion-label">{{ promotion.title }}</div>
                 {% endif %}
                 <div class="promotion-timer" data-countdown="{{ timer_end|date:'U' }}"

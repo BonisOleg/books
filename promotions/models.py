@@ -9,8 +9,11 @@ class Promotion(models.Model):
         related_name='promotions', on_delete=models.CASCADE
     )
     title = models.CharField(
-        'Назва акції', max_length=200, blank=True, default='',
-        help_text='Необов\'язково. Якщо залишити порожнім — таймер покажеться без заголовку.',
+        'Підзаголовок акції', max_length=200, blank=True, default='',
+        help_text=(
+            'Необов\'язково. Пишіть уточнення, наприклад: «Знижки до Дня Матері» або «Літній розпродаж». '
+            'Не пишіть просто «Акція» — це слово вже показується автоматично у вигляді значка на товарі.'
+        ),
     )
     description = models.TextField('Опис', blank=True)
     auto_synced = models.BooleanField(
