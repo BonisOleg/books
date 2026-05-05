@@ -13,9 +13,10 @@ from urllib.parse import urlparse
 
 import requests
 from django.core.files.base import ContentFile
-from django.utils.text import slugify
 
 from products.models import Category, Product, ProductAttribute, ProductImage
+
+from .utils import ascii_slug
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +194,7 @@ def build_prom_row(headers_lower, row_values, language):
 
 
 def _ensure_unique_slug(name, sku):
-    base = slugify(name, allow_unicode=True)[:400] or sku.lower()
+    base = ascii_slug(name, fallback=sku, max_length=400)
     slug = base
     counter = 1
     while Product.objects.filter(slug=slug).exclude(sku=sku).exists():
@@ -244,7 +245,7 @@ def _attach_categories(product, cat_name, sku):
         return
     cat, _ = Category.objects.get_or_create(
         name=cat_name,
-        defaults={'slug': slugify(cat_name, allow_unicode=True) or sku.lower()},
+        defaults={'slug': ascii_slug(cat_name, fallback=f'cat-{sku}')},
     )
     product.categories.set([cat])
 

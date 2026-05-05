@@ -2,12 +2,12 @@ import csv
 import io
 from decimal import Decimal, InvalidOperation
 
-from django.utils.text import slugify
 from openpyxl import load_workbook
 
 from products.models import Category, Product
 
 from . import importers_prom
+from .utils import ascii_slug
 
 ALLOWED_LANGUAGES = ('uk', 'ru')
 DEFAULT_LANGUAGE = 'uk'
@@ -111,7 +111,7 @@ def _process_row(row_dict):
     for cat_name in (c.strip() for c in raw_categories.replace(';', ',').split(',') if c.strip()):
         cat, _ = Category.objects.get_or_create(
             name=cat_name,
-            defaults={'slug': slugify(cat_name, allow_unicode=True) or sku.lower()}
+            defaults={'slug': ascii_slug(cat_name, fallback=f'cat-{sku}')}
         )
         category_objs.append(cat)
 
@@ -136,7 +136,7 @@ def _process_row(row_dict):
         except (InvalidOperation, ValueError):
             pass
 
-    base_slug = slugify(name, allow_unicode=True)[:400] or sku.lower()
+    base_slug = ascii_slug(name, fallback=sku, max_length=400)
     slug = base_slug
     counter = 1
     while Product.objects.filter(slug=slug).exclude(sku=sku).exists():
