@@ -16,6 +16,45 @@ from django.utils.http import urlsafe_base64_encode
 logger = logging.getLogger(__name__)
 
 
+def send_new_order_notification(order) -> bool:
+    """Надсилає сповіщення адміну про нове замовлення на notification_email з SiteSettings."""
+    try:
+        from core.models import SiteSettings
+        settings_obj = SiteSettings.objects.first()
+        recipient = getattr(settings_obj, 'notification_email', '') if settings_obj else ''
+        if not recipient:
+            return False
+
+        items = list(order.items.select_related('product').all())
+        items_text = '\n'.join(
+            f"  • {item.product_name} (арт. {item.product_sku}) × {item.quantity} — {item.price} грн"
+            for item in items
+        )
+        message = (
+            f"Нове замовлення #{order.order_number}\n\n"
+            f"Клієнт: {order.first_name} {order.last_name}\n"
+            f"Телефон: {order.phone}\n"
+            f"Email: {order.email or '—'}\n"
+            f"Місто: {order.city}\n"
+            f"Відділення НП: {order.warehouse}\n"
+            f"Оплата: {order.get_payment_method_display()}\n"
+            f"Коментар: {order.comment or '—'}\n\n"
+            f"Товари:\n{items_text}\n\n"
+            f"Сума: {order.total} грн"
+        )
+        send_mail(
+            subject=f"[Нове замовлення] #{order.order_number} — {order.first_name} {order.last_name}",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient],
+            fail_silently=False,
+        )
+        return True
+    except Exception:
+        logger.exception('Failed to send new order notification email')
+        return False
+
+
 def send_order_confirmation_email(order, request=None) -> bool:
     if not order.email:
         return False

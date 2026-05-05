@@ -16,6 +16,11 @@ class SiteSettings(models.Model):
         help_text='Рекомендований розмір: 64×64 px або 32×32 px (PNG/ICO).'
     )
     email = models.EmailField('Email', blank=True)
+    notification_email = models.EmailField(
+        'Email для сповіщень про замовлення', blank=True,
+        help_text='На цю адресу надходитимуть повідомлення про нові замовлення. '
+                  'Якщо порожньо — сповіщення не надсилаються.'
+    )
     address = models.CharField('Адреса', max_length=300, blank=True)
     phone_1 = models.CharField('Телефон 1', max_length=30, blank=True)
     phone_2 = models.CharField('Телефон 2', max_length=30, blank=True)

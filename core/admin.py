@@ -16,7 +16,7 @@ class SiteSettingsAdmin(LangFilteredFieldsets, TranslationAdmin):
     fieldsets = (
         ('Основне', {'fields': ('site_name', 'logo', 'favicon')}),
         ('Контакти', {
-            'fields': ('email', 'address', 'phone_1', 'phone_2', 'phone_3',
+            'fields': ('email', 'notification_email', 'address', 'phone_1', 'phone_2', 'phone_3',
                        'contact_person', 'work_schedule'),
         }),
         ('Умови повернення', {'fields': ('return_policy',)}),

@@ -9,7 +9,7 @@ from products.models import Product
 
 from .forms import CheckoutForm, OneClickForm
 from .models import Order, OrderItem
-from .utils import create_account_for_order, send_order_confirmation_email
+from .utils import create_account_for_order, send_new_order_notification, send_order_confirmation_email
 
 ORDER_SESSION_KEY = 'allowed_order_ids'
 
@@ -59,6 +59,7 @@ def checkout(request):
             _allow_order_access(request, order)
 
             send_order_confirmation_email(order, request)
+            send_new_order_notification(order)
             if mode == 'register' and not request.user.is_authenticated:
                 create_account_for_order(order, request)
 
@@ -125,6 +126,7 @@ def oneclick(request, product_id):
                 price=product.price,
                 quantity=1,
             )
+            send_new_order_notification(order)
             html = render_to_string('orders/partials/oneclick_success.html', {})
             return HttpResponse(html)
     else:
