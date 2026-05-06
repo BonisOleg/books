@@ -170,11 +170,18 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
 
 # ---------------------------------------------------------------------------
 # Email
+# Пріоритет: Resend API → Gmail SMTP → console (логи Render)
 # ---------------------------------------------------------------------------
+_RESEND_KEY = _env('RESEND_API_KEY')
 _EMAIL_USER = _env('EMAIL_HOST_USER')
 _EMAIL_PASSWORD = _env('EMAIL_HOST_PASSWORD')
 
-if _EMAIL_USER and _EMAIL_PASSWORD:
+if _RESEND_KEY:
+    INSTALLED_APPS = INSTALLED_APPS + ['anymail']  # type: ignore[name-defined]
+    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+    ANYMAIL = {'RESEND_API_KEY': _RESEND_KEY}
+    DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or 'onboarding@resend.dev'
+elif _EMAIL_USER and _EMAIL_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_PORT = 587
@@ -184,11 +191,10 @@ if _EMAIL_USER and _EMAIL_PASSWORD:
     EMAIL_HOST_PASSWORD = _EMAIL_PASSWORD
     DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or _EMAIL_USER
 else:
-    # Fallback: листи пишуться у stdout (видно у Render Logs).
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = _env('DEFAULT_FROM_EMAIL') or 'webmaster@localhost'
-    _log.warning('EMAIL_HOST_USER/PASSWORD не задано — використовую console '
-                 'email backend. Листи будуть писатися в логи, не надсилатися.')
+    _log.warning('Жодного email backend не сконфігуровано — листи пишуться у '
+                 'Render Logs. Додай RESEND_API_KEY у Environment Variables.')
 
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 

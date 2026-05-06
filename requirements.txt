@@ -26,5 +26,8 @@ django-tinymce>=4.1
 # Model-level translations (uk/en/ru per-field in admin)
 django-modeltranslation>=0.18
 
+# Email (Resend via anymail або Gmail SMTP як fallback)
+django-anymail[resend]>=12.0
+
 # Observability (опційно — активується, якщо SENTRY_DSN задано)
 sentry-sdk[django]>=2.18
