@@ -16,6 +16,9 @@
         <a href="{% url 'promotions:gift_picker' %}" class="mobile-menu__link">{% trans 'Підібрати подарунок' %}</a>
         <a href="{% url 'blog:articles' %}" class="mobile-menu__link">{% trans 'Статті' %}</a>
         <a href="{% url 'blog:news_list' %}" class="mobile-menu__link">{% trans 'Новини' %}</a>
+        {% for page in header_pages %}
+        <a href="{{ page.get_absolute_url }}" class="mobile-menu__link">{{ page.title }}</a>
+        {% endfor %}
         {% for page in footer_pages %}
         <a href="{{ page.get_absolute_url }}" class="mobile-menu__link">{{ page.title }}</a>
         {% endfor %}

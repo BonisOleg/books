@@ -27,6 +27,13 @@ def site_settings(request):
     except Exception:
         footer_pages = []
 
+    try:
+        header_pages = Page.objects.filter(
+            is_published=True, show_in_header=True
+        ).order_by('header_order', 'title')
+    except Exception:
+        header_pages = []
+
     available_languages = [('uk', 'Українська')]
     if site:
         if site.enable_ru:
@@ -45,6 +52,7 @@ def site_settings(request):
         'site_settings': site,
         'nav_categories': nav_categories,
         'footer_pages': footer_pages,
+        'header_pages': header_pages,
         'available_languages': available_languages,
         'path_without_lang': path_without_lang,
         'SITE_NAME': getattr(settings, 'SITE_NAME', 'Магазин книжок'),

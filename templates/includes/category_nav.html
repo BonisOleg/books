@@ -1,8 +1,9 @@
 {% load i18n %}
-{% if nav_categories %}
-<nav class="category-nav" aria-label="{% trans 'Категорії' %}">
+{% if nav_categories or header_pages %}
+<nav class="category-nav" aria-label="{% trans 'Навігація' %}">
     <div class="container">
         <div class="category-nav__inner">
+            {% if nav_categories %}
             <div class="category-nav__megamenu">
                 <a href="{% url 'products:catalog' %}" class="category-nav__link category-nav__link--all" aria-haspopup="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -23,11 +24,17 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% if header_pages %}
             <div class="category-nav__list">
-                {% for cat in nav_categories %}
-                <a href="{{ cat.get_absolute_url }}" class="category-nav__link">{{ cat.name }}</a>
+                {% for page in header_pages %}
+                <a href="{{ page.get_absolute_url }}" class="category-nav__link"
+                   hx-get="{{ page.get_absolute_url }}?modal=1"
+                   hx-target="#modal-root"
+                   hx-swap="innerHTML">{{ page.title }}</a>
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
     </div>
 </nav>

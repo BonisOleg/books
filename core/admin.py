@@ -186,13 +186,26 @@ class BannerAdmin(LangFilteredFieldsets, TranslationAdmin):
 
 @admin.register(Page)
 class PageAdmin(LangFilteredFieldsets, TranslationAdmin):
-    list_display = ('title', 'slug', 'is_published', 'show_in_footer', 'footer_order', 'updated_at')
-    list_editable = ('is_published', 'show_in_footer', 'footer_order')
-    list_filter = ('is_published', 'show_in_footer')
+    list_display = (
+        'title', 'slug', 'is_published',
+        'show_in_header', 'header_order',
+        'show_in_footer', 'footer_order',
+        'updated_at',
+    )
+    list_editable = (
+        'is_published',
+        'show_in_header', 'header_order',
+        'show_in_footer', 'footer_order',
+    )
+    list_filter = ('is_published', 'show_in_header', 'show_in_footer')
     search_fields = ('title_uk', 'title_en', 'title_ru', 'slug')
     prepopulated_fields = {'slug': ('title_uk',)}
     fieldsets = (
-        ('Загальне', {'fields': ('slug', 'show_in_footer', 'footer_order', 'is_published')}),
+        ('Загальне', {'fields': (
+            'slug', 'is_published',
+            'show_in_header', 'header_order',
+            'show_in_footer', 'footer_order',
+        )}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'content_uk', 'meta_title_uk', 'meta_description_uk'),

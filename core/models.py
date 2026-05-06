@@ -183,6 +183,11 @@ class Page(models.Model):
         help_text='Якщо увімкнено — посилання з\'явиться у блоці «Інформація» у футері.'
     )
     footer_order = models.PositiveIntegerField('Порядок у футері', default=0)
+    show_in_header = models.BooleanField(
+        'Показувати у хедері', default=False,
+        help_text='Якщо увімкнено — посилання з\'явиться в навігаційному рядку хедера.'
+    )
+    header_order = models.PositiveIntegerField('Порядок у хедері', default=0)
     is_published = models.BooleanField('Опубліковано', default=True)
     created_at = models.DateTimeField('Дата створення', auto_now_add=True)
     updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
