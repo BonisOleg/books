@@ -1,0 +1,45 @@
+.quick-save-btn {
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid #417690;
+    border-radius: 4px;
+    background: #417690;
+    color: #fff;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.quick-save-btn:hover:not(:disabled) {
+    background: #2b5570;
+    border-color: #2b5570;
+}
+
+.quick-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.quick-save-btn--loading {
+    background: #666;
+    border-color: #666;
+}
+
+.quick-save-btn--success {
+    background: #28a745;
+    border-color: #28a745;
+}
+
+.quick-save-btn--error {
+    background: #c0392b;
+    border-color: #c0392b;
+}
+
+.field-quick-save {
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 6px 8px;
+}

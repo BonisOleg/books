@@ -1,5 +1,9 @@
+import json
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import admin, messages
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path
 from django.utils import timezone
@@ -36,6 +40,11 @@ def _image_thumb(image_field, size_class=''):
 class AdminPreviewMedia:
     css = {'all': ('css/admin-previews.css', 'css/admin_lang_panels.css')}
     js = ('js/admin_lang_panels.js',)
+
+
+class AdminQuickSaveMedia:
+    css = {'all': ('css/admin-previews.css', 'css/admin_lang_panels.css', 'css/admin_quick_save.css')}
+    js = ('js/admin_lang_panels.js', 'js/admin_quick_save.js')
 
 
 class ProductImageInline(admin.TabularInline):
@@ -162,7 +171,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
     save_on_top = True
     change_form_template = 'admin/products/product/change_form.html'
 
-    class Media(AdminPreviewMedia):
+    class Media(AdminQuickSaveMedia):
         pass
 
     # ── Fixes ────────────────────────────────────────────────────────────────
@@ -236,8 +245,68 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
                 self.admin_site.admin_view(self.bulk_upload_view),
                 name='products_product_bulk_upload',
             ),
+            path(
+                'quick-save/',
+                self.admin_site.admin_view(self.quick_save_view),
+                name='products_product_quick_save',
+            ),
         ]
         return custom + urls
+
+    def quick_save_view(self, request):
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+        if not request.user.has_perm('products.change_product'):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        product_id = data.get('product_id')
+        if not product_id:
+            return JsonResponse({'error': 'product_id required'}, status=400)
+
+        try:
+            product = Product.objects.get(pk=product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({'error': 'Product not found'}, status=404)
+
+        update_fields = []
+
+        price_raw = data.get('price')
+        if price_raw is not None and str(price_raw).strip():
+            try:
+                product.price = Decimal(
+                    str(price_raw).replace(',', '.').replace('\xa0', '').replace(' ', '')
+                )
+                update_fields.append('price')
+            except InvalidOperation:
+                return JsonResponse({'error': 'Невірне значення ціни'}, status=400)
+
+        stock_status = data.get('stock_status')
+        if stock_status is not None:
+            valid = [s[0] for s in Product.STOCK_CHOICES]
+            if stock_status not in valid:
+                return JsonResponse({'error': 'Невірний статус наявності'}, status=400)
+            product.stock_status = stock_status
+            update_fields.append('stock_status')
+
+        if 'badge_obj' in data:
+            badge_id = data['badge_obj']
+            product.badge_obj_id = int(badge_id) if badge_id else None
+            update_fields.append('badge_obj_id')
+
+        if 'is_active' in data:
+            product.is_active = bool(data['is_active'])
+            update_fields.append('is_active')
+
+        if update_fields:
+            product.save(update_fields=update_fields)
+
+        return JsonResponse({'success': True, 'updated': update_fields})
 
     def bulk_upload_view(self, request, object_id):
         product = get_object_or_404(Product, pk=object_id)
