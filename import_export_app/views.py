@@ -43,12 +43,20 @@ def import_view(request):
     fetch_images = request.POST.get('fetch_images') == 'on'
 
     filename = file_obj.name.lower()
-    if filename.endswith('.csv'):
-        results = import_csv(file_obj, language=language, fetch_images=fetch_images)
-    elif filename.endswith('.xlsx'):
-        results = import_excel(file_obj, language=language, fetch_images=fetch_images)
-    else:
-        messages.error(request, 'Непідтримуваний формат. Використовуйте CSV або XLSX.')
+    try:
+        if filename.endswith('.csv'):
+            results = import_csv(file_obj, language=language, fetch_images=fetch_images)
+        elif filename.endswith('.xlsx'):
+            results = import_excel(file_obj, language=language, fetch_images=fetch_images)
+        else:
+            messages.error(request, 'Непідтримуваний формат файлу. Використовуйте CSV або XLSX.')
+            return redirect('import_export_app:dashboard')
+    except Exception:
+        messages.error(
+            request,
+            'Не вдалося обробити файл. Переконайтесь, що файл не пошкоджений '
+            'і відповідає формату CSV або XLSX.',
+        )
         return redirect('import_export_app:dashboard')
 
     return render(

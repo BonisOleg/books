@@ -1,4 +1,5 @@
 import json
+import os
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import admin, messages
@@ -23,6 +24,10 @@ from .models import (
     ProductImage,
     ProductVideo,
 )
+
+_ALLOWED_IMAGE_EXTENSIONS = frozenset({'.jpg', '.jpeg', '.png', '.webp', '.gif'})
+_ALLOWED_IMAGE_MIMES = frozenset({'image/jpeg', 'image/png', 'image/webp', 'image/gif'})
+_MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def _image_thumb(image_field, size_class=''):
@@ -322,6 +327,20 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
                     .order_by('-order').values_list('order', flat=True).first() or 0
                 )
                 for f in files:
+                    ext = os.path.splitext(f.name.lower())[1]
+                    if ext not in _ALLOWED_IMAGE_EXTENSIONS or f.content_type not in _ALLOWED_IMAGE_MIMES:
+                        messages.warning(
+                            request,
+                            f'«{f.name}» — непідтримуваний формат файлу. '
+                            'Дозволено лише: JPG, PNG, WEBP, GIF.',
+                        )
+                        continue
+                    if f.size > _MAX_IMAGE_UPLOAD_BYTES:
+                        messages.warning(
+                            request,
+                            f'«{f.name}» перевищує максимальний розмір 10 MB.',
+                        )
+                        continue
                     if existing + created >= 20:
                         messages.warning(
                             request, 'Досягнуто ліміту 20 фото на товар. Завантажено лише частину.'
