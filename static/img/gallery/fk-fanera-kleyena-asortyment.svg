@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a1f0e"/>
+      <stop offset="100%" stop-color="#5c3d1a"/>
+    </linearGradient>
+    <pattern id="wood" x="0" y="0" width="60" height="4" patternUnits="userSpaceOnUse">
+      <rect width="60" height="4" fill="none"/>
+      <line x1="0" y1="2" x2="60" y2="2" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="600" height="450" fill="url(#g)"/>
+  <rect width="600" height="450" fill="url(#wood)"/>
+  <text x="300" y="190" font-family="Georgia,serif" font-size="18" fill="rgba(255,255,255,0.5)" text-anchor="middle">$</text>
+  <text x="300" y="225" font-family="Georgia,serif" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">$0=5@0 :;5T=0</text>
+  <text x="300" y="256" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.55)" text-anchor="middle">2 0A>@B8<5=BV 2500×1250</text>
+</svg>

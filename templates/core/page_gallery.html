@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load static i18n core_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/gallery.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container photo-gallery">
+    <h1 class="photo-gallery__title">{{ page.title }}</h1>
+
+    {# ================================================================
+       ГАЛЕРЕЯ — додавай / видаляй <a> блоки нижче.
+       Кожен блок:
+         href     — шлях до повного зображення (той самий static-файл)
+         data-label — підпис у лайтбоксі
+         <img src> — те саме зображення (або менша версія)
+         .photo-gallery__badge — коротка категорія
+         .photo-gallery__label — назва, яку видно на карточці
+
+       Щоб додати фото:
+         1. Поклади файл у static/img/gallery/
+         2. Скопіюй один <a> блок і заміни назви файлів та тексти.
+       ================================================================ #}
+
+    <div class="photo-gallery__grid" id="pg-grid">
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/fk-fanera-kleyena-asortyment.svg' %}"
+           data-label="Фанера клеєна ФК в асортименті 2500×1250">
+            <img src="{% static 'img/gallery/fk-fanera-kleyena-asortyment.svg' %}"
+                 alt="Фанера клеєна ФК в асортименті 2500×1250"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ФК</span>
+                <span class="photo-gallery__label">Фанера клеєна в асортименті 2500×1250</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/dvp-ozdoblena-bila.svg' %}"
+           data-label="ДВП оздоблена (ДВПО) біла">
+            <img src="{% static 'img/gallery/dvp-ozdoblena-bila.svg' %}"
+                 alt="ДВП оздоблена (ДВПО) біла"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ДВП</span>
+                <span class="photo-gallery__label">ДВП оздоблена (ДВПО) біла</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/dvp-derevovloknista-plyta.svg' %}"
+           data-label="ДВП Деревоволокниста плита">
+            <img src="{% static 'img/gallery/dvp-derevovloknista-plyta.svg' %}"
+                 alt="ДВП Деревоволокниста плита"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ДВП</span>
+                <span class="photo-gallery__label">ДВП Деревоволокниста плита</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/fsf-antykozna-poverkhnya.svg' %}"
+           data-label="ФСФ — антиковзна поверхня">
+            <img src="{% static 'img/gallery/fsf-antykozna-poverkhnya.svg' %}"
+                 alt="ФСФ — антиковзна поверхня"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ФСФ</span>
+                <span class="photo-gallery__label">ФСФ — антиковзна поверхня</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/dvpo-derevovloknista-bila.svg' %}"
+           data-label="ДВПО Деревоволокниста плита біла">
+            <img src="{% static 'img/gallery/dvpo-derevovloknista-bila.svg' %}"
+                 alt="ДВПО Деревоволокниста плита біла"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ДВПО</span>
+                <span class="photo-gallery__label">ДВПО Деревоволокниста плита біла</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/fk-fanera-sklad.svg' %}"
+           data-label="Фанера клеєна ФК на складі — стопки листів різної товщини та сортності">
+            <img src="{% static 'img/gallery/fk-fanera-sklad.svg' %}"
+                 alt="Фанера клеєна ФК на складі — стопки листів різної товщини та сортності"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ФК</span>
+                <span class="photo-gallery__label">Фанера клеєна ФК на складі</span>
+            </div>
+        </a>
+
+        <a class="photo-gallery__item"
+           href="{% static 'img/gallery/fanera-na-skladi.svg' %}"
+           data-label="Фанера на складі">
+            <img src="{% static 'img/gallery/fanera-na-skladi.svg' %}"
+                 alt="Фанера на складі"
+                 loading="lazy">
+            <div class="photo-gallery__caption">
+                <span class="photo-gallery__badge">ФК</span>
+                <span class="photo-gallery__label">Фанера на складі</span>
+            </div>
+        </a>
+
+        {# === ДОД АЙ НОВІ ФОТО СЮДИ === #}
+
+    </div>
+</div>
+
+{# Лайтбокс #}
+<div class="pg-lightbox" id="pg-lightbox" role="dialog" aria-modal="true" aria-label="Перегляд фото">
+    <button type="button" class="pg-lightbox__close" id="pg-lb-close" aria-label="Закрити">×</button>
+    <button type="button" class="pg-lightbox__nav pg-lightbox__nav--prev" id="pg-lb-prev" aria-label="Попереднє">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <img class="pg-lightbox__img" id="pg-lb-img" src="" alt="">
+    <button type="button" class="pg-lightbox__nav pg-lightbox__nav--next" id="pg-lb-next" aria-label="Наступне">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+    <div class="pg-lightbox__counter" id="pg-lb-counter"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var items = Array.from(document.querySelectorAll('#pg-grid .photo-gallery__item'));
+    var lb = document.getElementById('pg-lightbox');
+    var lbImg = document.getElementById('pg-lb-img');
+    var lbCounter = document.getElementById('pg-lb-counter');
+    var idx = 0;
+
+    function open(i) {
+        idx = i;
+        lbImg.src = items[idx].href;
+        lbImg.alt = items[idx].dataset.label || '';
+        lbCounter.textContent = (idx + 1) + ' / ' + items.length;
+        lb.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+        lb.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    function nav(delta) {
+        idx = (idx + delta + items.length) % items.length;
+        lbImg.src = items[idx].href;
+        lbImg.alt = items[idx].dataset.label || '';
+        lbCounter.textContent = (idx + 1) + ' / ' + items.length;
+    }
+
+    items.forEach(function (el, i) {
+        el.addEventListener('click', function (e) {
+            e.preventDefault();
+            open(i);
+        });
+    });
+
+    document.getElementById('pg-lb-close').addEventListener('click', close);
+    document.getElementById('pg-lb-prev').addEventListener('click', function () { nav(-1); });
+    document.getElementById('pg-lb-next').addEventListener('click', function () { nav(1); });
+
+    lb.addEventListener('click', function (e) {
+        if (e.target === lb) close();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (!lb.classList.contains('is-open')) return;
+        if (e.key === 'Escape') close();
+        if (e.key === 'ArrowLeft') nav(-1);
+        if (e.key === 'ArrowRight') nav(1);
+    });
+
+    /* Touch swipe */
+    var tx = 0;
+    lb.addEventListener('touchstart', function (e) { tx = e.changedTouches[0].screenX; }, { passive: true });
+    lb.addEventListener('touchend', function (e) {
+        var diff = tx - e.changedTouches[0].screenX;
+        if (Math.abs(diff) > 50) nav(diff > 0 ? 1 : -1);
+    }, { passive: true });
+}());
+</script>
+{% endblock %}

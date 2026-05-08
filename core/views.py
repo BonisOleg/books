@@ -52,7 +52,8 @@ class PageDetailView(DetailView):
     def get_template_names(self):
         if self.request.GET.get('modal') == '1' or self.request.headers.get('HX-Request'):
             return ['core/page_modal.html']
-        return ['core/page_detail.html']
+        slug = self.kwargs.get('slug', '')
+        return [f'core/page_{slug}.html', 'core/page_detail.html']
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
