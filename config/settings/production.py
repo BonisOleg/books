@@ -46,9 +46,16 @@ if not SECRET_KEY:
 # Render автоматично виставляє RENDER_EXTERNAL_HOSTNAME для веб-сервісу.
 RENDER_EXTERNAL_HOSTNAME = _env('RENDER_EXTERNAL_HOSTNAME')
 
+# Кастомний домен (наприклад ofion.com.ua) — задається вручну в Render Env Vars.
+CUSTOM_DOMAIN = _env('CUSTOM_DOMAIN')
+
 ALLOWED_HOSTS = _split_csv(_env('DJANGO_ALLOWED_HOSTS'))
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if CUSTOM_DOMAIN:
+    for _host in [CUSTOM_DOMAIN, f'www.{CUSTOM_DOMAIN}']:
+        if _host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(_host)
 # Якщо нічого не задано — приймаємо .onrender.com (стандартний домен Render).
 if not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
@@ -61,6 +68,10 @@ if RENDER_EXTERNAL_HOSTNAME:
     auto_origin = f'https://{RENDER_EXTERNAL_HOSTNAME}'
     if auto_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(auto_origin)
+if CUSTOM_DOMAIN:
+    for _origin in [f'https://{CUSTOM_DOMAIN}', f'https://www.{CUSTOM_DOMAIN}']:
+        if _origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(_origin)
 if not any('onrender.com' in o for o in CSRF_TRUSTED_ORIGINS):
     CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
