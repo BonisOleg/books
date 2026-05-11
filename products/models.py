@@ -106,6 +106,11 @@ class Product(models.Model):
     )
     description = HTMLField('Опис')
     short_description = HTMLField('Короткий опис', blank=True)
+    order_info = HTMLField(
+        'Інформація для замовлення', blank=True,
+        help_text='Відображається у вкладці «Інформація для замовлення» на сторінці товару. '
+                  'Якщо залишити порожнім — показуватиметься стандартний текст.',
+    )
     price = models.DecimalField('Ціна', max_digits=12, decimal_places=2)
     old_price = models.DecimalField(
         'Стара ціна', max_digits=12, decimal_places=2, null=True, blank=True

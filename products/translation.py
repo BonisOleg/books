@@ -15,7 +15,7 @@ class CategoryTranslationOptions(TranslationOptions):
 
 @register(Product)
 class ProductTranslationOptions(TranslationOptions):
-    fields = ('name', 'description', 'short_description', 'meta_title', 'meta_description')
+    fields = ('name', 'description', 'short_description', 'order_info', 'meta_title', 'meta_description')
 
 
 @register(ProductAttribute)

@@ -154,6 +154,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇺🇦 Українська', {
             'fields': (
                 'name_uk', 'description_uk', 'short_description_uk',
+                'order_info_uk',
                 'meta_title_uk', 'meta_description_uk',
             ),
             'classes': ('lang-panel', 'lang-uk'),
@@ -161,6 +162,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇬🇧 English', {
             'fields': (
                 'name_en', 'description_en', 'short_description_en',
+                'order_info_en',
                 'meta_title_en', 'meta_description_en',
             ),
             'classes': ('lang-panel', 'lang-en'),
@@ -168,6 +170,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇷🇺 Русский', {
             'fields': (
                 'name_ru', 'description_ru', 'short_description_ru',
+                'order_info_ru',
                 'meta_title_ru', 'meta_description_ru',
             ),
             'classes': ('lang-panel', 'lang-ru'),
