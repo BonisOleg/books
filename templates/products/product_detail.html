@@ -217,6 +217,8 @@
         <div class="product-tabs__panel" id="tab-order-info">
             {% if product.order_info %}
                 {{ product.order_info|clean_richtext }}
+            {% elif site_settings.default_order_info %}
+                {{ site_settings.default_order_info|clean_richtext }}
             {% else %}
                 <p>{% trans 'Доставка здійснюється Новою Поштою по всій Україні.' %}</p>
                 <p>{% trans 'Оплата: LiqPay, Monobank, накладений платіж.' %}</p>
