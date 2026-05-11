@@ -9,6 +9,34 @@ _DATA_ATTRS_RE = re.compile(
     flags=re.IGNORECASE,
 )
 
+_SHIPPING_DETAILS = {
+    "@type": "OfferShippingDetails",
+    "shippingRate": {
+        "@type": "MonetaryAmount",
+        "value": 0,
+        "currency": "UAH",
+    },
+    "shippingDestination": {
+        "@type": "DefinedRegion",
+        "addressCountry": "UA",
+    },
+    "deliveryTime": {
+        "@type": "ShippingDeliveryTime",
+        "handlingTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 0,
+            "maxValue": 1,
+            "unitCode": "DAY",
+        },
+        "transitTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 1,
+            "maxValue": 3,
+            "unitCode": "DAY",
+        },
+    },
+}
+
 
 def _plain_text(html_content: str, max_len: int = 500) -> str:
     """Return plain text from an HTML string, safe for structured data and meta tags.
@@ -30,32 +58,62 @@ def _plain_text(html_content: str, max_len: int = 500) -> str:
     return plain[:max_len]
 
 
+def _return_policy_schema(return_policy_text: str) -> dict:
+    return {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "UA",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+        "merchantReturnDays": 14,
+        "returnMethod": "https://schema.org/ReturnByMail",
+        "returnFees": "https://schema.org/FreeReturn",
+        **({"description": return_policy_text[:500]} if return_policy_text else {}),
+    }
+
+
 def get_product_schema(product, request):
     images = [
         request.build_absolute_uri(img.image.url)
         for img in product.images.all()
     ]
 
+    description = _plain_text(product.description) or _plain_text(product.short_description)
+
+    try:
+        from core.models import SiteSettings
+        site = SiteSettings.objects.only('site_name', 'return_policy').first()
+        seller_name = site.site_name if site else getattr(settings, 'SITE_NAME', 'Магазин книжок')
+        return_policy_text = site.return_policy if site else ""
+    except Exception:
+        seller_name = getattr(settings, 'SITE_NAME', 'Магазин книжок')
+        return_policy_text = ""
+
+    offer = {
+        "@type": "Offer",
+        "url": request.build_absolute_uri(product.get_absolute_url()),
+        "priceCurrency": "UAH",
+        "price": float(product.price),
+        "availability": product.availability_schema,
+        "itemCondition": "https://schema.org/NewCondition",
+        "seller": {
+            "@type": "Organization",
+            "name": seller_name,
+        },
+        "shippingDetails": _SHIPPING_DETAILS,
+        "hasMerchantReturnPolicy": _return_policy_schema(return_policy_text),
+    }
+
     schema = {
         "@context": "https://schema.org",
         "@type": "Product",
         "name": product.name,
-        "description": _plain_text(product.description),
         "sku": product.sku,
+        "mpn": product.sku,
         "image": images,
-        "offers": {
-            "@type": "Offer",
-            "url": request.build_absolute_uri(product.get_absolute_url()),
-            "priceCurrency": "UAH",
-            "price": str(product.price),
-            "availability": product.availability_schema,
-            "itemCondition": "https://schema.org/NewCondition",
-            "seller": {
-                "@type": "Organization",
-                "name": getattr(settings, 'SITE_NAME', 'Магазин книжок'),
-            }
-        }
+        "offers": offer,
     }
+
+    if description:
+        schema["description"] = description
 
     if product.manufacturer:
         schema["brand"] = {
