@@ -215,9 +215,13 @@
         </div>
 
         <div class="product-tabs__panel" id="tab-order-info">
-            <p>{% trans 'Доставка здійснюється Новою Поштою по всій Україні.' %}</p>
-            <p>{% trans 'Оплата: LiqPay, Monobank, накладений платіж.' %}</p>
-            <p>{% trans 'Повернення можливе протягом 14 днів після отримання.' %}</p>
+            {% if product.order_info %}
+                {{ product.order_info|clean_richtext }}
+            {% else %}
+                <p>{% trans 'Доставка здійснюється Новою Поштою по всій Україні.' %}</p>
+                <p>{% trans 'Оплата: LiqPay, Monobank, накладений платіж.' %}</p>
+                <p>{% trans 'Повернення можливе протягом 14 днів після отримання.' %}</p>
+            {% endif %}
         </div>
 
         <div class="product-tabs__panel" id="tab-reviews"
