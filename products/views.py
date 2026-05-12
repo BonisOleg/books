@@ -125,6 +125,17 @@ class ProductDetailView(DetailView):
         ctx['product_schema'] = get_product_schema(product, self.request)
         ctx['reviews'] = product.reviews.filter(is_approved=True).order_by('-created_at')
 
+        # Prevent duplication: if description plain text matches short_description,
+        # the tab-desc panel should not repeat content already shown in the info block.
+        desc_html = product.description or ''
+        short_html = product.short_description or ''
+        plain_desc = ' '.join(strip_tags(desc_html).split())
+        plain_short = ' '.join(strip_tags(short_html).split())
+        if plain_short and plain_desc == plain_short:
+            ctx['description_for_tab'] = ''
+        else:
+            ctx['description_for_tab'] = desc_html
+
         viewed_ids = self.request.session.get('viewed_products', [])
         previous_viewed = [pid for pid in viewed_ids if pid != product.id]
         if previous_viewed:

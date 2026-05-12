@@ -187,7 +187,11 @@
         </div>
 
         <div class="product-tabs__panel is-active" id="tab-desc">
-            {{ product.description|clean_richtext }}
+            {% if description_for_tab %}
+                {{ description_for_tab|clean_richtext }}
+            {% elif not product.short_description %}
+                {{ product.description|clean_richtext }}
+            {% endif %}
         </div>
 
         <div class="product-tabs__panel" id="tab-attrs">
