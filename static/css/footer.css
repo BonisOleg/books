@@ -123,6 +123,22 @@
     color: var(--color-accent);
 }
 
+.footer__dev {
+    text-align: center;
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.3);
+    padding-top: 10px;
+}
+
+.footer__dev-link {
+    color: rgba(255,255,255,0.4);
+    transition: color var(--transition);
+}
+
+.footer__dev-link:hover {
+    color: rgba(255,255,255,0.65);
+}
+
 @media (min-width: 768px) {
     .footer__grid {
         grid-template-columns: repeat(2, 1fr);
