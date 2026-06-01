@@ -1,4 +1,4 @@
-{% load static core_tags i18n %}
+{% load static core_tags i18n l10n %}
 <div class="product-card" itemscope itemtype="https://schema.org/Product">
     <div class="product-card__badges">
         {% include "includes/product_badges.html" with product=product %}
@@ -54,7 +54,8 @@
 
         <div class="product-card__price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
             <meta itemprop="priceCurrency" content="UAH">
-            <meta itemprop="price" content="{{ product.price }}">
+            <meta itemprop="price" content="{{ product.price|unlocalize }}">
+            <link itemprop="availability" href="{{ product.availability_schema }}">
             {% if product.old_price %}
             <span class="price__old">{{ product.old_price|uah }}</span>
             {% endif %}
