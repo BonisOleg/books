@@ -1,6 +1,8 @@
 import requests
 from django.conf import settings
 
+from .city_aliases import resolve_city_query
+
 NP_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
 
 
@@ -29,8 +31,19 @@ def _call(model, method, properties=None):
 def search_cities(query):
     if len(query) < 2:
         return []
+
+    search_query = resolve_city_query(query)
+    cities = _fetch_settlements(search_query)
+
+    if not cities and search_query != query.strip():
+        cities = _fetch_settlements(query.strip())
+
+    return cities
+
+
+def _fetch_settlements(city_name):
     results = _call('Address', 'searchSettlements', {
-        'CityName': query,
+        'CityName': city_name,
         'Limit': '20',
         'Page': '1',
     })
