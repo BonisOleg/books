@@ -1,16 +1,22 @@
 {% extends "base.html" %}
-{% load core_tags i18n %}
+{% load static core_tags i18n %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/order-success.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container order-success-page">
     <div class="order-success">
-        <div class="order-success__icon">&#10003;</div>
-        <h1 class="order-success__title">{% trans 'Замовлення прийнято!' %}</h1>
-        <p class="order-success__number">{% trans 'Номер замовлення:' %} #{{ order.order_number }}</p>
-        <p class="order-success__hint">
-            {% trans "Ми зв'яжемося з вами найближчим часом для підтвердження." %}
-        </p>
-        <a href="{% url 'core:home' %}" class="btn btn--primary">{% trans 'На головну' %}</a>
+        <div class="order-success__card">
+            <div class="order-success__icon" aria-hidden="true">&#10003;</div>
+            <h1 class="order-success__title">{% trans 'Замовлення прийнято!' %}</h1>
+            <p class="order-success__number">{% trans 'Номер замовлення:' %} #{{ order.order_number }}</p>
+            <p class="order-success__hint">
+                {% trans "Ми зв'яжемося з вами найближчим часом для підтвердження." %}
+            </p>
+            <a href="{% url 'core:home' %}" class="btn btn--primary order-success__btn">{% trans 'На головну' %}</a>
+        </div>
     </div>
 </div>
 {% endblock %}
