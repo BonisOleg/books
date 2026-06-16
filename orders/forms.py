@@ -1,6 +1,8 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from core.validators import PHONE_WIDGET_ATTRS, validate_ua_phone
+
 from .models import Order
 
 
@@ -36,10 +38,7 @@ class CheckoutForm(forms.ModelForm):
             'patronymic': forms.TextInput(attrs={
                 'class': 'form-input', 'placeholder': _('По батькові'),
             }),
-            'phone': forms.TextInput(attrs={
-                'class': 'form-input', 'placeholder': '+380...',
-                'type': 'tel',
-            }),
+            'phone': forms.TextInput(attrs=PHONE_WIDGET_ATTRS),
             'email': forms.EmailInput(attrs={
                 'class': 'form-input', 'placeholder': 'email@example.com',
             }),
@@ -67,6 +66,9 @@ class CheckoutForm(forms.ModelForm):
             self.fields['checkout_mode'].initial = 'account'
             self.fields['checkout_mode'].widget = forms.HiddenInput()
 
+    def clean_phone(self):
+        return validate_ua_phone(self.cleaned_data.get('phone', ''))
+
     def clean(self):
         cleaned = super().clean()
         if cleaned.get('checkout_mode') == 'register' and not cleaned.get('email'):
@@ -77,10 +79,7 @@ class CheckoutForm(forms.ModelForm):
 class OneClickForm(forms.Form):
     phone = forms.CharField(
         max_length=30,
-        widget=forms.TextInput(attrs={
-            'class': 'form-input', 'placeholder': '+380...',
-            'type': 'tel',
-        })
+        widget=forms.TextInput(attrs=PHONE_WIDGET_ATTRS),
     )
     name = forms.CharField(
         max_length=150, required=False,
@@ -88,3 +87,6 @@ class OneClickForm(forms.Form):
             'class': 'form-input', 'placeholder': _('Ваше ім\'я'),
         })
     )
+
+    def clean_phone(self):
+        return validate_ua_phone(self.cleaned_data.get('phone', ''))
