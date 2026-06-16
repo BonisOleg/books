@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
 
+from products.feed_utils import get_feed_dashboard_context
+
 from .exporters import export_csv, export_excel, export_xml
 from .importers import import_csv, import_excel
 
@@ -71,5 +73,8 @@ def dashboard(request):
     return render(
         request,
         'import_export_app/dashboard.html',
-        _admin_ctx(request, {'title': 'Імпорт / Експорт товарів'}),
+        _admin_ctx(request, {
+            'title': 'Імпорт / Експорт товарів',
+            **get_feed_dashboard_context(),
+        }),
     )

@@ -98,7 +98,7 @@ class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
     prepopulated_fields = {'slug': ('name_uk',)}
     fieldsets = (
         ('Загальне', {
-            'fields': ('slug', 'parent', 'image', 'order', 'is_active'),
+            'fields': ('slug', 'parent', 'image', 'google_product_category', 'order', 'is_active'),
         }),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {

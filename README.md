@@ -47,5 +47,5 @@ SITE_PROTOCOL=http
 
 ## Google Merchant
 
-XML фід: `/catalog/feed/google-merchant.xml`
+XML фід: `/feeds/google-merchant.xml`
 JSON-LD structured data на кожній сторінці товару.

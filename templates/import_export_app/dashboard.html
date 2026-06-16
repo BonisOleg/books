@@ -4,6 +4,8 @@
 {% block title %}Імпорт / Експорт товарів | {% trans "Administration" %}{% endblock %}
 
 {% block extrahead %}
+<link rel="stylesheet" href="{% static 'css/admin_feeds.css' %}">
+<script src="{% static 'js/admin_feeds.js' %}" defer></script>
 <style>
 .ie-section {
     background: #fff;
@@ -132,15 +134,7 @@
     </div>
 </div>
 
-<div class="ie-section">
-    <h2>Google Merchant Feed</h2>
-    <p class="ie-hint">XML-фід для Google Merchant Center.</p>
-    <div class="ie-actions">
-        <a href="{% url 'products:google_merchant_feed' %}" target="_blank" rel="noopener">
-            Відкрити Google Merchant XML
-        </a>
-    </div>
-</div>
+{% include "import_export_app/partials/feeds_panel.html" %}
 
 <div class="ie-section">
     <h2>Імпорт товарів</h2>

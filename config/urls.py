@@ -16,6 +16,7 @@ from core.sitemaps import (
     StaticSitemap,
 )
 from orders.views import liqpay_callback, mono_callback
+from products.feeds import google_merchant_feed
 
 sitemaps = {
     'static': StaticSitemap,
@@ -27,6 +28,7 @@ sitemaps = {
 
 urlpatterns = [
     path('healthz', lambda request: HttpResponse('ok', content_type='text/plain'), name='healthz'),
+    path('feeds/google-merchant.xml', google_merchant_feed, name='google_merchant_feed'),
     path('admin/import-export/', include('import_export_app.urls')),
     path('admin/tinymce-upload/', tinymce_upload_image, name='tinymce_upload_image'),
     path('admin/', admin.site.urls),

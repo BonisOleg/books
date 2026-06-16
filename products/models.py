@@ -54,6 +54,11 @@ class Category(models.Model):
     )
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
+    google_product_category = models.CharField(
+        'Google product category ID', max_length=20, blank=True,
+        help_text='Числовий ID з Google Taxonomy. Книги: 784. '
+                  'Якщо порожньо — успадковується від батьківської категорії або 784.',
+    )
     order = models.PositiveIntegerField('Порядок', default=0)
     is_active = models.BooleanField('Активна', default=True)
 

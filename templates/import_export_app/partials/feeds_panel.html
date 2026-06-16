@@ -1,0 +1,130 @@
+<div class="ie-section ie-section--feeds">
+    <h2>Фіди для реклами (Google Merchant Center)</h2>
+    <p class="ie-hint">
+        Канонічний XML-фід для Google Shopping та Performance Max.
+        Бренд за замовчуванням: <strong>{{ site_brand }}</strong>.
+    </p>
+
+    {% if domain_status.warnings %}
+    <div class="ie-feeds-warnings" role="alert">
+        <strong>Перевірте налаштування домену на Render:</strong>
+        <ul>
+            {% for warning in domain_status.warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="ie-feeds-status">
+        {% if domain_status.is_production_ready %}
+        <span class="ie-feeds-badge ie-feeds-badge--ok">Домен: {{ domain_status.base_url }}</span>
+        {% else %}
+        <span class="ie-feeds-badge ie-feeds-badge--warn">Домен: {{ domain_status.base_url }}</span>
+        {% endif %}
+        <span class="ie-feeds-badge ie-feeds-badge--stat">У фіді: {{ feed_stats.in_feed }}</span>
+        <span class="ie-feeds-badge ie-feeds-badge--stat">Виключено: {{ feed_stats.excluded }}</span>
+    </div>
+
+    <div class="ie-feeds-url-row">
+        <input
+            type="text"
+            id="ie-feeds-url"
+            class="ie-feeds-url-input"
+            value="{{ domain_status.base_url }}{% url 'google_merchant_feed' %}"
+            readonly
+            aria-label="URL фіду Google Merchant"
+        >
+        <button type="button" id="ie-feeds-copy" class="ie-btn">Копіювати URL</button>
+        <span id="ie-feeds-copied" class="ie-feeds-copied" aria-live="polite">Скопійовано</span>
+        <a href="{% url 'google_merchant_feed' %}" target="_blank" rel="noopener" class="ie-btn ie-btn--outline">
+            Відкрити XML
+        </a>
+    </div>
+
+    <div class="ie-feeds-grid">
+        <div class="ie-feeds-stat-card">
+            <strong>{{ feed_stats.total_active }}</strong>
+            <span>Активних товарів</span>
+        </div>
+        <div class="ie-feeds-stat-card">
+            <strong>{{ feed_stats.in_feed }}</strong>
+            <span>У фіді GMC</span>
+        </div>
+        <div class="ie-feeds-stat-card">
+            <strong>{{ feed_stats.excluded }}</strong>
+            <span>Не потрапляють</span>
+        </div>
+    </div>
+
+    <h3 style="font-size:0.92rem;margin:0 0 8px;color:#333;">Превʼю товарів у фіді</h3>
+    {% if feed_preview %}
+    <div class="ie-feeds-table-wrap">
+        <table class="ie-feeds-table">
+            <thead>
+                <tr>
+                    <th>Фото</th>
+                    <th>Назва</th>
+                    <th>Ціна</th>
+                    <th>SKU</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in feed_preview %}
+                <tr>
+                    <td>
+                        <img src="{{ row.image_url }}" alt="" class="ie-feeds-thumb" width="48" height="48" loading="lazy">
+                    </td>
+                    <td>
+                        <a href="{{ row.link }}" target="_blank" rel="noopener">{{ row.title }}</a>
+                    </td>
+                    <td>{{ row.price }}</td>
+                    <td>{{ row.product.sku }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="ie-feeds-empty">Немає товарів, що відповідають вимогам фіду (активний, з фото, ціна &gt; 0).</p>
+    {% endif %}
+
+    {% if feed_excluded %}
+    <h3 style="font-size:0.92rem;margin:0 0 8px;color:#333;">Товари, які не потрапляють у фід</h3>
+    <div class="ie-feeds-table-wrap">
+        <table class="ie-feeds-table">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Причини</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in feed_excluded %}
+                <tr>
+                    <td>{{ row.product.name|truncatechars:60 }}</td>
+                    <td>
+                        {% for label in row.reason_labels %}
+                        <span class="ie-feeds-reason">{{ label }}</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <a href="{% url 'admin:products_product_change' row.product.pk %}">Редагувати</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if excluded_truncated %}
+    <p class="ie-feeds-empty">Показано перші 30 виключених товарів.</p>
+    {% endif %}
+    {% endif %}
+
+    <div class="ie-feeds-links">
+        <a href="https://merchants.google.com/" target="_blank" rel="noopener">Google Merchant Center</a>
+        <a href="https://ads.google.com/" target="_blank" rel="noopener">Google Ads</a>
+        <a href="https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt" target="_blank" rel="noopener">Google Taxonomy (category ID)</a>
+    </div>
+</div>
