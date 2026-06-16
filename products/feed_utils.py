@@ -26,9 +26,22 @@ _EXCLUSION_LABELS = {
 _GTIN_RE = re.compile(r'^(\d{13}|\d{9}[\dX])$', re.IGNORECASE)
 
 
+def _resolved_site_domain() -> str:
+    domain = getattr(settings, 'SITE_DOMAIN', 'localhost:8000')
+    if domain and domain not in ('localhost:8000', 'localhost', '127.0.0.1'):
+        return domain
+    custom = getattr(settings, 'CUSTOM_DOMAIN', '')
+    if custom:
+        return custom
+    render_host = getattr(settings, 'RENDER_EXTERNAL_HOSTNAME', '')
+    if render_host:
+        return render_host
+    return domain or 'localhost:8000'
+
+
 def get_base_url() -> str:
     protocol = getattr(settings, 'SITE_PROTOCOL', 'https')
-    domain = getattr(settings, 'SITE_DOMAIN', 'localhost:8000')
+    domain = _resolved_site_domain()
     return f'{protocol}://{domain}'
 
 
@@ -184,7 +197,7 @@ def build_google_merchant_xml() -> str:
 
 
 def get_domain_status() -> dict:
-    domain = getattr(settings, 'SITE_DOMAIN', 'localhost:8000')
+    domain = _resolved_site_domain()
     warnings = []
     if not domain or domain == 'localhost:8000':
         warnings.append('SITE_DOMAIN не налаштовано для продакшену.')

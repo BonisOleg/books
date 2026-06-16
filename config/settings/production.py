@@ -75,6 +75,21 @@ if CUSTOM_DOMAIN:
 if not any('onrender.com' in o for o in CSRF_TRUSTED_ORIGINS):
     CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
 
+# Публічний URL (фіди GMC, листи, посилання) — SITE_DOMAIN або CUSTOM_DOMAIN з Render.
+_site_domain_env = _env('SITE_DOMAIN')
+if _site_domain_env:
+    SITE_DOMAIN = _site_domain_env
+elif CUSTOM_DOMAIN:
+    SITE_DOMAIN = CUSTOM_DOMAIN
+elif RENDER_EXTERNAL_HOSTNAME:
+    SITE_DOMAIN = RENDER_EXTERNAL_HOSTNAME
+
+_site_protocol_env = _env('SITE_PROTOCOL')
+if _site_protocol_env:
+    SITE_PROTOCOL = _site_protocol_env
+elif CUSTOM_DOMAIN or RENDER_EXTERNAL_HOSTNAME:
+    SITE_PROTOCOL = 'https'
+
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
