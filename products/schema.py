@@ -81,10 +81,10 @@ def get_product_schema(product, request):
     try:
         from core.models import SiteSettings
         site = SiteSettings.objects.only('site_name', 'return_policy').first()
-        seller_name = site.site_name if site else getattr(settings, 'SITE_NAME', 'Магазин книжок')
+        seller_name = site.site_name if site else getattr(settings, 'SITE_NAME', 'OFION')
         return_policy_text = site.return_policy if site else ""
     except Exception:
-        seller_name = getattr(settings, 'SITE_NAME', 'Магазин книжок')
+        seller_name = getattr(settings, 'SITE_NAME', 'OFION')
         return_policy_text = ""
 
     offer = {

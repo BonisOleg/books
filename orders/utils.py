@@ -66,7 +66,7 @@ def send_order_confirmation_email(order, request=None) -> bool:
             protocol = 'https' if request.is_secure() else 'http'
         ctx = {
             'order': order,
-            'site_name': getattr(settings, 'SITE_NAME', 'Магазин'),
+            'site_name': getattr(settings, 'SITE_NAME', 'OFION'),
             'site_url': f'{protocol}://{host}',
         }
         subject = f"Замовлення #{order.order_number} прийнято"
@@ -141,7 +141,7 @@ def _send_set_password_email(user, request=None) -> None:
         ctx = {
             'user': user,
             'reset_url': f'{protocol}://{host}{path}',
-            'site_name': getattr(settings, 'SITE_NAME', 'Магазин'),
+            'site_name': getattr(settings, 'SITE_NAME', 'OFION'),
         }
         subject = 'Встановіть пароль для входу в особистий кабінет'
         text_body = render_to_string('orders/emails/set_password.txt', ctx)

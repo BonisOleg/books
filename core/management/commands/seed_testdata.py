@@ -408,7 +408,7 @@ class Command(BaseCommand):
     def _create_site_settings(self):
         from core.models import SiteSettings
         obj, created = SiteSettings.objects.get_or_create(pk=1)
-        obj.site_name = 'Магазин книжок'
+        obj.site_name = 'OFION'
         obj.site_description = 'Інтернет-магазин елітних подарунків, книг у шкірі, статуеток та ексклюзивних товарів'
         obj.email = 'info@bookshop.com.ua'
         obj.address = 'проспект Корольова 1, Київ, Україна'
@@ -432,7 +432,7 @@ class Command(BaseCommand):
         obj.telegram_url = 'https://t.me/bookshop_ua'
         obj.facebook_url = 'https://facebook.com/bookshop.ua'
         obj.instagram_url = 'https://instagram.com/bookshop_ua'
-        obj.seo_home_title = 'Магазин книжок — елітні книги, подарунки та ексклюзивні товари'
+        obj.seo_home_title = 'OFION – статусні подарунки для керівників, партнерів і близьких'
         obj.seo_home_description = (
             'Інтернет-магазин книг у шкіряній палітурці, колекційних видань, '
             'настільних ігор преміум-класу та подарункових наборів. Доставка по Україні.'

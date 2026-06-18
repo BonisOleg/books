@@ -118,7 +118,8 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
-SITE_NAME = 'Магазин книжок'
+SITE_NAME = 'OFION'
+SITE_HOME_TITLE = 'OFION – статусні подарунки для керівників, партнерів і близьких'
 SITE_DOMAIN = os.getenv('SITE_DOMAIN', 'localhost:8000')
 SITE_PROTOCOL = os.getenv('SITE_PROTOCOL', 'http')
 

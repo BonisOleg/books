@@ -5,7 +5,7 @@ from tinymce.models import HTMLField
 
 
 class SiteSettings(models.Model):
-    site_name = models.CharField('Назва сайту', max_length=200, default='Магазин книжок')
+    site_name = models.CharField('Назва сайту', max_length=200, default='OFION')
     site_description = HTMLField('Опис сайту (головна)', blank=True)
     logo = models.ImageField(
         'Логотип', upload_to='site/', blank=True,
@@ -33,7 +33,10 @@ class SiteSettings(models.Model):
     tiktok_url = models.URLField('TikTok', blank=True)
     promo_banner_text = models.CharField('Промо-банер текст', max_length=300, blank=True)
     promo_banner_url = models.URLField('Промо-банер посилання', blank=True)
-    seo_home_title = models.CharField('SEO title головної', max_length=200, blank=True)
+    seo_home_title = models.CharField(
+        'SEO title головної', max_length=200, blank=True,
+        default='OFION – статусні подарунки для керівників, партнерів і близьких',
+    )
     seo_home_description = models.TextField('SEO description головної', blank=True)
     work_schedule = models.TextField('Графік роботи', blank=True,
                                      default='Пн-Пт: 09:00-19:00\nСб-Нд: 10:00-18:00')

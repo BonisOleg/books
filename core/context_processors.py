@@ -48,6 +48,17 @@ def site_settings(request):
     else:
         path_without_lang = request.path
 
+    site_name = getattr(settings, 'SITE_NAME', 'OFION')
+    site_home_title = getattr(
+        settings, 'SITE_HOME_TITLE',
+        'OFION – статусні подарунки для керівників, партнерів і близьких',
+    )
+    if site:
+        if site.site_name:
+            site_name = site.site_name
+        if site.seo_home_title:
+            site_home_title = site.seo_home_title
+
     return {
         'site_settings': site,
         'nav_categories': nav_categories,
@@ -55,7 +66,8 @@ def site_settings(request):
         'header_pages': header_pages,
         'available_languages': available_languages,
         'path_without_lang': path_without_lang,
-        'SITE_NAME': getattr(settings, 'SITE_NAME', 'Магазин книжок'),
+        'SITE_NAME': site_name,
+        'SITE_HOME_TITLE': site_home_title,
         'PHONE_NUMBERS': getattr(settings, 'PHONE_NUMBERS', []),
         'TELEGRAM_BOT_USERNAME': getattr(settings, 'TELEGRAM_BOT_USERNAME', ''),
         'VIBER_BOT_URI': getattr(settings, 'VIBER_BOT_URI', ''),

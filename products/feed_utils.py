@@ -76,7 +76,7 @@ def get_site_brand() -> str:
             return site.site_name
     except Exception:
         pass
-    return getattr(settings, 'SITE_NAME', 'Магазин книжок')
+    return getattr(settings, 'SITE_NAME', 'OFION')
 
 
 def get_google_category(product) -> str:
