@@ -10,6 +10,7 @@ After=network.target postgresql.service
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/bookshop
+Environment=HOME=/var/www/bookshop
 EnvironmentFile=/var/www/bookshop/.env
 ExecStart=/var/www/bookshop/.venv/bin/gunicorn config.wsgi:application \
     --bind 127.0.0.1:8000 \
