@@ -179,7 +179,7 @@ WHITENOISE_AUTOREFRESH = False
 # Безпека
 # ---------------------------------------------------------------------------
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = _env('SECURE_SSL_REDIRECT', 'true').lower() in ('1', 'true', 'yes')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365  # 1 рік
