@@ -14,10 +14,9 @@ for f in "${DUMP}" "${ENV_FILE}"; do
     [[ -f "${f}" ]] || { echo "Немає ${f}" >&2; exit 1; }
 done
 
-set -a
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
-set +a
+# Не source .env — значення з <>, пробілами ламають bash.
+DATABASE_URL="$(grep -m1 '^DATABASE_URL=' "${ENV_FILE}" | cut -d= -f2- | sed 's/^["'\'']//; s/["'\'']$//')"
+export DATABASE_URL
 
 [[ -n "${DATABASE_URL:-}" ]] || { echo "DATABASE_URL не задано в .env" >&2; exit 1; }
 

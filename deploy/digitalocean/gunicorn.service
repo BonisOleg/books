@@ -13,8 +13,8 @@ WorkingDirectory=/var/www/bookshop
 EnvironmentFile=/var/www/bookshop/.env
 ExecStart=/var/www/bookshop/.venv/bin/gunicorn config.wsgi:application \
     --bind 127.0.0.1:8000 \
-    --workers ${WEB_CONCURRENCY:-2} \
-    --threads ${WEB_THREADS:-2} \
+    --workers 2 \
+    --threads 2 \
     --worker-class gthread \
     --timeout 120 \
     --keep-alive 5 \

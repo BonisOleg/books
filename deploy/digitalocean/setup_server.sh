@@ -15,7 +15,7 @@ apt-get upgrade -y
 
 echo "==> Пакети"
 apt-get install -y python3 python3-venv python3-pip nginx postgresql postgresql-contrib \
-    git curl ufw certbot python3-certbot-nginx
+    git curl ufw certbot python3-certbot-nginx gettext
 
 echo "==> Postgres: база та користувач"
 DB_PASS=$(openssl rand -base64 24)

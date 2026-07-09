@@ -19,14 +19,16 @@ python manage.py collectstatic --noinput
 python manage.py migrate --noinput
 python manage.py check
 
+echo "==> Systemd (завжди оновлюємо unit-файл)"
+cp deploy/digitalocean/gunicorn.service /etc/systemd/system/bookshop.service
+systemctl daemon-reload
+systemctl enable bookshop
+
 if [[ ! -f /etc/nginx/sites-enabled/ofion ]]; then
-    echo "==> Перший деплой: Nginx + systemd"
+    echo "==> Перший деплой: Nginx"
     cp deploy/digitalocean/nginx-ofion.conf /etc/nginx/sites-available/ofion
     ln -sf /etc/nginx/sites-available/ofion /etc/nginx/sites-enabled/ofion
     rm -f /etc/nginx/sites-enabled/default
-    cp deploy/digitalocean/gunicorn.service /etc/systemd/system/bookshop.service
-    systemctl daemon-reload
-    systemctl enable bookshop
     nginx -t
     systemctl reload nginx
 fi
