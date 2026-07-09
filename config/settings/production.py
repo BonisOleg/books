@@ -1,9 +1,11 @@
-"""Production settings for Render (Web Service + Postgres + Cloudinary).
+"""Production settings (Render, DigitalOcean Droplet, інші VPS/PaaS).
 
 Філософія: сервіс ЗАВЖДИ повинен підніматися. Якщо якогось секрету ще немає
 (CLOUDINARY_URL, SMTP, кастомний домен) — вмикаємо безпечний fallback і
-лише пишемо WARNING у логи. Це дозволяє побачити сайт одразу після першого
-деплою і поступово підключати інтеграції через Render Dashboard.
+лише пишемо WARNING у логи.
+
+Медіа на DigitalOcean: USE_LOCAL_MEDIA=1 + MEDIA_ROOT на диску Droplet.
+Фото з cloudinary_export/ копіюються в MEDIA_ROOT; Nginx віддає /media/.
 """
 from __future__ import annotations
 
@@ -125,6 +127,12 @@ MIDDLEWARE = [
     *MIDDLEWARE[1:],
 ]
 
+_USE_LOCAL_MEDIA = _env('USE_LOCAL_MEDIA', '').lower() in ('1', 'true', 'yes')
+_MEDIA_ROOT_ENV = _env('MEDIA_ROOT')
+if _MEDIA_ROOT_ENV:
+    from pathlib import Path
+    MEDIA_ROOT = Path(_MEDIA_ROOT_ENV)
+
 _CLOUDINARY_URL = _env('CLOUDINARY_URL')
 _CN = _env('CLOUDINARY_CLOUD_NAME')
 _AK = _env('CLOUDINARY_API_KEY')
@@ -136,7 +144,11 @@ if not _CLOUDINARY_URL and _CN and _AK and _AS:
     _CLOUDINARY_URL = f'cloudinary://{_AK}:{_AS}@{_CN}'
     os.environ.setdefault('CLOUDINARY_URL', _CLOUDINARY_URL)
 
-if _CLOUDINARY_URL:
+if _USE_LOCAL_MEDIA:
+    _DEFAULT_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
+    CLOUDINARY_STORAGE = {}
+    _log.info('USE_LOCAL_MEDIA=1 — медіа на диску (%s), Cloudinary вимкнено.', MEDIA_ROOT)
+elif _CLOUDINARY_URL:
     _DEFAULT_STORAGE_BACKEND = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     CLOUDINARY_STORAGE = {'CLOUDINARY_URL': _CLOUDINARY_URL}
     if _CN and _AK and _AS:
@@ -146,14 +158,9 @@ if _CLOUDINARY_URL:
             'API_SECRET': _AS,
         })
 else:
-    # Fallback: локальна файлова система (ephemeral на Render — ок для першого
-    # запуску, але на проді обов'язково задай Cloudinary).
     _DEFAULT_STORAGE_BACKEND = 'django.core.files.storage.FileSystemStorage'
     CLOUDINARY_STORAGE = {}
-    _log.warning('Cloudinary не сконфігуровано (немає ні CLOUDINARY_URL, '
-                 'ні трійки CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET) — '
-                 'медіа зберігаються локально (ephemeral диск Render, '
-                 'файли зникнуть при рестарті).')
+    _log.warning('Cloudinary не сконфігуровано — медіа зберігаються локально (%s).', MEDIA_ROOT)
 
 STORAGES = {
     'default': {'BACKEND': _DEFAULT_STORAGE_BACKEND},

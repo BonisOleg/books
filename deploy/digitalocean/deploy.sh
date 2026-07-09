@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Деплой/оновлення коду на Droplet. Запуск з кореня проєкту під www-data або root.
+set -o errexit
+set -o pipefail
+set -o nounset
+
+APP_DIR="${APP_DIR:-/var/www/bookshop}"
+cd "${APP_DIR}"
+
+echo "==> Python venv"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip setuptools wheel
+pip install --no-cache-dir -r requirements.txt
+
+echo "==> Django build"
+python manage.py compilemessages
+python manage.py collectstatic --noinput
+python manage.py migrate --noinput
+python manage.py check
+
+if [[ ! -f /etc/nginx/sites-enabled/ofion ]]; then
+    echo "==> Перший деплой: Nginx + systemd"
+    cp deploy/digitalocean/nginx-ofion.conf /etc/nginx/sites-available/ofion
+    ln -sf /etc/nginx/sites-available/ofion /etc/nginx/sites-enabled/ofion
+    rm -f /etc/nginx/sites-enabled/default
+    cp deploy/digitalocean/gunicorn.service /etc/systemd/system/bookshop.service
+    systemctl daemon-reload
+    systemctl enable bookshop
+    nginx -t
+    systemctl reload nginx
+fi
+
+echo "==> Права"
+chown -R www-data:www-data "${APP_DIR}/staticfiles" "${APP_DIR}/media" 2>/dev/null || true
+
+echo "==> Перезапуск Gunicorn"
+systemctl restart bookshop
+systemctl status bookshop --no-pager
+
+echo "==> Готово"

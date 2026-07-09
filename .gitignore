@@ -70,3 +70,9 @@ yarn-error.log*
 *.bak
 *.tmp
 *~
+
+# Міграція Render → DigitalOcean (не в git — передаються через rsync)
+bookshop_dump.pgdump
+cloudinary_export/
+download_log.txt
+image_refs.csv
