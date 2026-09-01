@@ -1,0 +1,14 @@
+# Fail2ban jail for bookshop abuse (nginx 429 + limiting requests)
+# Install: /etc/fail2ban/jail.d/bookshop-abuse.local
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+filter = nginx-limit-req
+logpath = /var/log/nginx/access.log
+          /var/log/nginx/error.log
+backend = auto
+maxretry = 8
+findtime = 600
+bantime = 3600
+action = %(action_)s

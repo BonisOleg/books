@@ -42,6 +42,11 @@ if [[ ! -f /etc/nginx/sites-enabled/ofion ]]; then
     systemctl reload nginx
 fi
 
+if [[ -f deploy/digitalocean/apply_abuse_blocking.sh ]]; then
+    echo "==> Abuse blocking (nginx rate limit + fail2ban)"
+    bash deploy/digitalocean/apply_abuse_blocking.sh
+fi
+
 echo "==> Права"
 chown -R www-data:www-data "${APP_DIR}/staticfiles" "${APP_DIR}/media" 2>/dev/null || true
 
