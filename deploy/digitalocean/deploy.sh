@@ -14,8 +14,16 @@ pip install --upgrade pip setuptools wheel
 pip install --no-cache-dir -r requirements.txt
 
 echo "==> Django build"
+# manage.py за замовчуванням — develop; для collectstatic потрібен production (manifest).
+if [[ -f .env ]]; then
+    _dsm="$(grep -E '^DJANGO_SETTINGS_MODULE=' .env | cut -d= -f2- | tr -d '"' | tr -d "'" || true)"
+    export DJANGO_SETTINGS_MODULE="${_dsm:-config.settings.production}"
+else
+    export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-config.settings.production}"
+fi
+echo "    DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}"
 python manage.py compilemessages
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear
 python manage.py migrate --noinput
 python manage.py check
 
