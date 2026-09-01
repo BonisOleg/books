@@ -1,10 +1,14 @@
+from django.conf import settings
+from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from cart.cart import Cart
+from core.ratelimit import is_rate_limited
 from products.models import Product
 
 from .forms import CheckoutForm, OneClickForm
@@ -30,14 +34,39 @@ def _check_order_access(request, order):
     return order.id in allowed
 
 
+def _checkout_rate_limited(request):
+    ip_limit, ip_period = getattr(settings, 'ABUSE_CHECKOUT_IP')
+    session_limit, session_period = getattr(settings, 'ABUSE_CHECKOUT_SESSION')
+    return is_rate_limited(
+        request,
+        'checkout',
+        ip_limit=ip_limit,
+        ip_period=ip_period,
+        session_limit=session_limit,
+        session_period=session_period,
+    )
+
+
+def _oneclick_rate_limited(request):
+    ip_limit, ip_period = getattr(settings, 'ABUSE_ONECLICK_IP')
+    return is_rate_limited(
+        request,
+        'oneclick',
+        ip_limit=ip_limit,
+        ip_period=ip_period,
+    )
+
+
 def checkout(request):
     cart = Cart(request)
     if cart.total_count == 0:
         return redirect('cart:detail')
 
     if request.method == 'POST':
-        form = CheckoutForm(request.POST, user=request.user)
-        if form.is_valid():
+        form = CheckoutForm(request.POST, user=request.user, request=request)
+        if _checkout_rate_limited(request):
+            messages.error(request, _('Забагато спроб. Спробуйте пізніше.'))
+        elif form.is_valid():
             order = form.save(commit=False)
             mode = form.cleaned_data.get('checkout_mode', 'guest')
             if request.user.is_authenticated:
@@ -82,7 +111,7 @@ def checkout(request):
                 'email': request.user.email,
                 'patronymic': getattr(request.user, 'patronymic', ''),
             }
-        form = CheckoutForm(initial=initial, user=request.user)
+        form = CheckoutForm(initial=initial, user=request.user, request=request)
 
     items = cart.get_items()
     return render(request, 'orders/checkout.html', {
@@ -106,8 +135,10 @@ def order_success(request, order_id):
 def oneclick(request, product_id):
     product = get_object_or_404(Product, id=product_id, is_active=True)
     if request.method == 'POST':
-        form = OneClickForm(request.POST)
-        if form.is_valid():
+        form = OneClickForm(request.POST, request=request)
+        if _oneclick_rate_limited(request):
+            form.add_error(None, _('Забагато спроб. Спробуйте пізніше.'))
+        elif form.is_valid():
             order = Order.objects.create(
                 first_name=form.cleaned_data.get('name', ''),
                 last_name='',
@@ -130,7 +161,7 @@ def oneclick(request, product_id):
             html = render_to_string('orders/partials/oneclick_success.html', {})
             return HttpResponse(html)
     else:
-        form = OneClickForm()
+        form = OneClickForm(request=request)
     return render(request, 'orders/partials/oneclick_modal.html', {
         'form': form,
         'product': product,

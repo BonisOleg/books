@@ -25,6 +25,7 @@ echo "    DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}"
 python manage.py compilemessages
 python manage.py collectstatic --noinput --clear
 python manage.py migrate --noinput
+python manage.py createcachetable
 python manage.py check
 
 echo "==> Systemd (завжди оновлюємо unit-файл)"

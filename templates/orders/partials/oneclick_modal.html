@@ -7,6 +7,14 @@
         <p class="modal__price">{{ product.price|uah }}</p>
         <form hx-post="{% url 'orders:oneclick' product.id %}" hx-target="#oneclick-modal" hx-swap="outerHTML">
             {% csrf_token %}
+            {{ form.form_ts }}
+            <div class="u-hp" aria-hidden="true">
+                <label for="{{ form.website.id_for_label }}">{% trans 'Сайт' %}</label>
+                {{ form.website }}
+            </div>
+            {% if form.non_field_errors %}
+            <div class="form-error">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
             <div class="form-group">
                 <label class="form-label form-label--required">{% trans "Телефон" %}</label>
                 {{ form.phone }}

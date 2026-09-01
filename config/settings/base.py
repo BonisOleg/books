@@ -114,6 +114,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+    }
+}
+
+CART_ADD_MAX_QUANTITY = 20
+ABUSE_CART_ADD_IP = (20, 60)
+ABUSE_CART_ADD_SESSION = (30, 60)
+ABUSE_CART_UPDATE_IP = (20, 60)
+ABUSE_CART_UPDATE_SESSION = (30, 60)
+ABUSE_CHECKOUT_IP = (5, 60)
+ABUSE_CHECKOUT_SESSION = (8, 60)
+ABUSE_ONECLICK_IP = (5, 60)
+ABUSE_NP_API_IP = (30, 60)
+
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'

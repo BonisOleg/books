@@ -85,8 +85,10 @@
     <script src="{% static 'js/oneclick-modal.js' %}"></script>
     <script src="{% static 'js/phone-input.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    {% block online_consultant %}
     {% if site_settings and site_settings.online_consultant_code %}
     {{ site_settings.online_consultant_code|safe }}
     {% endif %}
+    {% endblock %}
 </body>
 </html>

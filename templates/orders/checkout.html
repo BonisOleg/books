@@ -5,12 +5,22 @@
 <link rel="stylesheet" href="{% static 'css/checkout.css' %}">
 {% endblock %}
 
+{% block online_consultant %}{% endblock %}
+
 {% block content %}
 <div class="container checkout-page">
     <h1 class="checkout-page__title">{% trans 'Оформлення замовлення' %}</h1>
 
     <form method="post" class="checkout-form">
         {% csrf_token %}
+        {{ form.form_ts }}
+        <div class="u-hp" aria-hidden="true">
+            <label for="{{ form.website.id_for_label }}">{% trans 'Сайт' %}</label>
+            {{ form.website }}
+        </div>
+        {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
 
         <div>
             {% if not user.is_authenticated %}

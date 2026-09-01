@@ -1,6 +1,12 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from core.form_guards import (
+    form_ts_field,
+    honeypot_field,
+    issue_form_ts,
+    validate_form_guards,
+)
 from core.validators import PHONE_WIDGET_ATTRS, validate_ua_phone
 
 from .models import Order
@@ -20,6 +26,8 @@ class CheckoutForm(forms.ModelForm):
         initial='guest',
         widget=forms.RadioSelect(attrs={'class': 'checkout-mode__input'}),
     )
+    website = honeypot_field()
+    form_ts = form_ts_field()
 
     class Meta:
         model = Order
@@ -59,9 +67,12 @@ class CheckoutForm(forms.ModelForm):
             'payment_method': forms.RadioSelect(),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, request=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        self.request = request
+        if not self.is_bound:
+            self.fields['form_ts'].initial = issue_form_ts()
         if user and user.is_authenticated:
             self.fields['checkout_mode'].initial = 'account'
             self.fields['checkout_mode'].widget = forms.HiddenInput()
@@ -71,6 +82,11 @@ class CheckoutForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        validate_form_guards(
+            cleaned.get('website', ''),
+            cleaned.get('form_ts', ''),
+            request=self.request,
+        )
         if cleaned.get('checkout_mode') == 'register' and not cleaned.get('email'):
             self.add_error('email', _('Для реєстрації потрібен email.'))
         return cleaned
@@ -87,6 +103,23 @@ class OneClickForm(forms.Form):
             'class': 'form-input', 'placeholder': _('Ваше ім\'я'),
         })
     )
+    website = honeypot_field()
+    form_ts = form_ts_field()
+
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+        if not self.is_bound:
+            self.fields['form_ts'].initial = issue_form_ts()
 
     def clean_phone(self):
         return validate_ua_phone(self.cleaned_data.get('phone', ''))
+
+    def clean(self):
+        cleaned = super().clean()
+        validate_form_guards(
+            cleaned.get('website', ''),
+            cleaned.get('form_ts', ''),
+            request=self.request,
+        )
+        return cleaned
