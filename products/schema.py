@@ -4,6 +4,8 @@ import re
 from django.conf import settings
 from django.utils.html import strip_tags
 
+from core.public_urls import build_public_absolute_uri
+
 _DATA_ATTRS_RE = re.compile(
     r'\s+data-(start|end|section-id)="[^"]*"',
     flags=re.IGNORECASE,
@@ -72,7 +74,7 @@ def _return_policy_schema(return_policy_text: str) -> dict:
 
 def get_product_schema(product, request):
     images = [
-        request.build_absolute_uri(img.image.url)
+        build_public_absolute_uri(img.image.url)
         for img in product.images.all()
     ]
 
@@ -89,7 +91,7 @@ def get_product_schema(product, request):
 
     offer = {
         "@type": "Offer",
-        "url": request.build_absolute_uri(product.get_absolute_url()),
+        "url": build_public_absolute_uri(product.get_absolute_url()),
         "priceCurrency": "UAH",
         "price": float(product.price),
         "availability": product.availability_schema,
@@ -149,7 +151,7 @@ def get_breadcrumb_schema(breadcrumbs, request):
             "name": name,
         }
         if url:
-            entry["item"] = request.build_absolute_uri(url)
+            entry["item"] = build_public_absolute_uri(url)
         items.append(entry)
 
     return {

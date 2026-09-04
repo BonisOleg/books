@@ -1,5 +1,24 @@
 from django.conf import settings
+from django.http import HttpResponsePermanentRedirect
 from django.utils import translation
+
+from core.public_urls import canonical_host
+
+
+class CanonicalHostMiddleware:
+    """301 www → канонічний SITE_DOMAIN (ofion.com.ua). Лише GET/HEAD."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method in ('GET', 'HEAD'):
+            host = request.get_host().split(':')[0].lower()
+            apex = canonical_host()
+            if apex and not apex.startswith('localhost') and host == f'www.{apex}':
+                target = f'{getattr(settings, "SITE_PROTOCOL", "https")}://{apex}{request.get_full_path()}'
+                return HttpResponsePermanentRedirect(target)
+        return self.get_response(request)
 
 
 class LanguageGuardMiddleware:

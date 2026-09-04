@@ -6,11 +6,11 @@
 <meta property="og:type" content="{% block og_type %}website{% endblock %}">
 <meta property="og:title" content="{% block og_title %}{{ page_title|default:SITE_NAME }}{% endblock %}">
 <meta property="og:description" content="{% block og_description %}{{ page_meta_description|default:'' }}{% endblock %}">
-<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta property="og:url" content="{% block og_url %}{{ canonical_url }}{% endblock %}">
 {% block og_image %}{% endblock %}
 <meta property="og:locale" content="uk_UA">
 <meta property="og:site_name" content="{{ SITE_NAME }}">
 
-<link rel="canonical" href="{% block canonical %}{{ request.build_absolute_uri }}{% endblock %}">
+<link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}">
 
 {% block structured_data %}{% endblock %}
