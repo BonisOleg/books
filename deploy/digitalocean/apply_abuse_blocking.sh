@@ -25,26 +25,28 @@ install -m 644 "${SRC}/nginx-bookshop-abuse-locations.conf" \
   /etc/nginx/snippets/bookshop-abuse-locations.conf
 
 echo "==> inject include into site server blocks (if missing)"
-if [[ -f "${NGINX_SITE}" ]]; then
-  python3 - <<'PY'
+python3 - <<'PY'
 from pathlib import Path
 import re
 import sys
 
-site = Path("/etc/nginx/sites-available/ofion")
-if not site.exists():
-    # fallback common names
-    for candidate in (
-        Path("/etc/nginx/sites-available/ofion"),
-        Path("/etc/nginx/sites-available/default"),
-        Path("/etc/nginx/sites-available/bookshop"),
-    ):
-        if candidate.exists():
-            site = candidate
+candidates = [
+    Path("/etc/nginx/sites-available/ofion"),
+    Path("/etc/nginx/sites-available/ofion"),
+    Path("/etc/nginx/sites-available/bookshop"),
+    Path("/etc/nginx/sites-available/default"),
+]
+site = next((p for p in candidates if p.exists()), None)
+if site is None:
+    # try enabled symlinks
+    enabled = Path("/etc/nginx/sites-enabled")
+    for p in sorted(enabled.glob("*")):
+        if p.is_file() or p.is_symlink():
+            site = p.resolve()
             break
-    else:
-        print("No nginx site file found to patch", file=sys.stderr)
-        sys.exit(1)
+if site is None:
+    print("No nginx site file found to patch", file=sys.stderr)
+    sys.exit(1)
 
 text = site.read_text()
 needle = "include /etc/nginx/snippets/bookshop-abuse-locations.conf;"
@@ -52,7 +54,6 @@ if needle in text:
     print(f"  already present in {site}")
     sys.exit(0)
 
-# Insert include immediately before each top-level "location / {" inside server blocks.
 pattern = re.compile(r'(^[ \t]*)location\s+/\s*\{', re.M)
 
 def repl(match):
@@ -64,23 +65,20 @@ if n == 0:
     print(f"WARNING: no 'location /' found in {site}; add include manually", file=sys.stderr)
     sys.exit(0)
 
-backup = site.with_suffix(site.suffix + ".bak-abuse")
+backup = Path(str(site) + ".bak-abuse")
 backup.write_text(text)
 site.write_text(new_text)
 print(f"  patched {site} ({n} insert(s)); backup {backup}")
 PY
-else
-  echo "WARNING: ${NGINX_SITE} missing — zones installed, locations not wired" >&2
-fi
 
 # Detect upstream name used on this host and align snippet if needed
-if [[ -f "${NGINX_SITE}" ]] || ls /etc/nginx/sites-enabled/* >/dev/null 2>&1; then
-  UPSTREAM="$(grep -RhoE 'proxy_pass http://[A-Za-z0-9_]+' /etc/nginx/sites-enabled/ 2>/dev/null | head -1 | sed 's|proxy_pass http://||' || true)"
-  if [[ -n "${UPSTREAM}" && "${UPSTREAM}" != "bookshop_gunicorn" ]]; then
-    echo "==> aligning snippet upstream -> ${UPSTREAM}"
-    sed -i "s/bookshop_gunicorn/${UPSTREAM}/g" \
-      /etc/nginx/snippets/bookshop-abuse-locations.conf
-  fi
+UPSTREAM="$(grep -RhoE 'proxy_pass http://[A-Za-z0-9_]+;' /etc/nginx/sites-enabled/ 2>/dev/null | head -1 | sed -E 's/proxy_pass http:\/\/([A-Za-z0-9_]+);/\1/' || true)"
+if [[ -n "${UPSTREAM}" ]]; then
+  echo "==> aligning snippet upstream -> ${UPSTREAM}"
+  sed -i "s/bookshop_gunicorn/${UPSTREAM}/g" \
+    /etc/nginx/snippets/bookshop-abuse-locations.conf
+  sed -i "s/bookshop_gunicorn/${UPSTREAM}/g" \
+    /etc/nginx/snippets/bookshop-abuse-locations.conf
 fi
 
 echo "==> nginx -t"
@@ -97,6 +95,9 @@ fi
 install -m 644 "${SRC}/fail2ban-filter-nginx-limit-req.conf" \
   /etc/fail2ban/filter.d/nginx-limit-req.conf
 install -m 644 "${SRC}/fail2ban-jail-bookshop-abuse.local" \
+  /etc/fail2ban/jail.d/bookshop-abuse.local
+# normalize jail filter name to match installed filter
+sed -i 's/^filter = .*/filter = nginx-limit-req/' \
   /etc/fail2ban/jail.d/bookshop-abuse.local
 systemctl enable fail2ban
 systemctl restart fail2ban

@@ -1,6 +1,48 @@
 {% extends "base.html" %}
 {% load static core_tags i18n %}
 
+{% block extra_head %}
+{{ purchase_datalayer|json_script:"purchase-datalayer" }}
+<script>
+(function () {
+    var el = document.getElementById('purchase-datalayer');
+    if (!el) return;
+    var data;
+    try {
+        data = JSON.parse(el.textContent);
+    } catch (e) {
+        return;
+    }
+    if (!data || !data.transaction_id) return;
+
+    var key = 'gtm_purchase_' + data.transaction_id;
+    try {
+        if (window.sessionStorage && sessionStorage.getItem(key)) return;
+        if (window.sessionStorage) sessionStorage.setItem(key, '1');
+    } catch (e) {}
+
+    window.dataLayer = window.dataLayer || [];
+    dataLayer.push({ ecommerce: null });
+    var payload = {
+        event: 'purchase',
+        value: data.value,
+        currency: data.currency,
+        transaction_id: data.transaction_id,
+        items: data.items || [],
+        ecommerce: {
+            transaction_id: data.transaction_id,
+            value: data.value,
+            currency: data.currency,
+            items: data.items || []
+        }
+    };
+    if (data.email) payload.email = data.email;
+    if (data.phone) payload.phone = data.phone;
+    dataLayer.push(payload);
+})();
+</script>
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/order-success.css' %}">
 {% endblock %}

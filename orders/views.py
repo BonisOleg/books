@@ -47,6 +47,31 @@ def _checkout_rate_limited(request):
     )
 
 
+def _purchase_datalayer_payload(order) -> dict:
+    """GA4 purchase payload for GTM dataLayer (value/currency/transaction_id/items)."""
+    items = [
+        {
+            'item_id': item.product_sku,
+            'item_name': item.product_name,
+            'price': float(item.price),
+            'quantity': item.quantity,
+        }
+        for item in order.items.all()
+    ]
+    payload = {
+        'event': 'purchase',
+        'value': float(order.total),
+        'currency': 'UAH',
+        'transaction_id': order.order_number,
+        'items': items,
+    }
+    if order.email:
+        payload['email'] = order.email
+    if order.phone:
+        payload['phone'] = order.phone
+    return payload
+
+
 def _oneclick_rate_limited(request):
     ip_limit, ip_period = getattr(settings, 'ABUSE_ONECLICK_IP')
     return is_rate_limited(
@@ -123,12 +148,16 @@ def checkout(request):
 
 
 def order_success(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
+    order = get_object_or_404(
+        Order.objects.prefetch_related('items'),
+        id=order_id,
+    )
     if not _check_order_access(request, order):
         raise Http404
     return render(request, 'orders/order_success.html', {
         'order': order,
         'page_title': f'Замовлення #{order.order_number}',
+        'purchase_datalayer': _purchase_datalayer_payload(order),
     })
 
 

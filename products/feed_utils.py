@@ -4,10 +4,13 @@ from xml.etree.ElementTree import Element, SubElement
 
 from django.conf import settings
 
-from .models import Product
+from .models import Category, Product
 from .schema import _plain_text
 
 DEFAULT_GOOGLE_CATEGORY = '784'  # Media > Books
+
+# Категорія https://ofion.com.ua/catalog/ikoni/ (+ підкатегорії) — не в GMC фіді
+FEED_EXCLUDED_CATEGORY_SLUGS = ('ikoni',)
 
 AVAILABILITY_MAP = {
     'in_stock': 'in_stock',
@@ -21,6 +24,7 @@ _EXCLUSION_LABELS = {
     'no_price': 'Ціна ≤ 0',
     'no_description': 'Немає опису',
     'inactive': 'Неактивний',
+    'icons_category': 'Категорія «Ікони» (виключено з фіду)',
 }
 
 _GTIN_RE = re.compile(r'^(\d{13}|\d{9}[\dX])$', re.IGNORECASE)
@@ -105,16 +109,35 @@ def product_type_path(product) -> str:
     return ' > '.join(parts)
 
 
+def get_feed_excluded_category_ids() -> set[int]:
+    """ID категорії ikoni та всіх нащадків (Ікони Святих тощо)."""
+    ids: set[int] = set()
+    roots = Category.objects.filter(slug__in=FEED_EXCLUDED_CATEGORY_SLUGS).only('id')
+    frontier = [root.id for root in roots]
+    ids.update(frontier)
+    while frontier:
+        children = list(
+            Category.objects.filter(parent_id__in=frontier).values_list('id', flat=True)
+        )
+        frontier = [cid for cid in children if cid not in ids]
+        ids.update(frontier)
+    return ids
+
+
 def feed_eligible_queryset():
-    return (
+    qs = (
         Product.objects.filter(is_active=True, price__gt=0, images__isnull=False)
         .distinct()
         .prefetch_related('categories', 'categories__parent', 'images')
         .order_by('-updated_at')
     )
+    excluded_ids = get_feed_excluded_category_ids()
+    if excluded_ids:
+        qs = qs.exclude(categories__id__in=excluded_ids)
+    return qs
 
 
-def get_product_exclusion_reasons(product) -> list[str]:
+def get_product_exclusion_reasons(product, excluded_category_ids=None) -> list[str]:
     reasons = []
     if not product.is_active:
         reasons.append('inactive')
@@ -124,6 +147,10 @@ def get_product_exclusion_reasons(product) -> list[str]:
         reasons.append('no_price')
     if not product_description(product).strip():
         reasons.append('no_description')
+    if excluded_category_ids is None:
+        excluded_category_ids = get_feed_excluded_category_ids()
+    if excluded_category_ids and product.categories.filter(id__in=excluded_category_ids).exists():
+        reasons.append('icons_category')
     return reasons
 
 
@@ -186,7 +213,7 @@ def build_google_merchant_xml() -> str:
 
     SubElement(channel, 'title').text = site_brand
     SubElement(channel, 'link').text = base_url
-    SubElement(channel, 'description').text = 'Каталог товарів'
+    SubElement(channel, 'description').text = 'Каталог товарів (без категорії Ікони)'
 
     for product in feed_eligible_queryset():
         build_feed_item(channel, product, base_url, site_brand)
@@ -216,14 +243,17 @@ def get_domain_status() -> dict:
 
 def get_feed_dashboard_context() -> dict:
     base_url = get_base_url()
-    active_qs = Product.objects.filter(is_active=True).prefetch_related('images')
+    excluded_category_ids = get_feed_excluded_category_ids()
+    active_qs = Product.objects.filter(is_active=True).prefetch_related(
+        'images', 'categories',
+    )
     total_active = active_qs.count()
     eligible_qs = feed_eligible_queryset()
     in_feed_count = eligible_qs.count()
 
     excluded = []
     for product in active_qs.order_by('name')[:200]:
-        reasons = get_product_exclusion_reasons(product)
+        reasons = get_product_exclusion_reasons(product, excluded_category_ids)
         if reasons:
             excluded.append({
                 'product': product,
