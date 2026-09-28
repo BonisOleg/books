@@ -3,14 +3,43 @@ from decimal import Decimal
 from xml.etree.ElementTree import Element, SubElement
 
 from django.conf import settings
+from django.db.models import Q
 
 from .models import Category, Product
 from .schema import _plain_text
 
 DEFAULT_GOOGLE_CATEGORY = '784'  # Media > Books
 
-# Категорія https://ofion.com.ua/catalog/ikoni/ (+ підкатегорії) — не в GMC фіді
-FEED_EXCLUDED_CATEGORY_SLUGS = ('ikoni',)
+# Релігійні гілки каталогу (+ нащадки) — не в GMC / Ads фіді
+FEED_EXCLUDED_CATEGORY_SLUGS = (
+    'ikoni',  # https://ofion.com.ua/catalog/ikoni/
+    'koran',
+    'tora',
+)
+
+# Назви категорій на кшталт «Біблія» (slug може відрізнятись)
+FEED_EXCLUDED_CATEGORY_NAME_FRAGMENTS = (
+    'біблія', 'библия', 'bible',
+    'євангел', 'евангел',
+    'псалтир',
+    'коран', 'тора',
+)
+
+# Назва товару: Біблія / Псалтир / Молитвослов / Богородиця тощо
+# (не чіпаємо «Бібліотеки» — фрагмент «біблія», не «біблі»)
+FEED_RELIGIOUS_TITLE_FRAGMENTS = (
+    'біблія', 'библия', 'bible',
+    'псалтир', 'psalter',
+    'євангел', 'евангел', 'gospel',
+    'молитвослов', 'молитвенник', 'молитовник', 'молит',
+    'акафіст', 'акафист',
+    'богородиц', "розп'ят", 'розпят', 'распят',
+    'ісус', 'исус', 'христос',
+    'православ', 'релігійн', 'религиоз',
+    'ікона', 'ікони', 'икона', 'иконы',
+    'киот', 'кіот', 'складень',
+    'коран', 'quran', 'тора', 'torah',
+)
 
 AVAILABILITY_MAP = {
     'in_stock': 'in_stock',
@@ -25,6 +54,8 @@ _EXCLUSION_LABELS = {
     'no_description': 'Немає опису',
     'inactive': 'Неактивний',
     'icons_category': 'Категорія «Ікони» (виключено з фіду)',
+    'religious_category': 'Релігійна категорія (виключено з фіду)',
+    'religious_title': 'Релігійна тематика в назві (виключено з фіду)',
 }
 
 _GTIN_RE = re.compile(r'^(\d{13}|\d{9}[\dX])$', re.IGNORECASE)
@@ -109,10 +140,34 @@ def product_type_path(product) -> str:
     return ' > '.join(parts)
 
 
+def _category_name_exclusion_q() -> Q:
+    q = Q()
+    for frag in FEED_EXCLUDED_CATEGORY_NAME_FRAGMENTS:
+        q |= Q(name__icontains=frag)
+    return q
+
+
+def religious_title_q() -> Q:
+    q = Q()
+    for frag in FEED_RELIGIOUS_TITLE_FRAGMENTS:
+        q |= Q(name__icontains=frag)
+    return q
+
+
+def product_has_religious_title(product) -> bool:
+    name = (product.name or '').lower()
+    return any(frag.lower() in name for frag in FEED_RELIGIOUS_TITLE_FRAGMENTS)
+
+
 def get_feed_excluded_category_ids() -> set[int]:
-    """ID категорії ikoni та всіх нащадків (Ікони Святих тощо)."""
+    """ID релігійних категорій (ikoni/koran/tora/Біблія…) та всіх нащадків."""
     ids: set[int] = set()
-    roots = Category.objects.filter(slug__in=FEED_EXCLUDED_CATEGORY_SLUGS).only('id')
+    roots = list(
+        Category.objects.filter(slug__in=FEED_EXCLUDED_CATEGORY_SLUGS).only('id')
+    )
+    name_q = _category_name_exclusion_q()
+    if name_q:
+        roots.extend(list(Category.objects.filter(name_q).only('id')))
     frontier = [root.id for root in roots]
     ids.update(frontier)
     while frontier:
@@ -134,7 +189,8 @@ def feed_eligible_queryset():
     excluded_ids = get_feed_excluded_category_ids()
     if excluded_ids:
         qs = qs.exclude(categories__id__in=excluded_ids)
-    return qs
+    qs = qs.exclude(religious_title_q())
+    return qs.distinct()
 
 
 def get_product_exclusion_reasons(product, excluded_category_ids=None) -> list[str]:
@@ -150,9 +206,14 @@ def get_product_exclusion_reasons(product, excluded_category_ids=None) -> list[s
     if excluded_category_ids is None:
         excluded_category_ids = get_feed_excluded_category_ids()
     if excluded_category_ids and product.categories.filter(id__in=excluded_category_ids).exists():
-        reasons.append('icons_category')
+        # зворотна сумісність для ікон + загальна мітка
+        cat_slugs = set(product.categories.values_list('slug', flat=True))
+        if cat_slugs & {'ikoni', 'ikoni-svyatih', 'ikonografiya-bogorodici', 'ikonografiya-isusa-hrista'}:
+            reasons.append('icons_category')
+        reasons.append('religious_category')
+    if product_has_religious_title(product):
+        reasons.append('religious_title')
     return reasons
-
 
 def build_feed_item(channel: Element, product, base_url: str, site_brand: str) -> None:
     item = SubElement(channel, 'item')
@@ -213,7 +274,9 @@ def build_google_merchant_xml() -> str:
 
     SubElement(channel, 'title').text = site_brand
     SubElement(channel, 'link').text = base_url
-    SubElement(channel, 'description').text = 'Каталог товарів (без категорії Ікони)'
+    SubElement(channel, 'description').text = (
+        'Каталог товарів (без релігійної тематики: ікони, Біблія, Коран, Тора тощо)'
+    )
 
     for product in feed_eligible_queryset():
         build_feed_item(channel, product, base_url, site_brand)

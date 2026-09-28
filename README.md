@@ -47,5 +47,5 @@ SITE_PROTOCOL=http
 
 ## Google Merchant
 
-XML фід: `/feeds/google-merchant.xml` (без категорії «Ікони» / `ikoni` і підкатегорій).
+XML фід: `/feeds/google-merchant.xml` (без релігійної тематики: ікони, Біблія/Псалтир/Євангеліє, Коран, Тора тощо).
 JSON-LD structured data на кожній сторінці товару.

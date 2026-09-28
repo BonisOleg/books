@@ -3,7 +3,9 @@
     <p class="ie-hint">
         Канонічний XML-фід для Google Shopping та Performance Max.
         Бренд за замовчуванням: <strong>{{ site_brand }}</strong>.
-        Категорія <strong>Ікони</strong> (<code>/catalog/ikoni/</code> і підкатегорії) у фід не потрапляє.
+        З фіду виключено релігійну тематику: <strong>Ікони</strong>, <strong>Коран</strong>, <strong>Тора</strong>,
+        категорія/назва «Біблія», а також товари з релігійними ключовими словами в назві
+        (Псалтир, Євангеліє, Молитвослов, Богородиця тощо).
     </p>
 
     {% if domain_status.warnings %}
