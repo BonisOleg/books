@@ -39,8 +39,9 @@ FEED_RELIGIOUS_TITLE_FRAGMENTS = (
     'ікона', 'ікони', 'икона', 'иконы',
     'киот', 'кіот', 'складень',
     'коран', 'quran', 'тора', 'torah',
+    'ангел',
+    'божий', 'божа', 'боже', 'божого', 'божому', 'божим',
 )
-
 AVAILABILITY_MAP = {
     'in_stock': 'in_stock',
     'ready': 'in_stock',
