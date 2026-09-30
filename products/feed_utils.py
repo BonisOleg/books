@@ -62,6 +62,22 @@ _EXCLUSION_LABELS = {
 _GTIN_RE = re.compile(r'^(\d{13}|\d{9}[\dX])$', re.IGNORECASE)
 
 
+def _gtin13_checksum_ok(digits: str) -> bool:
+    # EAN-13 / ISBN-13: ваги 1,3 зліва, сума кратна 10.
+    total = sum(int(ch) * (3 if i % 2 else 1) for i, ch in enumerate(digits[:-1]))
+    return (10 - total % 10) % 10 == int(digits[-1])
+
+
+def _isbn10_checksum_ok(value: str) -> bool:
+    # ISBN-10: сума (10-i)*d кратна 11, остання цифра може бути X=10.
+    total = 0
+    for i, ch in enumerate(value[:-1]):
+        total += (10 - i) * int(ch)
+    last = value[-1].upper()
+    total += 10 if last == 'X' else int(last)
+    return total % 11 == 0
+
+
 def _resolved_site_domain() -> str:
     domain = getattr(settings, 'SITE_DOMAIN', 'localhost:8000')
     if domain and domain not in ('localhost:8000', 'localhost', '127.0.0.1'):
@@ -95,13 +111,28 @@ def format_gmc_price(value) -> str:
     return f'{Decimal(str(value)).quantize(Decimal("0.01"))} UAH'
 
 
+def _looks_like_internal_code(gtin: str, sku: str) -> bool:
+    """Артикул виробника виду 0302008071 при SKU 8071 — внутрішній код, не ISBN.
+
+    Такий код іноді випадково проходить mod 11, але в Merchant це чужий GTIN.
+    """
+    sku_digits = re.sub(r'\D', '', sku or '')
+    if len(sku_digits) < 3:
+        return False
+    return len(gtin) == 10 and gtin.isdigit() and gtin.endswith(sku_digits)
+
+
 def normalize_gtin(value: str) -> str | None:
     if not value:
         return None
     cleaned = re.sub(r'[\s\-]', '', value.strip())
-    if _GTIN_RE.match(cleaned):
-        return cleaned.upper()
-    return None
+    if not _GTIN_RE.match(cleaned):
+        return None
+    # Merchant перевіряє контрольну цифру: внутрішні коди на кшталт 0302008064
+    # проходять за довжиною, але дають «Invalid value [gtin]» і зняття товару.
+    if len(cleaned) == 13:
+        return cleaned if _gtin13_checksum_ok(cleaned) else None
+    return cleaned.upper() if _isbn10_checksum_ok(cleaned) else None
 
 
 def get_site_brand() -> str:
@@ -242,6 +273,8 @@ def build_feed_item(channel: Element, product, base_url: str, site_brand: str) -
     SubElement(item, 'g:condition').text = 'new'
 
     gtin = normalize_gtin(product.sku_manufacturer)
+    if gtin and _looks_like_internal_code(gtin, product.sku):
+        gtin = None
     brand = product.manufacturer or site_brand
 
     if gtin:

@@ -168,6 +168,8 @@ class StorefrontAssetTests(TestCase):
         self.assertNotIn('setTimeout(load', loader)
         self.assertIn('touchstart', loader)
         self.assertIn('purchase-datalayer', loader)
+        for param in ('gclid', 'gbraid', 'wbraid', 'fbclid', 'utm_'):
+            self.assertIn(param, loader)
         carousel = (ROOT / 'static/js/carousel.js').read_text(encoding='utf-8')
         self.assertIn('img[data-src]', carousel)
         nginx = (ROOT / 'deploy/digitalocean/nginx-ofion.conf').read_text(encoding='utf-8')

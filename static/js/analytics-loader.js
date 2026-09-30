@@ -91,8 +91,16 @@
         }
     }
 
+    /* Платний трафік: теги одразу, інакше конверсії GTM на click-слухачах
+       (tel:, /t.me, «Купити») губляться на першому кліку до прокрутки. */
+    var AD_PARAMS = /(?:^|[?&#])(?:gclid|gbraid|wbraid|dclid|fbclid|ttclid|msclkid|yclid|utm_[a-z]+)=/i;
+
+    function isAdLanding() {
+        return AD_PARAMS.test(window.location.search) || AD_PARAMS.test(window.location.hash);
+    }
+
     function arm() {
-        if (document.getElementById('purchase-datalayer')) {
+        if (document.getElementById('purchase-datalayer') || isAdLanding()) {
             load();
             return;
         }
