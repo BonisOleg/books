@@ -4,6 +4,13 @@ import sys
 
 
 def main():
+    # .env має підняти DJANGO_SETTINGS_MODULE ДО вибору settings,
+    # інакше на сервері manage.py працює з develop (порожня SQLite).
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.develop')
     try:
         from django.core.management import execute_from_command_line

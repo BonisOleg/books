@@ -21,7 +21,7 @@ curl -sI -H 'Accept-Encoding: gzip' https://ofion.com.ua/static/css/site.css | g
 
 3. Варіанти зображень. Оригінали не змінюються, з'являються лише сусідні `.w480.webp` / `.w800.webp` / `.w1280.webp`:
 
-На сервері немає `python`, тільки `.venv/bin/python`:
+На сервері немає `python`, тільки `.venv/bin/python`. `manage.py` сам читає `.env` (звідти `DJANGO_SETTINGS_MODULE=config.settings.production`), інакше команда працювала б із порожньою develop-SQLite і показувала «Зображень: 0»:
 
 ```bash
 .venv/bin/python manage.py build_image_variants --dry-run

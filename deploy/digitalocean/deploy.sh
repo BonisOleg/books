@@ -71,12 +71,25 @@ fi
 
 echo "==> Перевірка: HTML посилається на наявні static-файли"
 python - <<'PY'
-import re, sys, urllib.request
+import os, re, sys, urllib.request
 from pathlib import Path
+
+# Host має бути з DJANGO_ALLOWED_HOSTS, інакше Django відповідає 400.
+host = 'localhost'
+env_file = Path('.env')
+if env_file.is_file():
+    for line in env_file.read_text(encoding='utf-8').splitlines():
+        if line.startswith('DJANGO_ALLOWED_HOSTS='):
+            first = line.split('=', 1)[1].strip().strip('"\'').split(',')[0].strip()
+            if first:
+                host = first.lstrip('.')
+            break
+host = os.environ.get('DEPLOY_CHECK_HOST', host)
+req = urllib.request.Request('http://127.0.0.1:8000/', headers={'Host': host})
 try:
-    html = urllib.request.urlopen('http://127.0.0.1:8000/', timeout=15).read().decode('utf-8', 'ignore')
+    html = urllib.request.urlopen(req, timeout=15).read().decode('utf-8', 'ignore')
 except Exception as exc:  # noqa: BLE001
-    print(f'WARN: не вдалося отримати / з gunicorn: {exc}', file=sys.stderr)
+    print(f'WARN: не вдалося отримати / з gunicorn (Host: {host}): {exc}', file=sys.stderr)
     sys.exit(0)
 root = Path('staticfiles')
 refs = set(re.findall(r'/static/([^"\'\s?#]+)', html))

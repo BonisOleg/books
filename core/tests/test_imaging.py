@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
+from django.utils import translation
 from PIL import Image
 
 from core.imaging.variants import build_variants, cap_original, process_stored_file
@@ -129,12 +130,15 @@ class ResponsiveImgTests(TestCase):
         self.assertEqual(image_variant(image.image, 700), image_variant(image.image, 800))
 
     def test_product_card_template(self):
-        image = self._product_image()
-        image.product.refresh_from_db()
-        html = render_to_string('includes/product_card.html', {
-            'product': image.product,
-            'PHONE_NUMBERS': [],
-        })
+        # Інші тести ходять на /ru/ і /en/ через client — мова не має протікати
+        # ні в modeltranslation при створенні, ні в рендер.
+        with translation.override('uk'):
+            image = self._product_image()
+            image.product.refresh_from_db()
+            html = render_to_string('includes/product_card.html', {
+                'product': image.product,
+                'PHONE_NUMBERS': [],
+            })
         self.assertIn('image/webp', html)
         self.assertIn('Купити: Книга', html)
         self.assertIn('type="button"', html)
