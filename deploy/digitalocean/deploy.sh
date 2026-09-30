@@ -24,8 +24,15 @@ fi
 echo "    DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}"
 python manage.py compilemessages
 python scripts/bundle_site_css.py
-# --clear чистить лише STATIC_ROOT (staticfiles/), не MEDIA_ROOT.
-python manage.py collectstatic --noinput --clear
+# Без --clear: WhiteNoise manifest читається Gunicorn один раз при старті.
+# Якщо видалити старі хешовані файли до перезапуску — живий процес віддає
+# HTML зі старими хешами, і весь CSS/JS стає 404. Старі файли не заважають.
+# Разове очищення: CLEAR_STATIC=1 bash deploy/digitalocean/deploy.sh
+if [[ "${CLEAR_STATIC:-0}" == "1" ]]; then
+    python manage.py collectstatic --noinput --clear
+else
+    python manage.py collectstatic --noinput
+fi
 python manage.py migrate --noinput
 python manage.py createcachetable
 python manage.py check
@@ -34,6 +41,15 @@ echo "==> Systemd (завжди оновлюємо unit-файл)"
 cp deploy/digitalocean/gunicorn.service /etc/systemd/system/bookshop.service
 systemctl daemon-reload
 systemctl enable bookshop
+
+echo "==> Права"
+chown -R www-data:www-data "${APP_DIR}/staticfiles" "${APP_DIR}/media" 2>/dev/null || true
+
+# Перезапуск застосунку — одразу після збірки, до будь-яких сторонніх кроків
+# (nginx, fail2ban). Їх збій не має лишати старий процес зі старим manifest.
+echo "==> Перезапуск Gunicorn"
+systemctl restart bookshop
+systemctl status bookshop --no-pager
 
 # Не перезаписуємо наявний sites-available/ofion: там Certbot SSL.
 if [[ ! -e /etc/nginx/sites-available/ofion && ! -e /etc/nginx/sites-enabled/ofion ]]; then
@@ -45,16 +61,32 @@ if [[ ! -e /etc/nginx/sites-available/ofion && ! -e /etc/nginx/sites-enabled/ofi
     systemctl reload nginx
 fi
 
+# Сторонній крок: його збій не має ламати деплой (застосунок уже перезапущено).
 if [[ -f deploy/digitalocean/apply_abuse_blocking.sh ]]; then
     echo "==> Abuse blocking (nginx rate limit + fail2ban)"
-    bash deploy/digitalocean/apply_abuse_blocking.sh
+    if ! bash deploy/digitalocean/apply_abuse_blocking.sh; then
+        echo "WARN: apply_abuse_blocking.sh завершився з помилкою; застосунок працює, перевір nginx/fail2ban вручну" >&2
+    fi
 fi
 
-echo "==> Права"
-chown -R www-data:www-data "${APP_DIR}/staticfiles" "${APP_DIR}/media" 2>/dev/null || true
-
-echo "==> Перезапуск Gunicorn"
-systemctl restart bookshop
-systemctl status bookshop --no-pager
+echo "==> Перевірка: HTML посилається на наявні static-файли"
+python - <<'PY'
+import re, sys, urllib.request
+from pathlib import Path
+try:
+    html = urllib.request.urlopen('http://127.0.0.1:8000/', timeout=15).read().decode('utf-8', 'ignore')
+except Exception as exc:  # noqa: BLE001
+    print(f'WARN: не вдалося отримати / з gunicorn: {exc}', file=sys.stderr)
+    sys.exit(0)
+root = Path('staticfiles')
+refs = set(re.findall(r'/static/([^"\'\s?#]+)', html))
+missing = sorted(p for p in refs if not (root / p).is_file())
+if missing:
+    print('ERROR: у HTML є посилання на відсутні static-файли:', file=sys.stderr)
+    for p in missing[:20]:
+        print(f'  {p}', file=sys.stderr)
+    sys.exit(1)
+print(f'    OK: {len(refs)} static-посилань, усі файли на місці')
+PY
 
 echo "==> Готово"

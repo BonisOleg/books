@@ -1,7 +1,9 @@
 # Безпечний деплой Lighthouse v2
 
 Живий `/etc/nginx/sites-available/ofion` (Certbot) і каталог `media/` не перезаписуються.
-`collectstatic --clear` чистить лише `staticfiles/`.
+`collectstatic` без `--clear`: старі хешовані файли лишаються, поки живий Gunicorn ще тримає старий manifest. Очищення тільки свідомо: `CLEAR_STATIC=1 bash deploy/digitalocean/deploy.sh`.
+
+Інцидент 2026-09-30: `apply_abuse_blocking.sh` впав на `fail2ban-client status` (сокет ще не піднявся після restart), `set -e` зупинив `deploy.sh` до `systemctl restart bookshop`. Старий Gunicorn віддавав HTML зі старими хешами, які `--clear` уже видалив — весь CSS/JS 404. Тепер: Gunicorn перезапускається одразу після збірки, сторонні кроки нефатальні, в кінці деплой сам звіряє `/static/`-посилання з `staticfiles/`.
 
 Порядок:
 
@@ -19,9 +21,11 @@ curl -sI -H 'Accept-Encoding: gzip' https://ofion.com.ua/static/css/site.css | g
 
 3. Варіанти зображень. Оригінали не змінюються, з'являються лише сусідні `.w480.webp` / `.w800.webp` / `.w1280.webp`:
 
+На сервері немає `python`, тільки `.venv/bin/python`:
+
 ```bash
-python manage.py build_image_variants --dry-run
-python manage.py build_image_variants
+.venv/bin/python manage.py build_image_variants --dry-run
+.venv/bin/python manage.py build_image_variants
 ```
 
 4. Перевірка одного файлу (підставте реальний шлях банера):

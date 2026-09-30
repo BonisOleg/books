@@ -101,6 +101,20 @@ sed -i 's/^filter = .*/filter = nginx-limit-req/' \
   /etc/fail2ban/jail.d/bookshop-abuse.local
 systemctl enable fail2ban
 systemctl restart fail2ban
-fail2ban-client status nginx-limit-req || fail2ban-client status
+# Після restart сокет /var/run/fail2ban/fail2ban.sock з'являється не миттєво.
+# Чекаємо до 15 с; перевірка статусу — інформативна, не має валити деплой.
+_f2b_ready=0
+for _ in $(seq 1 30); do
+  if fail2ban-client ping >/dev/null 2>&1; then
+    _f2b_ready=1
+    break
+  fi
+  sleep 0.5
+done
+if [[ "${_f2b_ready}" == "1" ]]; then
+  fail2ban-client status nginx-limit-req 2>/dev/null || fail2ban-client status || true
+else
+  echo "WARN: fail2ban не відповів за 15 с; перевір: systemctl status fail2ban" >&2
+fi
 
 echo "==> Done. Test: burst POST /cart/add/<id>/ should return 429"
