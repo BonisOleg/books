@@ -1,6 +1,6 @@
 .site-footer {
     background: var(--color-primary-dark);
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
     padding: 32px 0 16px;
     margin-top: auto;
 }
@@ -23,7 +23,7 @@
 .footer__link {
     display: block;
     padding: 4px 0;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.8125rem;
     transition: color var(--transition);
 }
@@ -35,7 +35,7 @@
 .footer__phone {
     display: block;
     padding: 4px 0;
-    color: rgba(255,255,255,0.9);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 0.9375rem;
     font-weight: 500;
 }
@@ -47,7 +47,7 @@
 .footer__email {
     display: block;
     padding: 4px 0;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.8125rem;
 }
 
@@ -80,7 +80,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
     transition: background var(--transition);
 }
@@ -96,7 +96,7 @@
 }
 
 .footer__bottom {
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 16px;
     display: flex;
     flex-direction: column;
@@ -107,37 +107,45 @@
 
 .footer__copy {
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .footer__policy {
     font-size: 0.75rem;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .footer__policy a {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .footer__policy a:hover {
     color: var(--color-accent);
 }
 
+/* Контраст ≥ 4.5:1 на #0a0a0a: #8f8f8f ≈ 6.4:1, #a8a8a8 ≈ 8.6:1 (color-contrast).
+   Посилання підкреслене, а не лише кольором (link-in-text-block). */
 .footer__dev {
     text-align: center;
     font-size: 0.8125rem;
-    color: rgba(255,255,255,0.3);
+    color: #8f8f8f;
     padding-top: 10px;
 }
 
 .footer__dev-link,
 .footer__dev-name {
-    color: rgba(255,255,255,0.4);
+    color: #a8a8a8;
     transition: color var(--transition);
 }
 
-.footer__dev-link:hover {
-    color: rgba(255,255,255,0.65);
+.footer__dev-link {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.footer__dev-link:hover,
+.footer__dev-link:focus-visible {
+    color: #d6d6d6;
 }
 
 @media (min-width: 768px) {

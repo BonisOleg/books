@@ -79,14 +79,14 @@ document.addEventListener('DOMContentLoaded', function () {
         function showMiniCart() {
             clearTimeout(hideTimeout);
             fetch('/cart/mini/')
-                .then(function(r) { return r.text(); })
-                .then(function(html) {
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
                     miniCart.innerHTML = html;
                     miniCart.classList.add('is-visible');
                 });
         }
         function hideMiniCart() {
-            hideTimeout = setTimeout(function() {
+            hideTimeout = setTimeout(function () {
                 miniCart.classList.remove('is-visible');
             }, 300);
         }
