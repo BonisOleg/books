@@ -1,0 +1,23 @@
+{% load i18n core_tags %}
+{% if searchable and products %}
+<ul class="header__suggest-list">
+    {% for product in products %}
+    <li>
+        <a href="{% url 'products:detail' product.slug %}" class="header__suggest-item" role="option">
+            {% with img=product.images.all.0 %}
+            {% if img and img.image %}
+            <img class="header__suggest-img" src="{{ img.image.url }}" alt="" width="48" height="48" loading="lazy">
+            {% else %}
+            <span class="header__suggest-img header__suggest-img--empty" aria-hidden="true"></span>
+            {% endif %}
+            {% endwith %}
+            <span class="header__suggest-name">{{ product.name }}</span>
+            <span class="header__suggest-price">{{ product.price|uah }}</span>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+<a class="header__suggest-all" href="{% url 'products:search' %}?q={{ query|urlencode }}">{% trans 'Показати всі результати' %}</a>
+{% elif searchable %}
+<p class="header__suggest-empty">{% trans 'Нічого не знайдено' %}</p>
+{% endif %}

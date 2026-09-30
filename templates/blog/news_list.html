@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n %}
+{% load static i18n image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -13,7 +13,7 @@
         {% for item in news_list %}
         <div class="blog-card">
             {% if item.image %}
-            <img class="blog-card__img" src="{{ item.image.url }}" alt="{{ item.title }}" loading="lazy">
+            {% responsive_img item.image alt=item.title css_class="blog-card__img" sizes="(max-width: 767px) 100vw, 480px" %}
             {% endif %}
             <div class="blog-card__body">
                 <div class="blog-card__date">{{ item.created_at|date:"d.m.Y" }}</div>

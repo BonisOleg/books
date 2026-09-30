@@ -14,8 +14,26 @@
         var autoTimer = null;
         var autoDelay = parseInt(el.dataset.carouselAuto, 10) || 5000;
 
+        function activateImages(slide) {
+            if (!slide) return;
+            var imgs = slide.querySelectorAll('img[data-src]');
+            for (var i = 0; i < imgs.length; i++) {
+                var img = imgs[i];
+                if (img.getAttribute('src')) continue;
+                if (img.dataset.srcset) img.setAttribute('srcset', img.dataset.srcset);
+                if (img.dataset.sizes) img.setAttribute('sizes', img.dataset.sizes);
+                img.setAttribute('src', img.dataset.src);
+            }
+        }
+
+        function warm(index) {
+            activateImages(slides[index]);
+            activateImages(slides[(index + 1) % slides.length]);
+        }
+
         function goTo(index) {
             current = ((index % slides.length) + slides.length) % slides.length;
+            warm(current);
             track.style.transform = 'translateX(-' + (current * 100) + '%)';
 
             for (var i = 0; i < dots.length; i++) {
@@ -25,8 +43,11 @@
             }
         }
 
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
         function startAuto() {
             stopAuto();
+            if (reduceMotion) return;
             autoTimer = setInterval(function () { goTo(current + 1); }, autoDelay);
         }
 
@@ -61,7 +82,13 @@
         }
 
         el.addEventListener('mouseenter', stopAuto);
-        el.addEventListener('mouseleave', startAuto);
+        el.addEventListener('mouseleave', function () {
+            if (!el.contains(document.activeElement)) startAuto();
+        });
+        el.addEventListener('focusin', stopAuto);
+        el.addEventListener('focusout', function () {
+            startAuto();
+        });
 
         /* Touch / swipe (iOS Safari safe: passive listeners) */
         var touchStartX = 0;
@@ -107,6 +134,12 @@
 
         startAuto();
         goTo(0);
+        var idleWarm = function () { warm((current + 1) % slides.length); };
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(idleWarm, { timeout: 2000 });
+        } else {
+            window.setTimeout(idleWarm, 300);
+        }
     }
 
     function initAll() {

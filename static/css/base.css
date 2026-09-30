@@ -4,7 +4,7 @@
     --color-primary-dark: #000000;
     --color-accent: #c9a25b;
     --color-accent-light: #e6c787;
-    --color-success: #27ae60;
+    --color-success: #117a3a;
     --color-warning: #f39c12;
     --color-danger: #e74c3c;
     --color-info: #3498db;
@@ -15,9 +15,9 @@
     --color-text-muted: #8a8a8a;
     --color-border: #2a2a2a;
     --color-border-light: #1d1d1d;
-    --color-badge-sale: #e74c3c;
+    --color-badge-sale: #a93226;
     --color-badge-top: #f39c12;
-    --color-badge-new: #27ae60;
+    --color-badge-new: #117a3a;
     --color-stock-in: #2ecc71;
     --color-stock-ready: #f39c12;
     --color-stock-order: #3498db;
@@ -87,6 +87,11 @@ img {
     max-width: 100%;
     height: auto;
     display: block;
+}
+
+picture {
+    display: block;
+    max-width: 100%;
 }
 
 ul,
@@ -192,7 +197,7 @@ h6 {
 }
 
 .btn--buy:hover {
-    background: #219a52;
+    background: #0e6b3c;
     color: #fff;
 }
 
@@ -203,6 +208,11 @@ h6 {
 
 .btn--block {
     width: 100%;
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }
 
 .badge {
@@ -222,6 +232,7 @@ h6 {
 
 .badge--top {
     background: var(--color-badge-top);
+    color: #1a1a1a;
 }
 
 .badge--new {
@@ -233,13 +244,13 @@ h6 {
 }
 
 .badge[data-color="red"] {
-    background: #e74c3c;
+    background: #a93226;
     color: #fff;
 }
 
 .badge[data-color="orange"] {
     background: #f39c12;
-    color: #fff;
+    color: #1a1a1a;
 }
 
 .badge[data-color="yellow"] {
@@ -248,7 +259,7 @@ h6 {
 }
 
 .badge[data-color="green"] {
-    background: #27ae60;
+    background: #117a3a;
     color: #fff;
 }
 

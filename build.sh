@@ -21,6 +21,9 @@ pip install --no-cache-dir -r requirements.txt
 echo "==> Compiling translation messages"
 python manage.py compilemessages
 
+echo "==> Bundling base CSS"
+python scripts/bundle_site_css.py
+
 echo "==> Collecting static files (WhiteNoise compressed manifest)"
 python manage.py collectstatic --noinput --clear
 

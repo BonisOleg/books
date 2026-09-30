@@ -441,3 +441,78 @@
         padding-left: 38px;
     }
 }
+
+/* iOS Safari < 15 не розуміє aspect-ratio: резерв висоти через padding. */
+@supports not (aspect-ratio: 1 / 1) {
+    .banners[style*="--banner-w"] {
+        height: 0;
+        padding-top: calc(100% * var(--banner-h) / var(--banner-w));
+    }
+
+    .banners[style*="--banner-w"] .banners__track {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 100%;
+    }
+
+    .product-card__img-wrap {
+        height: 0;
+        padding-top: 100%;
+    }
+
+    .product-card__img-wrap a,
+    .product-card__img-wrap picture {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    .product-card__img {
+        height: 100%;
+    }
+
+    .category-card picture,
+    .blog-card picture,
+    .content-card picture {
+        position: relative;
+        height: 0;
+        overflow: hidden;
+    }
+
+    .category-card picture {
+        padding-top: 100%;
+    }
+
+    .blog-card picture,
+    .content-card picture {
+        padding-top: 56.25%;
+    }
+
+    .category-card__img,
+    .blog-card__img,
+    .content-card__img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .banners__track,
+    .product-card,
+    .category-card {
+        transition: none;
+    }
+
+    .product-card:hover,
+    .category-card:hover {
+        transform: none;
+    }
+}

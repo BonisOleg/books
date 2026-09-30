@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags i18n %}
+{% load static core_tags i18n image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
@@ -37,7 +37,8 @@
         {% for sub in subcategories %}
         <a href="{% url 'products:category' sub.slug %}" class="category-card">
             {% if sub.image %}
-            <img class="category-card__img" src="{{ sub.image.url }}" alt="{{ sub.name }}" loading="lazy">
+            {% blocktrans with name=sub.name asvar photo_alt %}Фото категорії: {{ name }}{% endblocktrans %}
+            {% responsive_img sub.image alt=photo_alt css_class="category-card__img" sizes="(max-width: 767px) 50vw, 240px" eager=forloop.counter priority=forloop.counter %}
             {% else %}
             <div class="category-card__img"></div>
             {% endif %}
@@ -57,7 +58,8 @@
                     hx-swap="innerHTML"
                     hx-include=".filter-panel input[name], .filter-panel select[name]"
                     name="sort"
-                    data-custom-select>
+                    data-custom-select
+                    aria-label="{% trans 'Сортування' %}">
                 <option value="default" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
                 <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>
                 <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
@@ -86,23 +88,7 @@
         </div>
     </div>
 
-    {% if page_obj.paginator.num_pages > 1 %}
-    <div class="catalog-pagination">
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&sort={{ current_sort }}">&laquo;</a>
-        {% endif %}
-        {% for num in page_obj.paginator.page_range %}
-        {% if num == page_obj.number %}
-        <span class="active">{{ num }}</span>
-        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-        <a href="?page={{ num }}&sort={{ current_sort }}">{{ num }}</a>
-        {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&sort={{ current_sort }}">&raquo;</a>
-        {% endif %}
-    </div>
-    {% endif %}
+    {% include "includes/pagination.html" %}
 
 </div>
 

@@ -1,4 +1,4 @@
-{% load static core_tags i18n l10n %}
+{% load static core_tags i18n l10n image_tags %}
 <div class="product-card" itemscope itemtype="https://schema.org/Product">
     <div class="product-card__badges">
         {% include "includes/product_badges.html" with product=product %}
@@ -8,9 +8,7 @@
         <a href="{% url 'products:detail' product.slug %}">
             {% with first_img=product.images.first %}
             {% if first_img %}
-            <img class="product-card__img" src="{{ first_img.image.url }}"
-                 alt="{{ first_img.alt_text|default:product.name }}"
-                 loading="lazy" itemprop="image">
+            {% responsive_img first_img.image alt=first_img.alt_text|default:product.name css_class="product-card__img" sizes="(max-width: 767px) 50vw, 280px" itemprop="image" eager=img_index priority=img_index %}
             {% else %}
             <div class="product-card__img"></div>
             {% endif %}
@@ -64,7 +62,8 @@
 
         <div class="product-card__actions">
             {% if product.stock_status != 'out' %}
-            <button class="btn btn--buy btn--block btn--sm"
+            <button type="button" class="btn btn--buy btn--block btn--sm"
+                    aria-label="{% trans 'Купити' %}: {{ product.name }}"
                     hx-post="{% url 'cart:add' product.id %}"
                     hx-target="#cart-count"
                     hx-swap="innerHTML"

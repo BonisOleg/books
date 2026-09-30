@@ -1,4 +1,4 @@
-{% load core_tags i18n %}
+{% load core_tags i18n image_tags %}
 <div class="mini-cart__header">{% trans "Кошик" %}</div>
 <div class="mini-cart__items">
     {% for item in cart_items %}
@@ -6,7 +6,7 @@
         <div class="mini-cart__item-img">
             {% with img=item.product.main_image %}
             {% if img %}
-            <img src="{{ img.image.url }}" alt="{{ item.product.name }}">
+            {% responsive_img img.image alt=item.product.name sizes="64px" %}
             {% endif %}
             {% endwith %}
         </div>

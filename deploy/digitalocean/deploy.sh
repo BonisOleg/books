@@ -23,6 +23,8 @@ else
 fi
 echo "    DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}"
 python manage.py compilemessages
+python scripts/bundle_site_css.py
+# --clear чистить лише STATIC_ROOT (staticfiles/), не MEDIA_ROOT.
 python manage.py collectstatic --noinput --clear
 python manage.py migrate --noinput
 python manage.py createcachetable
@@ -33,7 +35,8 @@ cp deploy/digitalocean/gunicorn.service /etc/systemd/system/bookshop.service
 systemctl daemon-reload
 systemctl enable bookshop
 
-if [[ ! -f /etc/nginx/sites-enabled/ofion ]]; then
+# Не перезаписуємо наявний sites-available/ofion: там Certbot SSL.
+if [[ ! -e /etc/nginx/sites-available/ofion && ! -e /etc/nginx/sites-enabled/ofion ]]; then
     echo "==> Перший деплой: Nginx"
     cp deploy/digitalocean/nginx-ofion.conf /etc/nginx/sites-available/ofion
     ln -sf /etc/nginx/sites-available/ofion /etc/nginx/sites-enabled/ofion

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags i18n %}
+{% load static core_tags i18n image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
@@ -21,8 +21,8 @@
             {% for cat in categories %}
             <a href="{% url 'products:category' cat.slug %}" class="category-card">
                 {% if cat.image %}
-                <img class="category-card__img" src="{{ cat.image.url }}"
-                     alt="{{ cat.name }}" loading="lazy">
+                {% blocktrans with name=cat.name asvar photo_alt %}Фото категорії: {{ name }}{% endblocktrans %}
+                {% responsive_img cat.image alt=photo_alt css_class="category-card__img" sizes="(max-width: 767px) 50vw, 240px" eager=forloop.counter priority=forloop.counter %}
                 {% else %}
                 <div class="category-card__img"></div>
                 {% endif %}
@@ -39,7 +39,7 @@
         <h2 class="section__title">{% trans 'Новинки та Хіти продажу' %}</h2>
         <div class="hits-scroll">
             {% for product in hit_products %}
-            {% include "includes/product_card.html" with product=product %}
+            {% include "includes/product_card.html" with product=product img_index=forloop.counter %}
             {% endfor %}
         </div>
         <a href="{% url 'products:catalog' %}" class="section__more">{% trans 'Усі товари' %} &rarr;</a>
@@ -69,8 +69,8 @@
             {% for item in latest_news %}
             <a href="{% url 'blog:news_detail' item.slug %}" class="content-card">
                 {% if item.image %}
-                <img class="content-card__img" src="{{ item.image.url }}"
-                     alt="{{ item.title }}" loading="lazy">
+                {% blocktrans with name=item.title asvar photo_alt %}Ілюстрація: {{ name }}{% endblocktrans %}
+                {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}
                 {% endif %}
                 <div class="content-card__body">
                     <div class="content-card__date">{{ item.created_at|date:"d.m.Y" }}</div>
@@ -95,8 +95,8 @@
             {% for item in latest_articles %}
             <a href="{% url 'blog:article_detail' item.slug %}" class="content-card">
                 {% if item.image %}
-                <img class="content-card__img" src="{{ item.image.url }}"
-                     alt="{{ item.title }}" loading="lazy">
+                {% blocktrans with name=item.title asvar photo_alt %}Ілюстрація: {{ name }}{% endblocktrans %}
+                {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}
                 {% endif %}
                 <div class="content-card__body">
                     <div class="content-card__date">{{ item.created_at|date:"d.m.Y" }}</div>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags i18n %}
+{% load static core_tags i18n image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product.css' %}">
@@ -16,7 +16,8 @@
 {% block og_type %}product{% endblock %}
 {% block og_image %}
 {% if product.main_image %}
-<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ product.main_image.image.url }}">
+{% image_variant product.main_image.image 1280 as og_img %}
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ og_img }}">
 {% endif %}
 {% endblock %}
 
@@ -44,7 +45,7 @@
                  data-label-next="{% trans 'Наступне' %}">
                 {% with first_img=product.images.first %}
                 {% if first_img %}
-                <img src="{{ first_img.image.url }}" alt="{{ first_img.alt_text|default:product.name }}" id="gallery-current">
+                {% responsive_img first_img.image alt=first_img.alt_text|default:product.name img_id="gallery-current" sizes="(max-width: 767px) 100vw, 640px" eager=True priority=True %}
                 {% else %}
                 <div class="no-photo">{% trans 'Немає фото' %}</div>
                 {% endif %}
@@ -52,13 +53,13 @@
             </div>
 
             <div class="product-gallery__arrows">
-                <button class="product-gallery__arrow" id="gallery-prev" aria-label="{% trans 'Попереднє фото' %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="product-gallery__arrow" id="gallery-prev" aria-label="{% trans 'Попереднє фото' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                         <polyline points="15 18 9 12 15 6"/>
                     </svg>
                 </button>
-                <button class="product-gallery__arrow" id="gallery-next" aria-label="{% trans 'Наступне фото' %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button type="button" class="product-gallery__arrow" id="gallery-next" aria-label="{% trans 'Наступне фото' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                         <polyline points="9 6 15 12 9 18"/>
                     </svg>
                 </button>
@@ -67,8 +68,11 @@
             <div class="product-gallery__nav" id="gallery-thumbs">
                 {% for img in product.images.all %}
                 <div class="product-gallery__thumb {% if forloop.first %}is-active{% endif %}"
-                     data-src="{{ img.image.url }}" data-type="image" data-index="{{ forloop.counter0 }}">
-                    <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:'' }}" loading="lazy">
+                     data-src="{% image_variant img.image 1280 %}"
+                     data-srcset="{% image_srcset img.image %}"
+                     data-full="{{ img.image.url }}"
+                     data-type="image" data-index="{{ forloop.counter0 }}">
+                    {% responsive_img img.image alt=img.alt_text|default:'' sizes="56px" %}
                 </div>
                 {% endfor %}
                 {% for vid in product.videos.all %}
@@ -77,7 +81,7 @@
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
                      data-index="{{ product.images.count|add:forloop.counter0 }}">
                     {% if vid.poster %}
-                    <img src="{{ vid.poster.url }}" alt="{% trans 'Відео' %}" loading="lazy">
+                    {% responsive_img vid.poster alt='' sizes="56px" %}
                     {% else %}
                     <div class="thumb-empty"></div>
                     {% endif %}

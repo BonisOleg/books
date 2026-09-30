@@ -4,21 +4,31 @@ document.addEventListener('DOMContentLoaded', function () {
     const overlay = document.getElementById('mobile-overlay');
     const closeBtn = document.getElementById('mobile-close');
 
-    function openMenu() {
-        menu.classList.add('is-open');
-        overlay.classList.add('is-visible');
-        document.body.style.overflow = 'hidden';
+    function setMenuOpen(open) {
+        if (!menu) return;
+        var restoreFocus = !open && (
+            menu.contains(document.activeElement) || document.activeElement === closeBtn
+        );
+        menu.classList.toggle('is-open', open);
+        menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+        if (overlay) overlay.classList.toggle('is-visible', open);
+        if (burger) burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.style.overflow = open ? 'hidden' : '';
+        if (open && closeBtn) {
+            closeBtn.focus();
+        } else if (restoreFocus && burger) {
+            burger.focus();
+        }
     }
 
-    function closeMenu() {
-        menu.classList.remove('is-open');
-        overlay.classList.remove('is-visible');
-        document.body.style.overflow = '';
-    }
-
-    if (burger) burger.addEventListener('click', openMenu);
-    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-    if (overlay) overlay.addEventListener('click', closeMenu);
+    if (burger) burger.addEventListener('click', function () { setMenuOpen(true); });
+    if (closeBtn) closeBtn.addEventListener('click', function () { setMenuOpen(false); });
+    if (overlay) overlay.addEventListener('click', function () { setMenuOpen(false); });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menu && menu.classList.contains('is-open')) {
+            setMenuOpen(false);
+        }
+    });
 
     const scrollUp = document.getElementById('scroll-up');
     const scrollDown = document.getElementById('scroll-down');

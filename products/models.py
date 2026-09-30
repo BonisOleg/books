@@ -150,6 +150,8 @@ class Product(models.Model):
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     is_active = models.BooleanField('Активний', default=True)
+    search_name = models.TextField('Індекс назви', editable=False, blank=True, default='')
+    search_text = models.TextField('Індекс пошуку', editable=False, blank=True, default='')
     created_at = models.DateTimeField('Дата створення', auto_now_add=True)
     updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
 

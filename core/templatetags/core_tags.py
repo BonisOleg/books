@@ -68,6 +68,36 @@ def clean_richtext(value):
     return mark_safe(result)
 
 
+@register.simple_tag
+def analytics_payload(site_settings):
+    if not site_settings:
+        return {}
+    return {
+        'gtm': site_settings.google_tag_manager_id or '',
+        'ga': site_settings.google_analytics_id or '',
+        'ads': site_settings.google_ads_conversion_id or '',
+        'pixel': site_settings.facebook_pixel_id or '',
+        'consultant': site_settings.online_consultant_code or '',
+    }
+
+
+def _first_banner_size(banner):
+    from core.imaging.variants import field_local_path, read_meta
+
+    path = field_local_path(getattr(banner, 'image', None))
+    if path is None or not path.is_file():
+        return None
+    meta = read_meta(path)
+    if meta and meta.get('width') and meta.get('height'):
+        return int(meta['width']), int(meta['height'])
+    try:
+        from PIL import Image
+        with Image.open(path) as image:
+            return image.size
+    except Exception:
+        return None
+
+
 @register.inclusion_tag('includes/banners.html')
 def banners(position, limit=None):
     from core.models import Banner
@@ -80,7 +110,13 @@ def banners(position, limit=None):
     )
     if limit:
         qs = qs[:limit]
-    return {'banners': qs, 'position': position}
+    items = list(qs)
+    banner_ratio = None
+    if items:
+        size = _first_banner_size(items[0])
+        if size and size[0] and size[1]:
+            banner_ratio = {'w': size[0], 'h': size[1]}
+    return {'banners': items, 'position': position, 'banner_ratio': banner_ratio}
 
 
 @register.inclusion_tag('includes/faq.html')

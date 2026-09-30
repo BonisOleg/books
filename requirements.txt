@@ -10,6 +10,7 @@ python-dotenv>=1.0
 
 # Static / media
 whitenoise[brotli]>=6.7
+rcssmin>=1.1
 cloudinary>=1.41
 django-cloudinary-storage>=0.3
 Pillow>=10.4

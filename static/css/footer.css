@@ -125,12 +125,13 @@
 
 .footer__dev {
     text-align: center;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     color: rgba(255,255,255,0.3);
     padding-top: 10px;
 }
 
-.footer__dev-link {
+.footer__dev-link,
+.footer__dev-name {
     color: rgba(255,255,255,0.4);
     transition: color var(--transition);
 }

@@ -25,16 +25,12 @@
     <link rel="icon" href="{{ site_settings.favicon.url }}">
     {% endif %}
 
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/components.css' %}">
-    <link rel="stylesheet" href="{% static 'css/header.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <link rel="stylesheet" href="{% static 'css/product-card.css' %}">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <link rel="stylesheet" href="{% static 'css/header_search.css' %}">
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/dropdowns.css' %}">
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
 
-    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    <script src="{% static 'vendor/htmx-2.0.4.min.js' %}" defer></script>
     {% include "includes/theme_vars.html" %}
     {% include "includes/analytics_head.html" %}
     {% block extra_head %}{% endblock %}
@@ -80,14 +76,16 @@
     {% include "includes/messenger_buttons.html" %}
 
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/search-suggest.js' %}"></script>
     <script src="{% static 'js/dropdowns.js' %}"></script>
     <script src="{% static 'js/carousel.js' %}"></script>
     <script src="{% static 'js/oneclick-modal.js' %}"></script>
     <script src="{% static 'js/phone-input.js' %}"></script>
+    <script src="{% static 'js/analytics-loader.js' %}"></script>
     {% block extra_js %}{% endblock %}
     {% block online_consultant %}
     {% if site_settings and site_settings.online_consultant_code %}
-    {{ site_settings.online_consultant_code|safe }}
+    <div id="consultant-deferred" hidden></div>
     {% endif %}
     {% endblock %}
 </body>

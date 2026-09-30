@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', function () {
         items.push({
             type: thumb.dataset.type,
             src: thumb.dataset.src,
+            srcset: thumb.dataset.srcset || '',
+            full: thumb.dataset.full || thumb.dataset.src,
             el: thumb,
         });
     });
@@ -59,7 +61,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             var img = document.createElement('img');
             img.src = item.src;
-            img.alt = '';
+            if (item.srcset) {
+                img.srcset = item.srcset;
+                img.sizes = '(max-width: 767px) 100vw, 640px';
+            }
+            var thumbImg = item.el.querySelector('img');
+            img.alt = thumbImg ? (thumbImg.getAttribute('alt') || '') : '';
             img.id = 'gallery-current';
             mainContainer.appendChild(img);
         }
@@ -166,7 +173,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderLightbox() {
         var item = imageItems[lightboxIndex];
-        lightboxImg.src = item.src;
+        lightboxImg.src = item.full || item.src;
+        lightboxImg.removeAttribute('srcset');
         lightboxCounter.textContent = (lightboxIndex + 1) + ' / ' + imageItems.length;
     }
 

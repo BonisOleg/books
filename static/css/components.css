@@ -324,6 +324,17 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+.banners[style*="--banner-w"] {
+    aspect-ratio: var(--banner-w) / var(--banner-h);
+}
+
+.banners[style*="--banner-w"] .banners__track,
+.banners[style*="--banner-w"] .banners__slide,
+.banners[style*="--banner-w"] .banner,
+.banners[style*="--banner-w"] .banner picture {
+    height: 100%;
+}
+
 .banners__track {
     display: flex;
     transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
@@ -349,6 +360,14 @@
     pointer-events: none;
 }
 
+.banners[style*="--banner-w"] .banner__img {
+    height: 100%;
+}
+
+.banner__img[data-src]:not([src]) {
+    visibility: hidden;
+}
+
 /* Arrows */
 .banners__btn {
     position: absolute;
@@ -358,8 +377,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.42);
     color: #fff;
@@ -390,26 +409,36 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 6px;
+    gap: 4px;
     z-index: 10;
 }
 
 .banners__dot {
-    width: 8px;
-    height: 8px;
+    position: relative;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    background: transparent;
     border: none;
     padding: 0;
     cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
     -webkit-appearance: none;
     appearance: none;
 }
 
-.banners__dot--active {
+.banners__dot::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.banners__dot--active::after {
     background: #fff;
-    transform: scale(1.35);
 }
 
 /* Position modifiers */
@@ -430,13 +459,13 @@
     margin-top: 24px;
 }
 
+.banners__dot:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
 /* Mobile */
 @media (max-width: 767px) {
-    .banners__btn {
-        width: 32px;
-        height: 32px;
-    }
-
     .banners__btn--prev { left: 6px; }
     .banners__btn--next { right: 6px; }
 

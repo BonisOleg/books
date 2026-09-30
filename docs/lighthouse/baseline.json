@@ -1,0 +1,31 @@
+{
+  "measured_at": "2026-09-30",
+  "host": "https://ofion.com.ua",
+  "note": "Заміри зроблені до деплою цих змін. Повторний прогін на проді — після деплою, python manage.py build_image_variants і sudo bash deploy/digitalocean/apply_performance.sh.",
+  "devtools_screenshot": {
+    "performance": 69,
+    "accessibility": 89,
+    "best-practices": 77,
+    "seo": 100
+  },
+  "lighthouse_12_6_1_headless": {
+    "home-mobile": {"performance": 56, "accessibility": 88, "best-practices": 79, "seo": 100},
+    "home-desktop": {"performance": 62, "accessibility": 89, "best-practices": 78, "seo": 100},
+    "catalog-mobile": {"performance": 80, "accessibility": 80, "best-practices": 79, "seo": 100},
+    "category-mobile": {"performance": 73, "accessibility": 85, "best-practices": 79, "seo": 100},
+    "product-mobile": {"performance": 73, "accessibility": 88, "best-practices": 79, "seo": 100}
+  },
+  "production_facts": {
+    "homepage_images": 48,
+    "homepage_image_bytes": 45370000,
+    "http": "1.1",
+    "css_gzip": false,
+    "lcp_banner": "/media/banners/0905-1_zwbjuk.png"
+  },
+  "local_banner_conversion": {
+    "file": "banners/0905-1_zwbjuk.png",
+    "original_bytes": 2239267,
+    "capped_png_bytes": 1940725,
+    "webp": {"480": 16952, "800": 40038, "1280": 91466}
+  }
+}

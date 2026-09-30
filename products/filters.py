@@ -8,12 +8,6 @@ def filter_products(queryset, params):
     badge = params.getlist('badge') if hasattr(params, 'getlist') else params.get('badge')
     subcategory = params.getlist('subcategory') if hasattr(params, 'getlist') else params.get('subcategory')
     sort = params.get('sort', 'default')
-    q = params.get('q', '').strip()
-
-    if q:
-        queryset = queryset.filter(
-            Q(name__icontains=q) | Q(description__icontains=q) | Q(sku__icontains=q)
-        )
 
     if price_min:
         try:

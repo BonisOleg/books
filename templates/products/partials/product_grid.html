@@ -1,6 +1,6 @@
 {% load core_tags %}
 {% for product in products %}
-{% include "includes/product_card.html" with product=product %}
+{% include "includes/product_card.html" with product=product img_index=forloop.counter %}
 {% endfor %}
 {% if not products %}
 <div class="products-empty">

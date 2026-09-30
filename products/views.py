@@ -1,11 +1,17 @@
 from django.db.models import Prefetch
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
+from django.views import View
 from django.views.generic import ListView, DetailView
-from django.shortcuts import get_object_or_404
-from .models import FilterGroup, FilterOption, Product, Category
+
+from core.ratelimit import is_rate_limited
+from .models import FilterGroup, Product, Category
 from .filters import filter_products
 from .schema import _plain_text, get_product_schema, get_breadcrumb_schema
+from .search import apply_search, search_tokens
 
 
 def _get_filter_groups(category=None):
@@ -50,7 +56,7 @@ class CatalogView(ListView):
         ctx['categories'] = Category.objects.filter(
             parent__isnull=True, is_active=True
         ).order_by('order')
-        ctx['page_title'] = 'Каталог'
+        ctx['page_title'] = _('Каталог')
         ctx['current_sort'] = self.request.GET.get('sort', 'default')
         ctx['filter_params'] = self.request.GET
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
@@ -202,15 +208,45 @@ class SearchView(ListView):
     paginate_by = 24
 
     def get_queryset(self):
+        q = self.request.GET.get('q', '')
         qs = Product.objects.filter(is_active=True).prefetch_related(
             'images', 'categories'
         )
         qs = _with_active_promotions(qs)
-        return filter_products(qs, self.request.GET)
+        qs = apply_search(qs, q)
+        qs = filter_products(qs, self.request.GET)
+        sort = self.request.GET.get('sort', 'default') or 'default'
+        if sort == 'default':
+            qs = qs.order_by('rank', '-created_at')
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         q = self.request.GET.get('q', '')
-        ctx['page_title'] = f'Пошук: {q}' if q else 'Пошук'
+        sort = self.request.GET.get('sort', 'default') or 'default'
         ctx['search_query'] = q
+        ctx['search_too_short'] = not search_tokens(q)
+        ctx['current_sort'] = sort
+        ctx['page_title'] = _('Пошук: %(query)s') % {'query': q} if q else _('Пошук')
         return ctx
+
+
+class SearchSuggestView(View):
+    def get(self, request):
+        if is_rate_limited(request, 'search_suggest', ip_limit=60, ip_period=60):
+            return HttpResponse(status=429)
+        q = request.GET.get('q', '')
+        searchable = bool(search_tokens(q))
+        products = []
+        if searchable:
+            qs = apply_search(Product.objects.filter(is_active=True), q)
+            products = list(
+                qs.order_by('rank', '-created_at')
+                .only('id', 'slug', 'price', 'name', 'name_uk', 'name_en', 'name_ru')
+                .prefetch_related('images')[:8]
+            )
+        return render(request, 'products/partials/search_suggest.html', {
+            'products': products,
+            'query': q,
+            'searchable': searchable,
+        })

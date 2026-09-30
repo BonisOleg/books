@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static i18n core_tags %}
+{% load static i18n core_tags image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/promotions.css' %}">
@@ -17,8 +17,7 @@
             <a href="{% url 'products:detail' promo.product.slug %}" class="promo-card__img-link">
                 {% with img=promo.product.images.first %}
                 {% if img %}
-                <img class="promo-card__img" src="{{ img.image.url }}"
-                     alt="{{ img.alt_text|default:promo.product.name }}" loading="lazy">
+                {% responsive_img img.image alt=img.alt_text|default:promo.product.name css_class="promo-card__img" sizes="(max-width: 767px) 100vw, 320px" %}
                 {% else %}
                 <div class="promo-card__img promo-card__img--empty"></div>
                 {% endif %}

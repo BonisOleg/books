@@ -1,45 +1,37 @@
+{% load image_tags %}
 {% if banners %}
 <div class="banners banners--{{ position }}"
      data-carousel
      data-carousel-auto="5000"
      role="region"
      aria-roledescription="carousel"
-     aria-label="Банери">
+     aria-label="Банери"
+     {% if banner_ratio %}style="--banner-w: {{ banner_ratio.w }}; --banner-h: {{ banner_ratio.h }};"{% endif %}>
     <div class="banners__track">
         {% for banner in banners %}
         <div class="banners__slide"
              role="group"
              aria-roledescription="slide"
-             aria-label="{{ forloop.counter }}">
+             aria-label="{{ banner.alt_text|default:banner.title|default:'Банер' }}">
             {% if banner.link %}
             <a href="{{ banner.link }}" class="banner banner--{{ position }}"
                {% if banner.open_in_new_tab %}target="_blank" rel="noopener"{% endif %}>
-                {% if banner.image_mobile %}
-                <picture>
-                    <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
-                    <img class="banner__img" src="{{ banner.image.url }}"
-                         alt="{{ banner.alt_text|default:banner.title }}"
-                         loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
-                </picture>
+                {% if forloop.first and position == 'home_hero' %}
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" eager=True priority=True %}
+                {% elif forloop.first %}
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" %}
                 {% else %}
-                <img class="banner__img" src="{{ banner.image.url }}"
-                     alt="{{ banner.alt_text|default:banner.title }}"
-                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" hold=True %}
                 {% endif %}
             </a>
             {% else %}
             <div class="banner banner--{{ position }}">
-                {% if banner.image_mobile %}
-                <picture>
-                    <source media="(max-width: 767px)" srcset="{{ banner.image_mobile.url }}">
-                    <img class="banner__img" src="{{ banner.image.url }}"
-                         alt="{{ banner.alt_text|default:banner.title }}"
-                         loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
-                </picture>
+                {% if forloop.first and position == 'home_hero' %}
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" eager=True priority=True %}
+                {% elif forloop.first %}
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" %}
                 {% else %}
-                <img class="banner__img" src="{{ banner.image.url }}"
-                     alt="{{ banner.alt_text|default:banner.title }}"
-                     loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                {% responsive_img banner.image mobile=banner.image_mobile alt=banner.alt_text|default:banner.title css_class="banner__img" sizes="100vw" hold=True %}
                 {% endif %}
             </div>
             {% endif %}
@@ -52,7 +44,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.5"
              stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
+             aria-hidden="true" focusable="false">
             <polyline points="15 18 9 12 15 6"/>
         </svg>
     </button>
@@ -60,7 +52,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.5"
              stroke-linecap="round" stroke-linejoin="round"
-             aria-hidden="true">
+             aria-hidden="true" focusable="false">
             <polyline points="9 18 15 12 9 6"/>
         </svg>
     </button>
@@ -69,7 +61,7 @@
         <button class="banners__dot{% if forloop.first %} banners__dot--active{% endif %}"
                 role="tab"
                 aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                aria-label="Банер {{ forloop.counter }}"
+                aria-label="{{ banner.alt_text|default:banner.title|default:'Банер' }}"
                 data-index="{{ forloop.counter0 }}"
                 type="button"></button>
         {% endfor %}

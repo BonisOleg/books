@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static core_tags %}
+{% load static core_tags image_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog.css' %}">
@@ -13,7 +13,7 @@
     </div>
 
     {% if article.image %}
-    <img class="blog-detail__img" src="{{ article.image.url }}" alt="{{ article.title }}">
+    {% responsive_img article.image alt=article.title css_class="blog-detail__img" sizes="(max-width: 767px) 100vw, 960px" eager=True priority=True %}
     {% endif %}
 
     <div class="blog-detail__content">

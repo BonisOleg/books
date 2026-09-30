@@ -44,6 +44,11 @@
     white-space: nowrap;
 }
 
+.header__logo picture {
+    display: inline-block;
+    line-height: 0;
+}
+
 .header__logo img {
     height: 40px;
     width: auto;
