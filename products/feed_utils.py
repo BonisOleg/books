@@ -111,6 +111,17 @@ def format_gmc_price(value) -> str:
     return f'{Decimal(str(value)).quantize(Decimal("0.01"))} UAH'
 
 
+def get_base_price(product) -> Decimal:
+    """Базова (регулярна) ціна без знижки для сегментації VIP/Middle.
+
+    Якщо є old_price і old_price > price — беремо old_price (ціна до акції),
+    інакше price. Це той самий принцип, що й g:price у Merchant-фіді.
+    """
+    if product.old_price and product.old_price > product.price:
+        return Decimal(str(product.old_price))
+    return Decimal(str(product.price))
+
+
 def _looks_like_internal_code(gtin: str, sku: str) -> bool:
     """Артикул виробника виду 0302008071 при SKU 8071 — внутрішній код, не ISBN.
 
@@ -247,7 +258,19 @@ def get_product_exclusion_reasons(product, excluded_category_ids=None) -> list[s
         reasons.append('religious_title')
     return reasons
 
-def build_feed_item(channel: Element, product, base_url: str, site_brand: str) -> None:
+def build_feed_item(
+    channel: Element,
+    product,
+    base_url: str,
+    site_brand: str,
+    *,
+    custom_label_0: str | None = None,
+    product_type_with_site_prefix: bool = False,
+) -> None:
+    """Збирає <item> для Google Shopping RSS.
+
+    Опційні kwargs лише для VIP/Middle; без них XML байт-ідентичний старому фіду.
+    """
     item = SubElement(channel, 'item')
 
     SubElement(item, 'g:id').text = product.sku
@@ -287,14 +310,30 @@ def build_feed_item(channel: Element, product, base_url: str, site_brand: str) -
 
     SubElement(item, 'g:google_product_category').text = get_google_category(product)
 
-    type_path = product_type_path(product)
+    if product_type_with_site_prefix:
+        type_path = product_type_path_with_site_prefix(product)
+    else:
+        type_path = product_type_path(product)
     if type_path:
         SubElement(item, 'g:product_type').text = type_path[:750]
+
+    if custom_label_0:
+        SubElement(item, 'g:custom_label_0').text = custom_label_0
 
     shipping = SubElement(item, 'g:shipping')
     SubElement(shipping, 'g:country').text = 'UA'
     SubElement(shipping, 'g:service').text = 'Standard'
     SubElement(shipping, 'g:price').text = format_gmc_price(0)
+
+
+def product_type_path_with_site_prefix(product) -> str:
+    """Breadcrumbs як на сайті: Головна > Каталог > … > категорія."""
+    primary = product.categories.first()
+    parts = ['Головна', 'Каталог']
+    if primary:
+        parts.extend(c.name for c in primary.get_ancestors())
+        parts.append(primary.name)
+    return ' > '.join(parts)
 
 
 def build_google_merchant_xml() -> str:

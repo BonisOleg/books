@@ -61,6 +61,12 @@ class Category(models.Model):
     )
     order = models.PositiveIntegerField('Порядок', default=0)
     is_active = models.BooleanField('Активна', default=True)
+    exclude_from_feeds = models.BooleanField(
+        'Виключити з VIP/Middle фідів',
+        default=False,
+        help_text='Товари цієї категорії (і підкатегорій) не потрапляють у /feeds/feed_vip.xml '
+                  'та /feeds/feed_middle.xml. Старий google-merchant.xml не змінюється.',
+    )
 
     class Meta:
         verbose_name = 'Категорія'
@@ -150,6 +156,12 @@ class Product(models.Model):
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     is_active = models.BooleanField('Активний', default=True)
+    exclude_from_feeds = models.BooleanField(
+        'Виключити з VIP/Middle фідів',
+        default=False,
+        help_text='Товар не потрапляє у /feeds/feed_vip.xml та /feeds/feed_middle.xml. '
+                  'Старий google-merchant.xml не змінюється.',
+    )
     search_name = models.TextField('Індекс назви', editable=False, blank=True, default='')
     search_text = models.TextField('Індекс пошуку', editable=False, blank=True, default='')
     created_at = models.DateTimeField('Дата створення', auto_now_add=True)
