@@ -41,6 +41,8 @@ ICON_CATEGORY_NAMES = ('Ікони', 'Иконы', 'Icons')
 ICON_CATEGORY_SLUGS = ('ikoni', 'ikony', 'icons')
 
 # Word-start стеми (без біблі/библи/ікон/хрест/релігі/свят/храм — окремі правила нижче).
+# Скан scratch DB (ofion_feedcheck_scratch): соломон/ангельськ/будд* безпечні на title+desc;
+# ангел/притч — лише title+category (див. _TITLE_CATEGORY_RELIGIOUS_* нижче).
 _RELIGIOUS_STEMS = (
     'коран',
     'євангел', 'евангел',
@@ -55,6 +57,10 @@ _RELIGIOUS_STEMS = (
     # церкв*/церков* (церква, церковний); не «церк» як підрядок усередині чужих слів.
     'церкв', 'церков',
     'православ',
+    # Книга мудрості Соломона (6191–6193); у scratch — лише title TP, без FP.
+    'соломон',
+    # «ангельська варта» тощо; покриває ангельськ* (не лише «ангел»).
+    'ангельськ',
 )
 
 # Повні межі слова (не iconic; тора≠автора/історія/томах).
@@ -63,6 +69,17 @@ _RELIGIOUS_WORDS = (
     'bible', 'biblical', 'quran', 'koran', 'gospel',
     'prayer', 'icon', 'triptych',
     'psalter', 'rosary',
+    # CowParade Buddha тощо; latin angel НЕ додаємо (Angeles / angelic).
+    'buddha',
+)
+
+# Лише назва + категорія (не довгі описи): скан scratch показав FP у desc —
+# «Повстання ангелів» (Анатоль Франс 3224), «рельєфними ангелами» (горщик 903),
+# «притчі» у зібранні Сковороди (1036, BG1098). (?!ин) — не «Ангелина».
+_TITLE_CATEGORY_RELIGIOUS_STEMS = (
+    # ангел/ангели/ангела…; не Ангелина; ангельськ* уже в _RELIGIOUS_STEMS.
+    r'ангел(?!ин)',
+    r'притч',
 )
 
 _HTML_TAG_RE = re.compile(r'<[^>]+>', re.UNICODE)
@@ -116,6 +133,8 @@ def _compile_religious_regex() -> re.Pattern[str]:
     stem_parts.append(r'свят(?:ой|ого|ые)(?!\w)\s+\S+')
     stem_parts.append(rf'святая(?!\w)\s+(?!(?:{_svyata_stop})\b)\S+')
     stem_parts.append(r'святое(?!\w)\s+писани')
+    # будд* — Будда/Будди…; не «буддь» і не випадкові будд+приголосна.
+    stem_parts.append(r'будд(?:а|и|у|е|ою|ів|ам|ами|ах)?(?!\w)')
     stems = '|'.join(stem_parts)
     words = '|'.join(re.escape(w) for w in _RELIGIOUS_WORDS)
     # (?<!\w) — старт слова; для words також (?!\w).
@@ -125,7 +144,17 @@ def _compile_religious_regex() -> re.Pattern[str]:
     )
 
 
+def _compile_title_category_only_regex() -> re.Pattern[str]:
+    """ангел/притч — лише назва+категорія (не description)."""
+    stems = '|'.join(_TITLE_CATEGORY_RELIGIOUS_STEMS)
+    return re.compile(
+        rf'(?<!\w)(?:{stems})',
+        re.IGNORECASE | re.UNICODE,
+    )
+
+
 RELIGIOUS_TEXT_RE = _compile_religious_regex()
+RELIGIOUS_TITLE_CATEGORY_ONLY_RE = _compile_title_category_only_regex()
 
 
 def _strip_html(text: str) -> str:
@@ -136,18 +165,35 @@ def format_religious_text_reason(matches: list[str]) -> str:
     return f'Релігійні ключові слова в назві/описі ({", ".join(matches)})'
 
 
-def find_religious_matches(text: str) -> list[str]:
+def _unique_regex_matches(cre: re.Pattern[str], text: str) -> list[str]:
     """Унікальні збіги (порядок збережено, регістр як у тексті)."""
     if not text:
         return []
     seen: set[str] = set()
     out: list[str] = []
-    for m in RELIGIOUS_TEXT_RE.finditer(text):
+    for m in cre.finditer(text):
         raw = m.group(0)
         key = raw.casefold()
         if key not in seen:
             seen.add(key)
             out.append(raw)
+    return out
+
+
+def find_religious_matches(text: str) -> list[str]:
+    """Збіги для довільного рядка (title-тести): base + ангел/притч.
+
+    На обʼєкті Product використовуйте product_religious_matches — там ангел/притч
+    лише по назві+категорії, щоб не ловити FP в описах.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for cre in (RELIGIOUS_TEXT_RE, RELIGIOUS_TITLE_CATEGORY_ONLY_RE):
+        for raw in _unique_regex_matches(cre, text):
+            key = raw.casefold()
+            if key not in seen:
+                seen.add(key)
+                out.append(raw)
     return out
 
 
@@ -182,8 +228,45 @@ def _product_text_blob(product) -> str:
     return _strip_html(' '.join(parts))
 
 
+def _product_title_category_blob(product) -> str:
+    """Назва + назви/slug категорій (без description) — для ангел/притч."""
+    parts: list[str] = []
+    for attr in ('name', 'name_uk', 'name_ru', 'name_en'):
+        val = getattr(product, attr, None)
+        if val:
+            parts.append(str(val))
+    cats = getattr(product, 'categories', None)
+    if cats is not None:
+        try:
+            cat_iter = cats.all()
+        except Exception:
+            cat_iter = []
+        for cat in cat_iter:
+            parts.extend(_localized_names(cat))
+            slug = getattr(cat, 'slug', None)
+            if slug:
+                parts.append(str(slug))
+    return _strip_html(' '.join(parts))
+
+
 def product_religious_matches(product) -> list[str]:
-    return find_religious_matches(_product_text_blob(product))
+    """Base-правила по title+desc; ангел/притч — лише title+category."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for raw in _unique_regex_matches(RELIGIOUS_TEXT_RE, _product_text_blob(product)):
+        key = raw.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(raw)
+    for raw in _unique_regex_matches(
+        RELIGIOUS_TITLE_CATEGORY_ONLY_RE,
+        _product_title_category_blob(product),
+    ):
+        key = raw.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(raw)
+    return out
 
 
 def product_matches_religious_text(product) -> bool:

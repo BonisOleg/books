@@ -271,33 +271,101 @@ class FeedSegmentTests(TestCase):
         arch.categories.add(self.pens)
         self.assertNotIn(arch, list(vip_queryset()) + list(middle_queryset()))
 
-    def test_disputed_items_via_exclude_from_feeds_flag(self):
-        """Спірні SKU (ангел/Соломон/Buddha/притч) — лише прапорець, не regex."""
-        disputed = (
-            ('7171', 'Садовий ангел'),
-            ('902', 'Ангел у саду'),
-            ('406', 'Декор Ангел'),
+    def test_religious_extra_true_positives(self):
+        """Ангел / ангельськ* / Соломон / Buddha / притч — виключення з VIP/Middle."""
+        true_pos = (
+            ('7171', 'Садова фігура Ангел із серцем'),
+            ('902', 'Садова фігура Ангел хлопчик'),
+            ('406', 'Садова фігура Ангел дівчинка'),
             ('8018', 'Ангельська варта'),
-            ('6191', 'Книга мудрості Соломона'),
-            ('6192', 'Книга мудрості Соломона том 2'),
-            ('6193', 'Книга мудрості Соломона том 3'),
+            ('6191', 'Книга мудрості Соломона в шкіряній палітурці'),
+            ('6192', 'Книга мудрості Соломона Подарункове видання'),
+            ('6193', 'Книга мудрості Соломона на підставці'),
             ('47752', 'CowParade Buddha'),
-            ('6115', 'Книга притч'),
-            ('6109', 'Книга притч подарункова'),
+            ('6115', 'Подарункова книга притч «Чаша мудрості»'),
+            ('6109', 'Подарункова книга притч у білій шкірі'),
+            ('BUDD-UK', 'Статуетка Будда'),
         )
-        for sku, title in disputed:
-            with self.subTest(sku=sku):
-                self.assertEqual(find_religious_matches(title), [], title)
+        for sku, title in true_pos:
+            with self.subTest(sku=sku, title=title):
+                self.assertTrue(find_religious_matches(title), title)
                 p = _product(
-                    name=title, slug=f'disp-{sku}', sku=sku,
-                    price=Decimal('500'), exclude_from_feeds=True,
+                    name=title, slug=f'tp-{sku}', sku=sku, price=Decimal('500'),
                 )
                 p.categories.add(self.pens)
-                self.assertNotIn(p, list(middle_queryset()))
-                # Без прапорця — у фіді (regex не чіпає)
-                p.exclude_from_feeds = False
-                p.save(update_fields=['exclude_from_feeds'])
+                self.assertTrue(product_matches_religious_text(p), title)
+                self.assertNotIn(p, list(vip_queryset()) + list(middle_queryset()))
+
+    def test_religious_extra_false_positives_guarded(self):
+        """FP з scratch DB: ангел/притч у description; Ангелина; latin angel*; буддь."""
+        # Title без ангел/притч — description згадує (Анатоль Франс / горщик / Сковорода)
+        desc_only_fp = (
+            (
+                'Зібрання творів Анатоля Франса у 5 томах',
+                'Том 5. Повстання ангелів. Новели.',
+            ),
+            (
+                'Садовий горщик квітковий великий',
+                'вишуканий дизайн із рельєфними ангелами',
+            ),
+            (
+                'Зібрання творів Григорія Сковороди у 2 томах',
+                'філософські трактати, байки, притчі, листи',
+            ),
+            (
+                'Григорій Сковорода. Найкраще',
+                'Притчі з глибоким змістом і символізмом',
+            ),
+        )
+        for i, (title, desc) in enumerate(desc_only_fp):
+            with self.subTest(title=title):
+                p = _product(
+                    name=title, slug=f'fp-desc-{i}', sku=f'FP-DESC-{i}',
+                    price=Decimal('500'), description=desc,
+                )
+                p.categories.add(self.pens)
+                self.assertFalse(product_matches_religious_text(p), title)
                 self.assertIn(p, list(middle_queryset()))
+
+        # Імена / latin / випадкові стеми
+        keep_titles = (
+            'Щоденник Ангелини',
+            'Ангелина Ковальова — мемуари',
+            'Los Angeles skyline notebook',
+            'Angelic design cover',
+            'Будьдьовий набір канцтоварів',
+        )
+        for i, title in enumerate(keep_titles):
+            with self.subTest(title=title):
+                self.assertEqual(find_religious_matches(title), [], title)
+                p = _product(
+                    name=title, slug=f'fp-title-{i}', sku=f'FP-T-{i}',
+                    price=Decimal('500'),
+                )
+                p.categories.add(self.pens)
+                self.assertIn(p, list(middle_queryset()))
+
+    def test_legacy_merchant_keeps_new_religious_titles(self):
+        """Нові релігійні правила — лише VIP/Middle; google-merchant без змін політики."""
+        angel = _product(
+            name='Садова фігура Ангел хлопчик', slug='leg-angel', sku='LEG-ANG',
+            price=Decimal('500'),
+        )
+        angel.categories.add(self.pens)
+        solomon = _product(
+            name='Книга мудрості Соломона', slug='leg-sol', sku='LEG-SOL',
+            price=Decimal('15000'),
+        )
+        solomon.categories.add(self.pens)
+
+        self.assertNotIn(angel, list(middle_queryset()))
+        self.assertNotIn(solomon, list(vip_queryset()) + list(middle_queryset()))
+
+        old_skus = {
+            el.text for el in ET.fromstring(build_google_merchant_xml()).findall('.//g:id', G_NS)
+        }
+        self.assertIn('LEG-ANG', old_skus)
+        self.assertIn('LEG-SOL', old_skus)
 
     def test_manual_exclude_flags(self):
         p = _product(slug='man', sku='MAN-1', price=Decimal('15000'), exclude_from_feeds=True)
