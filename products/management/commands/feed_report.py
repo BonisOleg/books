@@ -7,9 +7,8 @@ from django.db import connections
 from products.feed_segments import (
     ICON_CATEGORY_NAMES,
     ICON_CATEGORY_SLUGS,
-    VIP_CATEGORY_NAMES,
-    VIP_CATEGORY_SLUGS,
     VIP_PRICE_THRESHOLD,
+    _category_is_vip_book_or_diary,
     _category_matches_names_or_slugs,
     exclusion_reason_labels,
     format_religious_text_reason,
@@ -50,7 +49,8 @@ class Command(BaseCommand):
 
         categories = self._category_qs(using, has_category_flag)
         icon_ids = self._match_expand(using, categories, ICON_CATEGORY_NAMES, ICON_CATEGORY_SLUGS)
-        vip_cat_ids = self._match_expand(using, categories, VIP_CATEGORY_NAMES, VIP_CATEGORY_SLUGS)
+        vip_roots = [c.id for c in categories if _category_is_vip_book_or_diary(c)]
+        vip_cat_ids = self._expand(using, vip_roots)
         manual_cat_ids: set[int] = set()
         if has_category_flag:
             roots = [c.id for c in categories if getattr(c, 'exclude_from_feeds', False)]

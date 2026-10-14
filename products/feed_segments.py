@@ -5,8 +5,10 @@
 """
 from __future__ import annotations
 
+import html
 import re
 from decimal import Decimal
+from email.utils import formatdate
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from django.core.cache import cache
@@ -23,8 +25,8 @@ from .models import Category, Product
 FEED_SEGMENT_CACHE_TTL = 3600
 VIP_PRICE_THRESHOLD = Decimal('10000')
 
-# Категорії, що завжди VIP (будь-яка ціна), з підкатегоріями.
-VIP_CATEGORY_NAMES = ('Книги', 'Щоденники')
+# Застарілі константи (feed_report / імпорти) — VIP тепер через _category_is_vip_book_or_diary.
+VIP_CATEGORY_NAMES = ('Книги', 'Щоденники', 'Колекція книг', 'Книги та автори')
 VIP_CATEGORY_SLUGS = (
     'knyhy',
     'knigi',
@@ -36,13 +38,33 @@ VIP_CATEGORY_SLUGS = (
     'schodenniki',
 )
 
+# Назва/slug: Книги*, Колекція книг, Книги та автори, Щоденники* (А4/А5 тощо).
+_VIP_BOOK_NAME_RE = re.compile(
+    r'(?:'
+    r'^книги(?:\s|$)|'
+    r'^подарункові\s+книги|'
+    r'колекція\s+книг|'
+    r'книги\s+та\s+автори'
+    r')',
+    re.IGNORECASE | re.UNICODE,
+)
+_VIP_DIARY_NAME_RE = re.compile(r'^щоденник', re.IGNORECASE | re.UNICODE)
+_VIP_BOOK_SLUG_RE = re.compile(
+    r'(?:^|-)(?:knyhy|knigi|books|kolekts[iі]ya-knyg|knigi-ta-avtor)(?:-|$)',
+    re.IGNORECASE,
+)
+_VIP_DIARY_SLUG_RE = re.compile(
+    r'(?:shodenn|shchodenn|ezhednevn|diar)',
+    re.IGNORECASE,
+)
+
 # «Ікони» + підкатегорії — повне виключення з нових фідів.
 ICON_CATEGORY_NAMES = ('Ікони', 'Иконы', 'Icons')
 ICON_CATEGORY_SLUGS = ('ikoni', 'ikony', 'icons')
 
-# Word-start стеми (без біблі/библи/ікон/хрест/релігі/свят/храм — окремі правила нижче).
+# Word-start стеми (без біблі/библи/ікон/хрест/релігі/свят/храм/архангел — окремі правила).
 # Скан scratch DB (ofion_feedcheck_scratch): соломон/ангельськ/будд* безпечні на title+desc;
-# ангел/притч — лише title+category (див. _TITLE_CATEGORY_RELIGIOUS_* нижче).
+# ангел/притч/архангел/хрест — title+category (див. _TITLE_CATEGORY_RELIGIOUS_*).
 _RELIGIOUS_STEMS = (
     'коран',
     'євангел', 'евангел',
@@ -52,8 +74,6 @@ _RELIGIOUS_STEMS = (
     'псалтир',
     'четк', 'чотк',
     'лампад',
-    'архангел',
-    'архістратиг', 'архистратиг',
     # церкв*/церков* (церква, церковний); не «церк» як підрядок усередині чужих слів.
     'церкв', 'церков',
     'православ',
@@ -73,13 +93,19 @@ _RELIGIOUS_WORDS = (
     'buddha',
 )
 
-# Лише назва + категорія (не довгі описи): скан scratch показав FP у desc —
-# «Повстання ангелів» (Анатоль Франс 3224), «рельєфними ангелами» (горщик 903),
-# «притчі» у зібранні Сковороди (1036, BG1098). (?!ин) — не «Ангелина».
+# Лише назва + категорія + product_type (не довгі описи):
+# — ангел/притч: FP у desc (Франс / горщик / Сковорода);
+# — архангел/архістратиг: FP «Герб Києва» (6033) у desc; G03 лишає title;
+# — хрест: FP емблема СБУ «рівностороннього хреста» (6111/6066); «Хрест наперсний» у title.
 _TITLE_CATEGORY_RELIGIOUS_STEMS = (
-    # ангел/ангели/ангела…; не Ангелина; ангельськ* уже в _RELIGIOUS_STEMS.
     r'ангел(?!ин)',
     r'притч',
+    r'архангел',
+    r'архістратиг',
+    r'архистратиг',
+    r'(?<!пере)(?:хрест|крест)(?!л)',
+    r'crucifix',
+    r'cross(?!с)',
 )
 
 _HTML_TAG_RE = re.compile(r'<[^>]+>', re.UNICODE)
@@ -101,12 +127,8 @@ def _compile_religious_regex() -> re.Pattern[str]:
     # біблі/библи: Біблія/…/Біблій як ціле слово (+ bible/biblical); не бібліотека/біблійний.
     stem_parts.append(r'біблі(?:я|ю|ї|и|е|й)(?!\w)')
     stem_parts.append(r'библи(?:я|ю|и|е|й)(?!\w)')
-    # ікон/икон: ікона/іконостас/иконопис; не іконом*.
-    stem_parts.append(r'(?:ікон|икон)(?!ом)[аиуіоє]*')
-    # хрест/крест/cross/crucifix: word-start; не кресл*/крісл*, перехрест*, кросс*.
-    stem_parts.append(r'(?<!пере)(?:хрест|крест)(?!л)')
-    stem_parts.append(r'crucifix')
-    stem_parts.append(r'cross(?!с)')  # не кросс*
+    # ікон/икон: ікона/іконостас/иконопис; не іконом*, не іконограф* (1328).
+    stem_parts.append(r'(?:ікон|икон)(?!ом|ограф)[аиуіоє]*')
     # храм/храму/храмі/храмов* — не «храмів» (світські «храми Єгипту» у шахах).
     stem_parts.append(r'храм(?:у|ом|і|овий|ова|ове|ові)?(?!\w)')
     # Іменник «релігія/религия». Lookahead (?!йн)/(?!оз) раніше відсікав УСІ прикметники
@@ -121,17 +143,26 @@ def _compile_religious_regex() -> re.Pattern[str]:
     stem_parts.append(
         r'религиозн\w*(?=\s+(?:искусств|тематик|сюжет|мотив|содержан|обряд|культ|символ|икон))'
     )
-    # святий/святого/святі + імʼя; «свята» лише якщо далі не маркетингове «для/або/чи…»
-    # (род. відм. «свято» → «свята» у «на державні свята» — FP). Не святковий.
+    # святий/святого/святі + імʼя (\w+, не «&mdash;»/тире); не Валентин (46737).
+    # «свята» — не маркетингове «для/або…» і не «свята — на знак» (1017 після unescape).
     _svyata_stop = (
         r'для|або|чи|на|в|у|з|і|й|та|по|від|до|як|що|це|не|коли|'
         r'після|перед|будь|людині|підвищення'
     )
-    stem_parts.append(r'свят(?:ий|ого|і)(?!\w)\s+\S+')
-    stem_parts.append(rf'свята(?!\w)\s+(?!(?:{_svyata_stop})\b)\S+')
+    _svyat_name_stop = r'валентин\w*'
+    stem_parts.append(
+        rf'свят(?:ий|ого|і)(?!\w)\s+(?!(?:{_svyat_name_stop})\b)\w+'
+    )
+    stem_parts.append(
+        rf'свята(?!\w)\s+(?!(?:{_svyata_stop}|{_svyat_name_stop})\b)\w+'
+    )
     stem_parts.append(r'святе(?!\w)\s+письмо')
-    stem_parts.append(r'свят(?:ой|ого|ые)(?!\w)\s+\S+')
-    stem_parts.append(rf'святая(?!\w)\s+(?!(?:{_svyata_stop})\b)\S+')
+    stem_parts.append(
+        rf'свят(?:ой|ого|ые)(?!\w)\s+(?!(?:{_svyat_name_stop})\b)\w+'
+    )
+    stem_parts.append(
+        rf'святая(?!\w)\s+(?!(?:{_svyata_stop}|{_svyat_name_stop})\b)\w+'
+    )
     stem_parts.append(r'святое(?!\w)\s+писани')
     # будд* — Будда/Будди…; не «буддь» і не випадкові будд+приголосна.
     stem_parts.append(r'будд(?:а|и|у|е|ою|ів|ам|ами|ах)?(?!\w)')
@@ -145,7 +176,7 @@ def _compile_religious_regex() -> re.Pattern[str]:
 
 
 def _compile_title_category_only_regex() -> re.Pattern[str]:
-    """ангел/притч — лише назва+категорія (не description)."""
+    """ангел/притч/архангел/хрест — лише назва+категорія+product_type (не description)."""
     stems = '|'.join(_TITLE_CATEGORY_RELIGIOUS_STEMS)
     return re.compile(
         rf'(?<!\w)(?:{stems})',
@@ -158,7 +189,8 @@ RELIGIOUS_TITLE_CATEGORY_ONLY_RE = _compile_title_category_only_regex()
 
 
 def _strip_html(text: str) -> str:
-    return _HTML_TAG_RE.sub(' ', text)
+    """Прибирає теги й HTML-сутності (&mdash; → —), щоб не ловити FP на entity."""
+    return html.unescape(_HTML_TAG_RE.sub(' ', text))
 
 
 def format_religious_text_reason(matches: list[str]) -> str:
@@ -214,6 +246,53 @@ def _category_matches_names_or_slugs(cat, names: tuple[str, ...], slugs: tuple[s
     return any((n or '').casefold() in targets for n in _localized_names(cat))
 
 
+def _category_is_vip_book_or_diary(cat) -> bool:
+    """True якщо категорія — Книги / Колекція книг / Книги та автори / Щоденники*."""
+    slug = (cat.slug or '')
+    if _VIP_DIARY_SLUG_RE.search(slug) or _VIP_BOOK_SLUG_RE.search(slug):
+        return True
+    for name in _localized_names(cat):
+        n = (name or '').strip()
+        if _VIP_DIARY_NAME_RE.search(n) or _VIP_BOOK_NAME_RE.search(n):
+            return True
+    return False
+
+
+def _product_category_chain(product):
+    """Усі категорії товару + їхні предки (для VIP walk і title-blob)."""
+    cats = getattr(product, 'categories', None)
+    if cats is None:
+        return []
+    try:
+        cat_iter = list(cats.all())
+    except Exception:
+        return []
+    seen: set[int] = set()
+    chain = []
+    for cat in cat_iter:
+        nodes = list(cat.get_ancestors()) + [cat]
+        for node in nodes:
+            nid = getattr(node, 'id', None)
+            if nid is not None and nid in seen:
+                continue
+            if nid is not None:
+                seen.add(nid)
+            chain.append(node)
+    return chain
+
+
+def _product_type_path_text(product) -> str:
+    """Шлях product_type (як у фідах) для релігійного скану."""
+    try:
+        from .feed_utils import product_type_path, product_type_path_with_site_prefix
+        return ' '.join(filter(None, [
+            product_type_path(product),
+            product_type_path_with_site_prefix(product),
+        ]))
+    except Exception:
+        return ''
+
+
 def _product_text_blob(product) -> str:
     parts: list[str] = []
     for attr in (
@@ -225,27 +304,27 @@ def _product_text_blob(product) -> str:
         val = getattr(product, attr, None)
         if val:
             parts.append(str(val))
+    ptype = _product_type_path_text(product)
+    if ptype:
+        parts.append(ptype)
     return _strip_html(' '.join(parts))
 
 
 def _product_title_category_blob(product) -> str:
-    """Назва + назви/slug категорій (без description) — для ангел/притч."""
+    """Назва + категорії (+ предки) + product_type — без description."""
     parts: list[str] = []
     for attr in ('name', 'name_uk', 'name_ru', 'name_en'):
         val = getattr(product, attr, None)
         if val:
             parts.append(str(val))
-    cats = getattr(product, 'categories', None)
-    if cats is not None:
-        try:
-            cat_iter = cats.all()
-        except Exception:
-            cat_iter = []
-        for cat in cat_iter:
-            parts.extend(_localized_names(cat))
-            slug = getattr(cat, 'slug', None)
-            if slug:
-                parts.append(str(slug))
+    for cat in _product_category_chain(product):
+        parts.extend(_localized_names(cat))
+        slug = getattr(cat, 'slug', None)
+        if slug:
+            parts.append(str(slug))
+    ptype = _product_type_path_text(product)
+    if ptype:
+        parts.append(ptype)
     return _strip_html(' '.join(parts))
 
 
@@ -295,9 +374,14 @@ def get_manual_excluded_category_ids() -> set[int]:
 
 
 def get_vip_category_ids() -> set[int]:
+    """ID категорій Книги/Щоденники* (за name/slug pattern) + усі нащадки.
+
+    Не hardcoded exact slug-list: «Щоденники А5», «Колекція книг», «Книги та автори»
+    теж стають коренями; product_is_vip додатково ходить предками категорій товару.
+    """
     roots = [
         cat.id for cat in Category.objects.all()
-        if _category_matches_names_or_slugs(cat, VIP_CATEGORY_NAMES, VIP_CATEGORY_SLUGS)
+        if _category_is_vip_book_or_diary(cat)
     ]
     return _expand_category_ids(roots)
 
@@ -373,10 +457,19 @@ def non_religious_eligible_queryset():
 
 
 def product_is_vip(product, vip_category_ids: set[int] | None = None) -> bool:
+    """VIP: будь-яка категорія товару або її предок — Книги/Щоденники*; інакше ціна."""
+    # Спочатку walk предків (надійно для вкладених «Кабінет > Щоденники А5»).
+    for cat in _product_category_chain(product):
+        if _category_is_vip_book_or_diary(cat):
+            return True
     if vip_category_ids is None:
         vip_category_ids = get_vip_category_ids()
-    if vip_category_ids and product.categories.filter(id__in=vip_category_ids).exists():
-        return True
+    if vip_category_ids:
+        try:
+            if product.categories.filter(id__in=vip_category_ids).exists():
+                return True
+        except Exception:
+            pass
     return get_base_price(product) >= VIP_PRICE_THRESHOLD
 
 
@@ -463,6 +556,10 @@ def build_segment_feed_xml(segment: str) -> str:
     SubElement(channel, 'link').text = base_url
     SubElement(channel, 'description').text = (
         f'Каталог {segment} (без релігійної тематики)'
+    )
+    # RFC 822 — лише нові фіди; google-merchant.xml без lastBuildDate (byte-identical).
+    SubElement(channel, 'lastBuildDate').text = formatdate(
+        timeval=None, localtime=False, usegmt=True,
     )
 
     qs = vip_queryset() if segment == 'VIP' else middle_queryset()

@@ -114,6 +114,48 @@ class FeedSegmentTests(TestCase):
         p.categories.add(self.diaries)
         self.assertIn(p, list(vip_queryset()))
 
+    def test_diary_subcategory_under_cabinet_is_vip_any_price(self):
+        """Щоденники А4/А5 під «Кабінет керівника» — VIP, ніколи Middle."""
+        diary_a5 = Category.objects.create(
+            name='Щоденники А5', slug='shodenniki-a5', parent=self.cabinet,
+        )
+        diary_a4 = Category.objects.create(
+            name='Щоденники А4', slug='shodenniki-a4', parent=self.cabinet,
+        )
+        for i, cat in enumerate((diary_a5, diary_a4)):
+            p = _product(
+                slug=f'diary-nested-{i}', sku=f'DIA-N-{i}',
+                price=Decimal('6860.00'),
+            )
+            p.categories.add(cat)
+            self.assertTrue(product_is_vip(p), cat.name)
+            self.assertIn(p, list(vip_queryset()))
+            self.assertNotIn(p, list(middle_queryset()))
+
+    def test_books_collection_and_authors_paths_are_vip(self):
+        """«Колекція книг» / «Книги та автори» на будь-якій глибині — VIP."""
+        collection = Category.objects.create(
+            name='Колекція книг', slug='kolektsiya-knyg',
+        )
+        military = Category.objects.create(
+            name='Військова справа', slug='vijskova', parent=collection,
+        )
+        authors = Category.objects.create(
+            name='Книги та автори', slug='knigi-ta-avtory',
+        )
+        shevchenko = Category.objects.create(
+            name='Тарас Шевченко', slug='shevchenko', parent=authors,
+        )
+        for i, cat in enumerate((military, shevchenko, collection, authors)):
+            p = _product(
+                slug=f'book-path-{i}', sku=f'BK-P-{i}',
+                price=Decimal('50.00'),
+            )
+            p.categories.add(cat)
+            self.assertTrue(product_is_vip(p), cat.name)
+            self.assertIn(p, list(vip_queryset()))
+            self.assertNotIn(p, list(middle_queryset()))
+
     def test_sale_base_price_classifies_vip(self):
         # price 9000, old 11000 → base 11000 → VIP
         p = _product(
@@ -344,6 +386,136 @@ class FeedSegmentTests(TestCase):
                 )
                 p.categories.add(self.pens)
                 self.assertIn(p, list(middle_queryset()))
+
+    def test_live_feed_false_positives_restored(self):
+        """6 SKU з live merchant: не релігійні; 8018 лишається excluded."""
+        authors = Category.objects.create(
+            name='Книги та автори', slug='knigi-ta-avtory',
+        )
+        shevchenko = Category.objects.create(
+            name='Тарас Шевченко', slug='shevchenko', parent=authors,
+        )
+        collection = Category.objects.create(
+            name='Колекція книг', slug='kolektsiya-knyg',
+        )
+        military = Category.objects.create(
+            name='Військова справа', slug='vijskova', parent=collection,
+        )
+        sets_cat = Category.objects.create(
+            name='Стильні набори', slug='stylni-nabory', parent=self.cabinet,
+        )
+        souvenirs = Category.objects.create(
+            name='Сувенірна зброя', slug='suvenirna-zbroya',
+        )
+        cows = Category.objects.create(
+            name='Фігурки корів CowParade', slug='cowparade',
+        )
+
+        cases = (
+            (
+                '1017',
+                'Подарункова книга Кобзар Тараса Шевченка',
+                Decimal('14710'),
+                shevchenko,
+                'родинної бібліотеки й передаватися. без прив&rsquo;язки до '
+                'конкретного свята &mdash; на знак поваги',
+                'VIP',
+            ),
+            (
+                '1328',
+                'Подарункова книга Історія Українського війська',
+                Decimal('9600'),
+                military,
+                'архівні та іконографічні матеріали, що суттєво розширюють контекст',
+                'VIP',
+            ),
+            (
+                '6033',
+                'Подарунковий набір «Герб Києва» — щоденник А5 та ручка TENSO',
+                Decimal('9550'),
+                sets_cat,
+                'зображення історичного герба Києва з Архангелом Михаїлом. '
+                'Архангел Михаїл уособлює захист',
+                'Middle',
+            ),
+            (
+                '6111',
+                'Сувенір Пістолет Форт та емблема СБУ',
+                Decimal('7770'),
+                souvenirs,
+                'які присвятили своє життя службі. емблема у вигляді '
+                'прямого рівностороннього хреста синього кольору',
+                'Middle',
+            ),
+            (
+                '6066',
+                'Сувенір Пістолет ТТ та емблема СБУ',
+                Decimal('7010'),
+                souvenirs,
+                'які присвятили своє життя служінню. рівностороннього хреста',
+                'Middle',
+            ),
+            (
+                '46737',
+                'CowParade «Heartstanding Cow»',
+                Decimal('6480'),
+                cows,
+                'присвячена любові. Особливо доречно на День святого Валентина, '
+                'річницю знайомства',
+                'Middle',
+            ),
+        )
+        for sku, title, price, cat, desc, segment in cases:
+            with self.subTest(sku=sku):
+                p = _product(
+                    name=title, slug=f'restore-{sku}', sku=sku,
+                    price=price, description=f'<p>{desc}</p>',
+                )
+                p.categories.add(cat)
+                self.assertFalse(product_matches_religious_text(p), sku)
+                if segment == 'VIP':
+                    self.assertIn(p, list(vip_queryset()), sku)
+                    self.assertNotIn(p, list(middle_queryset()), sku)
+                else:
+                    self.assertIn(p, list(middle_queryset()), sku)
+                    self.assertNotIn(p, list(vip_queryset()), sku)
+
+        angel_guard = _product(
+            name='Художня композиція з ангельською вартою роду',
+            slug='8018-guard', sku='8018', price=Decimal('15000'),
+            description='символ української духовності',
+        )
+        angel_guard.categories.add(self.pens)
+        self.assertTrue(product_matches_religious_text(angel_guard))
+        self.assertNotIn(angel_guard, list(vip_queryset()) + list(middle_queryset()))
+
+    def test_iconography_and_valentine_and_mdash_not_religious(self):
+        self.assertEqual(find_religious_matches('архівні та іконографічні матеріали'), [])
+        self.assertEqual(find_religious_matches('День святого Валентина, річниця'), [])
+        self.assertEqual(
+            find_religious_matches('конкретного свята &mdash; на знак поваги'),
+            [],
+        )
+        self.assertEqual(find_religious_matches('родинної бібліотеки'), [])
+        self.assertEqual(find_religious_matches('які присвятили своє життя'), [])
+        # TP лишаються
+        self.assertTrue(find_religious_matches('Святий Миколай'))
+        self.assertTrue(find_religious_matches('деревʼяна ікона'))
+        self.assertTrue(find_religious_matches('Хрест наперсний'))
+
+    def test_segment_last_build_date_present_legacy_absent(self):
+        p = _product(slug='lbd', sku='LBD-1', price=Decimal('500'))
+        p.categories.add(self.pens)
+        vip_xml = build_segment_feed_xml('VIP')
+        mid_xml = build_segment_feed_xml('Middle')
+        legacy = build_google_merchant_xml()
+        for xml in (vip_xml, mid_xml):
+            root = ET.fromstring(xml)
+            lbd = root.find('channel/lastBuildDate')
+            self.assertIsNotNone(lbd)
+            self.assertTrue((lbd.text or '').endswith('GMT') or ' +' in (lbd.text or '') or ',' in (lbd.text or ''))
+        self.assertIsNone(ET.fromstring(legacy).find('channel/lastBuildDate'))
+        self.assertNotIn('<lastBuildDate>', legacy)
 
     def test_legacy_merchant_keeps_new_religious_titles(self):
         """Нові релігійні правила — лише VIP/Middle; google-merchant без змін політики."""
