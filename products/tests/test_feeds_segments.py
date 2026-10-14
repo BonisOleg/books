@@ -452,7 +452,8 @@ class FeedSegmentTests(TestCase):
                 'Сувенір Пістолет ТТ та емблема СБУ',
                 Decimal('7010'),
                 souvenirs,
-                'які присвятили своє життя служінню. рівностороннього хреста',
+                'які присвятили своє життя служінню. емблема СБУ виконана '
+                'у вигляді рівностороннього хреста',
                 'Middle',
             ),
             (
@@ -502,6 +503,71 @@ class FeedSegmentTests(TestCase):
         self.assertTrue(find_religious_matches('Святий Миколай'))
         self.assertTrue(find_religious_matches('деревʼяна ікона'))
         self.assertTrue(find_religious_matches('Хрест наперсний'))
+
+    def test_archangel_cross_description_with_heraldic_window(self):
+        """архангел/хрест у desc: гербове вікно → IN; реліг. контекст/title → OUT."""
+        # Гербові / держ. снипети (як на live сторінках) — не виключення
+        heraldic_ok = (
+            'зображення історичного герба Києва з Архангелом Михаїлом. '
+            'Архангел Михаїл уособлює захист',
+            'Архангел Михаїл на гербі Києва',
+            'емблема у вигляді прямого рівностороннього хреста синього кольору',
+            'емблема СБУ виконана у вигляді рівностороннього хреста',
+            'нагороджений хрестом за заслуги перед Україною',
+            'військовий орден із зображенням хреста',
+        )
+        for snippet in heraldic_ok:
+            with self.subTest(snippet=snippet[:48]):
+                self.assertEqual(find_religious_matches(snippet), [], snippet)
+
+        # Title / релігійний контекст — завжди OUT
+        self.assertTrue(find_religious_matches('Архістратиг Михаїл'))
+        self.assertTrue(find_religious_matches('Хрест наперсний'))
+        self.assertTrue(find_religious_matches(
+            'наперсний хрест із зображенням архангела на гербі',
+        ))
+        self.assertTrue(find_religious_matches(
+            'ікона архангела Михаїла для домашньої молитви',
+        ))
+
+        g03 = _product(
+            name='Архістратиг Михаїл', slug='g03', sku='G03',
+            price=Decimal('500'),
+            description='подарункова статуетка',
+        )
+        g03.categories.add(self.pens)
+        self.assertTrue(product_matches_religious_text(g03))
+        self.assertNotIn(g03, list(vip_queryset()) + list(middle_queryset()))
+
+        # Лише desc, релігійний контекст (ікон/молит) — OUT навіть біля «символ»
+        rel_desc = _product(
+            name='Подарункова статуетка', slug='arch-rel-desc', sku='ARCH-REL',
+            price=Decimal('500'),
+            description='деревʼяна ікона архангела Михаїла для молитви',
+        )
+        rel_desc.categories.add(self.pens)
+        self.assertTrue(product_matches_religious_text(rel_desc))
+        self.assertNotIn(rel_desc, list(vip_queryset()) + list(middle_queryset()))
+
+        # Лише desc без гербового вікна — OUT
+        bare = _product(
+            name='Декоративна фігура', slug='arch-bare', sku='ARCH-BARE',
+            price=Decimal('500'),
+            description='фігура архангела Михаїла з бронзи',
+        )
+        bare.categories.add(self.pens)
+        self.assertTrue(product_matches_religious_text(bare))
+        self.assertNotIn(bare, list(vip_queryset()) + list(middle_queryset()))
+
+        # Title з «хрест» ніколи не звільняється гербом у desc
+        titled = _product(
+            name='Хрест сувенірний', slug='cross-title', sku='CROSS-T',
+            price=Decimal('500'),
+            description='емблема СБУ та герб на підставці',
+        )
+        titled.categories.add(self.pens)
+        self.assertTrue(product_matches_religious_text(titled))
+        self.assertNotIn(titled, list(vip_queryset()) + list(middle_queryset()))
 
     def test_segment_last_build_date_present_legacy_absent(self):
         p = _product(slug='lbd', sku='LBD-1', price=Decimal('500'))

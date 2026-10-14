@@ -64,7 +64,7 @@ ICON_CATEGORY_SLUGS = ('ikoni', 'ikony', 'icons')
 
 # Word-start стеми (без біблі/библи/ікон/хрест/релігі/свят/храм/архангел — окремі правила).
 # Скан scratch DB (ofion_feedcheck_scratch): соломон/ангельськ/будд* безпечні на title+desc;
-# ангел/притч/архангел/хрест — title+category (див. _TITLE_CATEGORY_RELIGIOUS_*).
+# ангел/притч — title+category; архангел/хрест — title+desc з гербовим вікном (див. нижче).
 _RELIGIOUS_STEMS = (
     'коран',
     'євангел', 'евангел',
@@ -94,12 +94,15 @@ _RELIGIOUS_WORDS = (
 )
 
 # Лише назва + категорія + product_type (не довгі описи):
-# — ангел/притч: FP у desc (Франс / горщик / Сковорода);
-# — архангел/архістратиг: FP «Герб Києва» (6033) у desc; G03 лишає title;
-# — хрест: FP емблема СБУ «рівностороннього хреста» (6111/6066); «Хрест наперсний» у title.
+# ангел/притч: FP у desc (Франс / горщик / Сковорода).
 _TITLE_CATEGORY_RELIGIOUS_STEMS = (
     r'ангел(?!ин)',
     r'притч',
+)
+
+# архангел/хрест — і в description; гербове/держ./військ. вікно знімає лише desc-hit
+# (title/category/product_type ніколи не звільняються). Реліг. контекст у вікні бʼє виняток.
+_ARCHANGEL_CROSS_STEMS = (
     r'архангел',
     r'архістратиг',
     r'архистратиг',
@@ -107,6 +110,40 @@ _TITLE_CATEGORY_RELIGIOUS_STEMS = (
     r'crucifix',
     r'cross(?!с)',
 )
+
+# ~вікно навколо збігу: герб/емблема/символіка/СБУ/ЗСУ/орден/військ/геральд…
+_HERALDIC_CONTEXT_RE = re.compile(
+    r'(?:'
+    r'герб|'
+    r'емблем|'
+    # символіка / ціле «символ*» (не «символізує»)
+    r'символік|'
+    r'(?<!\w)символ(?:у|а|ом|і|и|ів|ами|ах)?(?!\w)|'
+    r'сбу|'
+    r'зсу|'
+    r'орден|'
+    r'військ|'
+    r'геральд|'
+    r'хрест\w*\s+за\s+заслуг'
+    r')',
+    re.IGNORECASE | re.UNICODE,
+)
+# Релігійний контекст у тому ж вікні скасовує гербовий виняток.
+# (?<!\w) — не «икон» у «виконана», не випадкові підрядки.
+_RELIGIOUS_BEATS_HERALDIC_RE = re.compile(
+    r'(?<!\w)(?:'
+    r'наперсн|'
+    r'(?:ікон|икон)(?!ом|ограф)|'
+    r'молит|'
+    r'церк|'
+    r'православ|'
+    r'свят(?:ий|ого|і|ой|ые|ая|ое)|'
+    r'духовн'
+    r')',
+    re.IGNORECASE | re.UNICODE,
+)
+_ARCH_CROSS_WINDOW_CHARS = 60
+_ARCH_CROSS_WINDOW_WORDS = 6
 
 _HTML_TAG_RE = re.compile(r'<[^>]+>', re.UNICODE)
 
@@ -176,8 +213,17 @@ def _compile_religious_regex() -> re.Pattern[str]:
 
 
 def _compile_title_category_only_regex() -> re.Pattern[str]:
-    """ангел/притч/архангел/хрест — лише назва+категорія+product_type (не description)."""
+    """ангел/притч — лише назва+категорія+product_type (не description)."""
     stems = '|'.join(_TITLE_CATEGORY_RELIGIOUS_STEMS)
+    return re.compile(
+        rf'(?<!\w)(?:{stems})',
+        re.IGNORECASE | re.UNICODE,
+    )
+
+
+def _compile_archangel_cross_regex() -> re.Pattern[str]:
+    """архангел*/хрест* — title+desc; desc може мати гербовий виняток."""
+    stems = '|'.join(_ARCHANGEL_CROSS_STEMS)
     return re.compile(
         rf'(?<!\w)(?:{stems})',
         re.IGNORECASE | re.UNICODE,
@@ -186,6 +232,7 @@ def _compile_title_category_only_regex() -> re.Pattern[str]:
 
 RELIGIOUS_TEXT_RE = _compile_religious_regex()
 RELIGIOUS_TITLE_CATEGORY_ONLY_RE = _compile_title_category_only_regex()
+ARCHANGEL_CROSS_RE = _compile_archangel_cross_regex()
 
 
 def _strip_html(text: str) -> str:
@@ -212,11 +259,90 @@ def _unique_regex_matches(cre: re.Pattern[str], text: str) -> list[str]:
     return out
 
 
-def find_religious_matches(text: str) -> list[str]:
-    """Збіги для довільного рядка (title-тести): base + ангел/притч.
+def _context_window(text: str, start: int, end: int) -> str:
+    """Мале вікно навколо збігу: речення або ~60 символів / ~6 слів з кожного боку."""
+    if not text:
+        return ''
+    # Межі речення (. ! ? ; …) — якщо близько.
+    sent_start = start
+    for i in range(start - 1, max(-1, start - 200), -1):
+        if text[i] in '.!?;…\n':
+            sent_start = i + 1
+            break
+    else:
+        sent_start = max(0, start - 200)
+    sent_end = end
+    for i in range(end, min(len(text), end + 200)):
+        if text[i] in '.!?;…\n':
+            sent_end = i
+            break
+    else:
+        sent_end = min(len(text), end + 200)
 
-    На обʼєкті Product використовуйте product_religious_matches — там ангел/притч
-    лише по назві+категорії, щоб не ловити FP в описах.
+    # Символьне вікно ~60.
+    char_lo = max(0, start - _ARCH_CROSS_WINDOW_CHARS)
+    char_hi = min(len(text), end + _ARCH_CROSS_WINDOW_CHARS)
+
+    # Словне вікно ~6 з кожного боку.
+    before = text[:start]
+    after = text[end:]
+    before_words = re.findall(r'\S+', before)
+    after_words = re.findall(r'\S+', after)
+    word_before = ' '.join(before_words[-_ARCH_CROSS_WINDOW_WORDS:])
+    word_after = ' '.join(after_words[:_ARCH_CROSS_WINDOW_WORDS])
+    # Позиції словного вікна в оригіналі (наближено через зріз char).
+    word_lo = max(0, start - len(word_before) - 8)
+    word_hi = min(len(text), end + len(word_after) + 8)
+
+    lo = max(0, min(sent_start, char_lo, word_lo))
+    # Якщо речення дуже довге — не тягнемо все: обмежуємо union char/word,
+    # але дозволяємо повне речення лише якщо воно не ширше за 2× char-вікно.
+    if sent_end - sent_start <= (_ARCH_CROSS_WINDOW_CHARS * 2 + (end - start)):
+        hi = min(len(text), max(sent_end, char_hi, word_hi))
+        lo = max(0, min(lo, sent_start))
+    else:
+        hi = min(len(text), max(char_hi, word_hi))
+    return text[lo:hi]
+
+
+def _archangel_cross_heraldic_exempt(text: str, start: int, end: int) -> bool:
+    """True = ігнорувати збіг (гербовий/держ. контекст без реліг. override)."""
+    window = _context_window(text, start, end)
+    if not window:
+        return False
+    if _RELIGIOUS_BEATS_HERALDIC_RE.search(window):
+        return False
+    return bool(_HERALDIC_CONTEXT_RE.search(window))
+
+
+def _unique_archangel_cross_matches(
+    text: str,
+    *,
+    allow_heraldic_exception: bool,
+) -> list[str]:
+    """Збіги архангел/хрест; опційно з гербовим винятком у вікні."""
+    if not text:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for m in ARCHANGEL_CROSS_RE.finditer(text):
+        if allow_heraldic_exception and _archangel_cross_heraldic_exempt(
+            text, m.start(), m.end(),
+        ):
+            continue
+        raw = m.group(0)
+        key = raw.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(raw)
+    return out
+
+
+def find_religious_matches(text: str) -> list[str]:
+    """Збіги для довільного рядка: base + ангел/притч + архангел/хрест (з герб. вікном).
+
+    На Product — product_religious_matches: ангел/притч лише title+category;
+    архангел/хрест у title ніколи не звільняються, у desc — з винятком.
     """
     seen: set[str] = set()
     out: list[str] = []
@@ -226,6 +352,11 @@ def find_religious_matches(text: str) -> list[str]:
             if key not in seen:
                 seen.add(key)
                 out.append(raw)
+    for raw in _unique_archangel_cross_matches(text, allow_heraldic_exception=True):
+        key = raw.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(raw)
     return out
 
 
@@ -328,23 +459,43 @@ def _product_title_category_blob(product) -> str:
     return _strip_html(' '.join(parts))
 
 
+def _product_description_blob(product) -> str:
+    """Лише description / short_description (для гербового винятку архангел/хрест)."""
+    parts: list[str] = []
+    for attr in (
+        'description', 'description_uk', 'description_ru', 'description_en',
+        'short_description', 'short_description_uk',
+        'short_description_ru', 'short_description_en',
+    ):
+        val = getattr(product, attr, None)
+        if val:
+            parts.append(str(val))
+    return _strip_html(' '.join(parts))
+
+
 def product_religious_matches(product) -> list[str]:
-    """Base-правила по title+desc; ангел/притч — лише title+category."""
+    """Base по title+desc; ангел/притч — title+category; архангел/хрест — title завжди,
+    desc — з гербовим вікном (реліг. контекст бʼє виняток)."""
     seen: set[str] = set()
     out: list[str] = []
-    for raw in _unique_regex_matches(RELIGIOUS_TEXT_RE, _product_text_blob(product)):
-        key = raw.casefold()
-        if key not in seen:
-            seen.add(key)
-            out.append(raw)
-    for raw in _unique_regex_matches(
-        RELIGIOUS_TITLE_CATEGORY_ONLY_RE,
-        _product_title_category_blob(product),
-    ):
-        key = raw.casefold()
-        if key not in seen:
-            seen.add(key)
-            out.append(raw)
+
+    def _add(raws: list[str]) -> None:
+        for raw in raws:
+            key = raw.casefold()
+            if key not in seen:
+                seen.add(key)
+                out.append(raw)
+
+    _add(_unique_regex_matches(RELIGIOUS_TEXT_RE, _product_text_blob(product)))
+    title_blob = _product_title_category_blob(product)
+    _add(_unique_regex_matches(RELIGIOUS_TITLE_CATEGORY_ONLY_RE, title_blob))
+    # Title/category/product_type — без винятку.
+    _add(_unique_archangel_cross_matches(title_blob, allow_heraldic_exception=False))
+    # Description — гербове вікно може зняти hit.
+    _add(_unique_archangel_cross_matches(
+        _product_description_blob(product),
+        allow_heraldic_exception=True,
+    ))
     return out
 
 
