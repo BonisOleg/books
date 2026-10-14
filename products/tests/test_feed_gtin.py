@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+from products.feed_taxonomy import is_internal_030_code
 from products.feed_utils import _looks_like_internal_code, normalize_gtin
 
 
@@ -24,6 +25,14 @@ class NormalizeGtinTests(SimpleTestCase):
         self.assertFalse(_looks_like_internal_code('0306406152', '8071'))
         self.assertFalse(_looks_like_internal_code('9786171234567', '4567'))
         self.assertFalse(_looks_like_internal_code('0302008071', '71'))
+
+    def test_segment_030_pattern_drops_checksum_passers(self):
+        """VIP/Middle: 030\\d{7} навіть з валідним ISBN-10 — внутрішній код."""
+        for code in ('0305002007', '0304002003', '0304001007', '0302008071'):
+            self.assertTrue(is_internal_030_code(code), code)
+            self.assertIsNotNone(normalize_gtin(code), code)  # checksum ok, legacy може лишити
+        self.assertFalse(is_internal_030_code('9786171234567'))
+        self.assertFalse(is_internal_030_code('4006381333931'))
 
     def test_garbage_is_rejected(self):
         for code in ('', None, 'abc', '12345', '123456789012'):

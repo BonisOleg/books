@@ -266,10 +266,12 @@ def build_feed_item(
     *,
     custom_label_0: str | None = None,
     product_type_with_site_prefix: bool = False,
+    segment_mode: bool = False,
 ) -> None:
     """Збирає <item> для Google Shopping RSS.
 
     Опційні kwargs лише для VIP/Middle; без них XML байт-ідентичний старому фіду.
+    segment_mode: GTIN лише для книг + drop 030\\d{7}; бренд/категорія з feed_taxonomy.
     """
     item = SubElement(channel, 'item')
 
@@ -298,7 +300,23 @@ def build_feed_item(
     gtin = normalize_gtin(product.sku_manufacturer)
     if gtin and _looks_like_internal_code(gtin, product.sku):
         gtin = None
-    brand = product.manufacturer or site_brand
+
+    if segment_mode:
+        from .feed_taxonomy import (
+            get_segment_google_category,
+            is_internal_030_code,
+            product_is_book_category,
+            resolve_segment_brand,
+        )
+        if gtin and is_internal_030_code(gtin):
+            gtin = None
+        if gtin and not product_is_book_category(product):
+            gtin = None
+        brand = resolve_segment_brand(product, site_brand)
+        google_cat = get_segment_google_category(product)
+    else:
+        brand = product.manufacturer or site_brand
+        google_cat = get_google_category(product)
 
     if gtin:
         SubElement(item, 'g:gtin').text = gtin
@@ -308,7 +326,8 @@ def build_feed_item(
     SubElement(item, 'g:brand').text = brand[:70]
     SubElement(item, 'g:mpn').text = product.sku
 
-    SubElement(item, 'g:google_product_category').text = get_google_category(product)
+    if google_cat:
+        SubElement(item, 'g:google_product_category').text = google_cat
 
     if product_type_with_site_prefix:
         type_path = product_type_path_with_site_prefix(product)

@@ -235,6 +235,70 @@ class FeedSegmentTests(TestCase):
         p.categories.add(self.pens)
         self.assertIn(p, list(middle_queryset()))
 
+    def test_religious_new_stems_and_religiynogo_mystetstva(self):
+        """архангел/архістратиг/храм/церков/православ + релігійного мистецтва."""
+        true_pos = (
+            'Архангел Михаїл',
+            'Архістратиг Михаїл',
+            'Ікона для храму',
+            'Церковний календар',
+            'Православний хрест',
+            'Святий Миколай',
+            'Святе письмо',
+        )
+        for i, title in enumerate(true_pos):
+            with self.subTest(title=title):
+                self.assertTrue(find_religious_matches(title), title)
+        self.assertTrue(find_religious_matches('витвір релігійного мистецтва'))
+        self.assertEqual(find_religious_matches('святковий набір'), [])
+        self.assertEqual(find_religious_matches('велике свято міста'), [])
+        # род. відм. «свято» → «свята» у маркетингових списках — не виключення
+        self.assertEqual(
+            find_religious_matches('На державні свята \n Для домашньої бібліотеки'),
+            [],
+        )
+        self.assertEqual(find_religious_matches('професійного свята чи ювілею'), [])
+        # «храмів» (Єгипет / світське) — ні; «храму» — так
+        self.assertEqual(find_religious_matches('фараонів, храмів та легенд'), [])
+        self.assertTrue(find_religious_matches('ікона для храму'))
+        self.assertIsNone(RELIGIOUS_TEXT_RE.search('суперхрамовий'))
+
+        arch = _product(
+            name='Архангел Михаїл', slug='arch-1', sku='779404',
+            price=Decimal('500'),
+            description='зразок релігійного мистецтва',
+        )
+        arch.categories.add(self.pens)
+        self.assertNotIn(arch, list(vip_queryset()) + list(middle_queryset()))
+
+    def test_disputed_items_via_exclude_from_feeds_flag(self):
+        """Спірні SKU (ангел/Соломон/Buddha/притч) — лише прапорець, не regex."""
+        disputed = (
+            ('7171', 'Садовий ангел'),
+            ('902', 'Ангел у саду'),
+            ('406', 'Декор Ангел'),
+            ('8018', 'Ангельська варта'),
+            ('6191', 'Книга мудрості Соломона'),
+            ('6192', 'Книга мудрості Соломона том 2'),
+            ('6193', 'Книга мудрості Соломона том 3'),
+            ('47752', 'CowParade Buddha'),
+            ('6115', 'Книга притч'),
+            ('6109', 'Книга притч подарункова'),
+        )
+        for sku, title in disputed:
+            with self.subTest(sku=sku):
+                self.assertEqual(find_religious_matches(title), [], title)
+                p = _product(
+                    name=title, slug=f'disp-{sku}', sku=sku,
+                    price=Decimal('500'), exclude_from_feeds=True,
+                )
+                p.categories.add(self.pens)
+                self.assertNotIn(p, list(middle_queryset()))
+                # Без прапорця — у фіді (regex не чіпає)
+                p.exclude_from_feeds = False
+                p.save(update_fields=['exclude_from_feeds'])
+                self.assertIn(p, list(middle_queryset()))
+
     def test_manual_exclude_flags(self):
         p = _product(slug='man', sku='MAN-1', price=Decimal('15000'), exclude_from_feeds=True)
         p.categories.add(self.pens)
@@ -280,7 +344,78 @@ class FeedSegmentTests(TestCase):
         self.assertTrue(ptype.startswith('Головна > Каталог'))
         self.assertIn('Кабінет керівника', ptype)
         self.assertIn('Ручки подарункові', ptype)
-        self.assertEqual(item.find('g:gtin', G_NS).text, '4006381333931')
+        # Нові фіди: GTIN лише для книг — ручка без gtin
+        self.assertIsNone(item.find('g:gtin', G_NS))
+        self.assertEqual(item.find('g:identifier_exists', G_NS).text, 'false')
+        self.assertEqual(item.find('g:brand', G_NS).text, 'Parker')
+        self.assertEqual(item.find('g:google_product_category', G_NS).text, '982')
+
+    def test_segment_gtin_books_only_drops_030_internal(self):
+        book = _product(
+            name='Класика', slug='book-gtin', sku='3527',
+            price=Decimal('100'),
+            sku_manufacturer='0305002007',  # ISBN-10 checksum ok, внутрішній 030*
+        )
+        book.categories.add(self.book_sub)
+        pen = _product(
+            name='Шахи Italfama', slug='chess-gtin', sku='CH-1',
+            price=Decimal('500'),
+            sku_manufacturer='4006381333931',
+        )
+        pen.categories.add(self.pens)
+        book_ok = _product(
+            name='Валідна книга', slug='book-ok', sku='BK-OK',
+            price=Decimal('100'),
+            sku_manufacturer='9786171234567',
+        )
+        book_ok.categories.add(self.books)
+
+        vip_xml = build_segment_feed_xml('VIP')
+        mid_xml = build_segment_feed_xml('Middle')
+        vip_root = ET.fromstring(vip_xml)
+        mid_root = ET.fromstring(mid_xml)
+
+        items = {
+            el.find('g:id', G_NS).text: el
+            for el in vip_root.findall('channel/item') + mid_root.findall('channel/item')
+        }
+        self.assertIsNone(items['3527'].find('g:gtin', G_NS))
+        self.assertEqual(items['3527'].find('g:identifier_exists', G_NS).text, 'false')
+        self.assertIsNone(items['CH-1'].find('g:gtin', G_NS))
+        self.assertEqual(items['BK-OK'].find('g:gtin', G_NS).text, '9786171234567')
+        self.assertEqual(items['CH-1'].find('g:brand', G_NS).text, 'Italfama')
+        self.assertEqual(items['3527'].find('g:google_product_category', G_NS).text, '784')
+
+    def test_segment_brand_from_name_when_manufacturer_empty(self):
+        p = _product(
+            name='Фігурка CowParade Classic', slug='cow-1', sku='COW-1',
+            price=Decimal('500'), manufacturer='',
+        )
+        cow_cat = Category.objects.create(name='Статуетки', slug='statuetky')
+        p.categories.add(cow_cat)
+        xml = build_segment_feed_xml('Middle')
+        item = ET.fromstring(xml).find('channel/item')
+        self.assertEqual(item.find('g:brand', G_NS).text, 'CowParade')
+        self.assertEqual(item.find('g:google_product_category', G_NS).text, '5609')
+
+    def test_legacy_gtin_and_category_unchanged_for_030(self):
+        """Старий фід: 030* що проходить ISBN-10 лишається (байтова сумісність політики)."""
+        p = _product(
+            name='Товар з внутр. кодом', slug='leg-030', sku='20023',
+            price=Decimal('3000'),
+            sku_manufacturer='0304002003',
+            manufacturer='OFION',
+        )
+        p.categories.add(self.pens)
+        root = ET.fromstring(build_google_merchant_xml())
+        item = next(
+            el for el in root.findall('channel/item')
+            if el.find('g:id', G_NS).text == '20023'
+        )
+        # Не ends-with SKU → legacy лишає gtin; category завжди 784 default
+        self.assertEqual(item.find('g:gtin', G_NS).text, '0304002003')
+        self.assertEqual(item.find('g:google_product_category', G_NS).text, '784')
+        self.assertEqual(item.find('g:brand', G_NS).text, 'OFION')
 
     def test_urls_and_partition(self):
         vip_p = _product(slug='v1', sku='V1', price=Decimal('20000'))

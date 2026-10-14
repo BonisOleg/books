@@ -60,7 +60,7 @@ class Command(BaseCommand):
 
         vip_count = 0
         middle_count = 0
-        excluded_rows: list[tuple[str, str]] = []
+        excluded_rows: list[tuple[str, str, str]] = []
 
         for product in products:
             reasons = self._collect_reasons(
@@ -83,7 +83,9 @@ class Command(BaseCommand):
                         elif not product.images.exists():
                             reasons = ['no_image']
                     labels = exclusion_reason_labels(reasons) if reasons else ['не у сегменті']
-                    excluded_rows.append((product.name, '; '.join(labels)))
+                    excluded_rows.append(
+                        (product.sku or str(product.pk), product.name, '; '.join(labels))
+                    )
                 continue
 
             if product_is_vip(product, vip_cat_ids):
@@ -100,8 +102,8 @@ class Command(BaseCommand):
         self.stdout.write('Excluded products:')
         if not excluded_rows:
             self.stdout.write('  (немає)')
-        for name, reason in excluded_rows:
-            self.stdout.write(f'  - {name} | {reason}')
+        for sku, name, reason in excluded_rows:
+            self.stdout.write(f'  - [{sku}] {name} | {reason}')
 
     def _collect_reasons(self, product, *, icon_ids, manual_cat_ids, has_product_flag) -> list[str]:
         reasons: list[str] = []
