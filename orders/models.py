@@ -46,6 +46,12 @@ class Order(models.Model):
         choices=PAYMENT_STATUS_CHOICES, default='pending'
     )
     payment_id = models.CharField('ID платежу', max_length=200, blank=True)
+    keycrm_order_id = models.PositiveBigIntegerField(
+        'ID замовлення KeyCRM', null=True, blank=True,
+    )
+    keycrm_payment_id = models.PositiveBigIntegerField(
+        'ID оплати KeyCRM', null=True, blank=True,
+    )
     status = models.CharField(
         'Статус', max_length=20, choices=STATUS_CHOICES, default='new'
     )

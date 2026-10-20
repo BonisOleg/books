@@ -86,6 +86,10 @@ services:
         sync: false
       - key: MONOBANK_TOKEN
         sync: false
+      - key: KEYCRM_API_KEY
+        sync: false
+      - key: KEYCRM_SOURCE_ID
+        sync: false
       - key: NOVAPOSHTA_API_KEY
         sync: false
       - key: TELEGRAM_BOT_USERNAME

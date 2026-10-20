@@ -12,6 +12,7 @@ from core.ratelimit import is_rate_limited
 from products.models import Product
 
 from .forms import CheckoutForm, OneClickForm
+from .keycrm import sync_order
 from .models import Order, OrderItem
 from .utils import create_account_for_order, send_new_order_notification, send_order_confirmation_email
 
@@ -117,14 +118,16 @@ def checkout(request):
             if mode == 'register' and not request.user.is_authenticated:
                 create_account_for_order(order, request)
 
-            if order.payment_method == 'liqpay':
-                return redirect('orders:pay_liqpay', order_id=order.id)
-            elif order.payment_method == 'monobank':
-                return redirect('orders:pay_mono', order_id=order.id)
-            elif order.payment_method in ('cod', 'manager'):
+            if order.payment_method in ('cod', 'manager'):
                 from .payments.cod_service import process_cod_order
                 process_cod_order(order)
 
+            sync_order(order)
+
+            if order.payment_method == 'liqpay':
+                return redirect('orders:pay_liqpay', order_id=order.id)
+            if order.payment_method == 'monobank':
+                return redirect('orders:pay_mono', order_id=order.id)
             return redirect('orders:success', order_id=order.id)
     else:
         initial = {}
@@ -187,6 +190,7 @@ def oneclick(request, product_id):
                 quantity=1,
             )
             send_new_order_notification(order)
+            sync_order(order)
             html = render_to_string('orders/partials/oneclick_success.html', {})
             return HttpResponse(html)
     else:

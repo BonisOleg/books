@@ -77,3 +77,5 @@ def process_callback(request):
         order.payment_status = 'failed'
 
     order.save()
+    from orders.keycrm import sync_order
+    sync_order(order)

@@ -30,11 +30,12 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'first_name', 'last_name', 'phone', 'items_count',
-        'total', 'payment_method', 'payment_status', 'status', 'created_at',
+        'total', 'payment_method', 'payment_status', 'status',
+        'keycrm_order_id', 'created_at',
     )
     list_filter = ('status', 'payment_method', 'payment_status')
     search_fields = ('first_name', 'last_name', 'phone', 'email')
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at', 'keycrm_order_id', 'keycrm_payment_id')
     inlines = [OrderItemInline]
     list_editable = ('status', 'payment_status')
 
