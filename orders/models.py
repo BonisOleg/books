@@ -96,3 +96,28 @@ class OrderItem(models.Model):
     @property
     def total(self):
         return self.price * self.quantity
+
+
+class OfflineConversionLog(models.Model):
+    STATUS_UPLOADED = 'uploaded'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = [
+        (STATUS_UPLOADED, 'Вивантажено'),
+        (STATUS_FAILED, 'Помилка'),
+    ]
+
+    keycrm_order_id = models.PositiveBigIntegerField(
+        'ID замовлення KeyCRM', unique=True,
+    )
+    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES)
+    uploaded_at = models.DateTimeField('Час вивантаження', null=True, blank=True)
+    error = models.TextField('Помилка', blank=True)
+    created_at = models.DateTimeField('Створено', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Офлайн-конверсія Google Ads'
+        verbose_name_plural = 'Офлайн-конверсії Google Ads'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'KeyCRM #{self.keycrm_order_id} ({self.status})'

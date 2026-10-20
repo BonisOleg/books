@@ -146,8 +146,29 @@ LIQPAY_PRIVATE_KEY = os.getenv('LIQPAY_PRIVATE_KEY', '')
 
 MONOBANK_TOKEN = os.getenv('MONOBANK_TOKEN', '')
 
+
+def _env_int(name, default):
+    raw = (os.getenv(name) or '').strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
 KEYCRM_API_KEY = os.getenv('KEYCRM_API_KEY', '')
 KEYCRM_SOURCE_ID = os.getenv('KEYCRM_SOURCE_ID', '')
+KEYCRM_COMPLETED_STATUS_ID = _env_int('KEYCRM_COMPLETED_STATUS_ID', 12)
+
+GOOGLE_ADS_CLIENT_ID = os.getenv('GOOGLE_ADS_CLIENT_ID', '')
+GOOGLE_ADS_CLIENT_SECRET = os.getenv('GOOGLE_ADS_CLIENT_SECRET', '')
+GOOGLE_ADS_REFRESH_TOKEN = os.getenv('GOOGLE_ADS_REFRESH_TOKEN', '')
+GOOGLE_ADS_DEVELOPER_TOKEN = os.getenv('GOOGLE_ADS_DEVELOPER_TOKEN', '')
+GOOGLE_ADS_CUSTOMER_ID = os.getenv('GOOGLE_ADS_CUSTOMER_ID', '')
+GOOGLE_ADS_CONVERSION_ACTION_ID = os.getenv('GOOGLE_ADS_CONVERSION_ACTION_ID', '')
+GOOGLE_ADS_LOGIN_CUSTOMER_ID = os.getenv('GOOGLE_ADS_LOGIN_CUSTOMER_ID', '')
+GOOGLE_ADS_API_VERSION = os.getenv('GOOGLE_ADS_API_VERSION', 'v23') or 'v23'
 
 NOVAPOSHTA_API_KEY = os.getenv('NOVAPOSHTA_API_KEY', '')
 
