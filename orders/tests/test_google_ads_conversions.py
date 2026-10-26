@@ -1,6 +1,7 @@
 import hashlib
 import json
-from datetime import datetime, timezone
+import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import requests
@@ -9,6 +10,8 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from orders.google_ads_conversions import (
+    _lookback,
+    _window,
     build_conversion,
     format_conversion_datetime,
     normalize_and_hash_email,
@@ -82,6 +85,42 @@ class NormalizeTests(TestCase):
             datetime(2026, 1, 15, 10, 0, tzinfo=timezone.utc),
         )
         self.assertRegex(text, r'^2026-01-15 \d{2}:\d{2}:\d{2}\+0[23]:00$')
+
+
+class LookbackTests(TestCase):
+    def test_default_is_48_hours(self):
+        with patch.dict(os.environ):
+            os.environ.pop('LOOKBACK_HOURS', None)
+            self.assertEqual(_lookback(), timedelta(hours=48))
+            start, end = _window()
+        self.assertEqual(end - start, timedelta(hours=48))
+
+    def test_env_240_hours(self):
+        with patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
+            self.assertEqual(_lookback(), timedelta(hours=240))
+            start, end = _window()
+        self.assertEqual(end - start, timedelta(hours=240))
+
+    @override_settings(LOOKBACK_HOURS=72)
+    def test_settings_override_env(self):
+        with patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
+            self.assertEqual(_lookback(), timedelta(hours=72))
+
+    def test_invalid_falls_back_to_48(self):
+        invalid = ('', '   ', '0', '-3', 'nope', '12.5')
+        for raw in invalid:
+            with self.subTest(source='env', raw=raw):
+                with patch.dict(os.environ, {'LOOKBACK_HOURS': raw}):
+                    self.assertEqual(_lookback(), timedelta(hours=48))
+            with self.subTest(source='settings', raw=raw):
+                with override_settings(LOOKBACK_HOURS=raw), \
+                        patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
+                    self.assertEqual(_lookback(), timedelta(hours=48))
+        for raw in (0, -1, 12.5, True):
+            with self.subTest(source='settings', raw=raw):
+                with override_settings(LOOKBACK_HOURS=raw), \
+                        patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
+                    self.assertEqual(_lookback(), timedelta(hours=48))
 
 
 @override_settings(**ADS)

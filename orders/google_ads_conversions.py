@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import datetime, timedelta, timezone as dt_timezone
 
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 KEYCRM_API = 'https://openapi.keycrm.app/v1'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
-LOOKBACK = timedelta(hours=48)
+_DEFAULT_LOOKBACK_HOURS = 48
 PAGE_LIMIT = 50
 MAX_PAGES = 20
 UPLOAD_CHUNK = 200
@@ -336,9 +337,28 @@ def _mark_many(order_ids, status, error):
         )
 
 
+def _lookback() -> timedelta:
+    raw = getattr(settings, 'LOOKBACK_HOURS', None)
+    if raw is None:
+        raw = os.environ.get('LOOKBACK_HOURS')
+    hours = _DEFAULT_LOOKBACK_HOURS
+    if isinstance(raw, str):
+        raw = raw.strip()
+    if raw not in (None, '') and not isinstance(raw, bool):
+        try:
+            if isinstance(raw, float) and not raw.is_integer():
+                raise ValueError
+            parsed = int(raw)
+        except (TypeError, ValueError):
+            parsed = 0
+        if parsed > 0:
+            hours = parsed
+    return timedelta(hours=hours)
+
+
 def _window():
     end = datetime.now(dt_timezone.utc)
-    return end - LOOKBACK, end
+    return end - _lookback(), end
 
 
 def _extract_list(data):
