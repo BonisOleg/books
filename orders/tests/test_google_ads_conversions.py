@@ -23,6 +23,7 @@ from orders.google_ads_conversions import (
 )
 from orders.models import OfflineConversionLog
 
+TOKEN_URL = 'https://oauth2.googleapis.com/token'
 INGEST_URL = 'https://datamanager.googleapis.com/v1/events:ingest'
 
 ADS = {
@@ -30,13 +31,11 @@ ADS = {
     'KEYCRM_COMPLETED_STATUS_ID': 12,
     'GOOGLE_ADS_CLIENT_ID': 'cid',
     'GOOGLE_ADS_CLIENT_SECRET': 'sec',
-    'GOOGLE_ADS_REFRESH_TOKEN': 'ref',
+    'GOOGLE_ADS_REFRESH_TOKEN': 'ads-ref',
     'GOOGLE_ADS_CUSTOMER_ID': '111-222-3333',
     'GOOGLE_ADS_CONVERSION_ACTION_ID': '999',
     'GOOGLE_ADS_LOGIN_CUSTOMER_ID': '',
-    'GOOGLE_DATAMANAGER_CLIENT_ID': '',
-    'GOOGLE_DATAMANAGER_CLIENT_SECRET': '',
-    'GOOGLE_DATAMANAGER_REFRESH_TOKEN': '',
+    'GOOGLE_DATAMANAGER_REFRESH_TOKEN': 'dm-ref',
     'GOOGLE_DATAMANAGER_VALIDATE_ONLY': False,
     'GOOGLE_DATAMANAGER_CONSENT_GRANTED': False,
 }
@@ -158,6 +157,8 @@ class UploadTests(TestCase):
         self.assertNotIn('developer-token', router.headers)
         self.assertNotIn('login-customer-id', router.headers)
         self.assertEqual(router.token_bodies[0]['client_id'], 'cid')
+        self.assertEqual(router.token_bodies[0]['client_secret'], 'sec')
+        self.assertEqual(router.token_bodies[0]['refresh_token'], 'dm-ref')
         self.assertEqual(router.token_bodies[0]['grant_type'], 'refresh_token')
 
         body = router.uploads[0]
@@ -355,18 +356,34 @@ class UploadTests(TestCase):
         self.assertNotIn('userData', gclid_event)
 
     @override_settings(
-        GOOGLE_DATAMANAGER_CLIENT_ID='dm-cid',
-        GOOGLE_DATAMANAGER_CLIENT_SECRET='dm-sec',
-        GOOGLE_DATAMANAGER_REFRESH_TOKEN='dm-ref',
+        GOOGLE_DATAMANAGER_REFRESH_TOKEN='',
+        GOOGLE_ADS_REFRESH_TOKEN='ads-only-ref',
     )
-    def test_datamanager_credentials_preferred(self):
+    def test_ads_refresh_token_alone_is_not_configured(self):
+        with patch('orders.google_ads_conversions.requests.get') as get_mock, \
+                patch('orders.google_ads_conversions.requests.post') as post_mock:
+            summary = upload_completed_orders()
+        self.assertTrue(summary['not_configured'])
+        self.assertIn('GOOGLE_DATAMANAGER_REFRESH_TOKEN', summary['missing'])
+        get_mock.assert_not_called()
+        post_mock.assert_not_called()
+
+    @override_settings(
+        GOOGLE_ADS_CLIENT_ID='ads-cid',
+        GOOGLE_ADS_CLIENT_SECRET='ads-sec',
+        GOOGLE_ADS_REFRESH_TOKEN='ads-ref',
+        GOOGLE_DATAMANAGER_REFRESH_TOKEN='dm-ref-only',
+    )
+    def test_token_post_uses_datamanager_refresh_and_ads_client(self):
         router = _Router([_order()])
         with _patched(router):
-            upload_completed_orders()
+            summary = upload_completed_orders()
+        self.assertFalse(summary['not_configured'])
+        self.assertEqual(router.token_urls, [TOKEN_URL])
         sent = router.token_bodies[0]
-        self.assertEqual(sent['client_id'], 'dm-cid')
-        self.assertEqual(sent['client_secret'], 'dm-sec')
-        self.assertEqual(sent['refresh_token'], 'dm-ref')
+        self.assertEqual(sent['client_id'], 'ads-cid')
+        self.assertEqual(sent['client_secret'], 'ads-sec')
+        self.assertEqual(sent['refresh_token'], 'dm-ref-only')
 
 
 @override_settings(**ADS)
@@ -421,6 +438,7 @@ class _Router:
         self.headers = {}
         self.gets = []
         self.urls = []
+        self.token_urls = []
         self.token_bodies = []
 
     def get(self, url, **kwargs):
@@ -432,6 +450,7 @@ class _Router:
 
     def post(self, url, **kwargs):
         if 'oauth2.googleapis.com' in url:
+            self.token_urls.append(url)
             self.token_bodies.append(kwargs.get('data') or {})
             return _response({'access_token': 'token'})
         self.urls.append(url)

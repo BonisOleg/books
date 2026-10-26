@@ -53,6 +53,7 @@ def upload_completed_orders(validate_only=None) -> dict:
         logger.warning(message)
         return {
             'not_configured': True,
+            'missing': missing,
             'validate_only': validate_only,
             'message': message,
             'fetched': 0,
@@ -101,6 +102,7 @@ def upload_completed_orders(validate_only=None) -> dict:
 
     summary = {
         'not_configured': False,
+        'missing': [],
         'validate_only': validate_only,
         'message': '',
         'fetched': len(orders),
@@ -297,18 +299,9 @@ def _destination() -> dict:
 
 def _oauth_credentials() -> dict:
     return {
-        'client_id': (
-            _setting('GOOGLE_DATAMANAGER_CLIENT_ID')
-            or _setting('GOOGLE_ADS_CLIENT_ID')
-        ),
-        'client_secret': (
-            _setting('GOOGLE_DATAMANAGER_CLIENT_SECRET')
-            or _setting('GOOGLE_ADS_CLIENT_SECRET')
-        ),
-        'refresh_token': (
-            _setting('GOOGLE_DATAMANAGER_REFRESH_TOKEN')
-            or _setting('GOOGLE_ADS_REFRESH_TOKEN')
-        ),
+        'client_id': _setting('GOOGLE_ADS_CLIENT_ID'),
+        'client_secret': _setting('GOOGLE_ADS_CLIENT_SECRET'),
+        'refresh_token': _setting('GOOGLE_DATAMANAGER_REFRESH_TOKEN'),
     }
 
 
@@ -409,20 +402,22 @@ def _setting(name) -> str:
 
 
 def _missing_settings() -> list[str]:
-    missing = []
-    if not _setting('KEYCRM_API_KEY'):
-        missing.append('KEYCRM_API_KEY')
-    creds = _oauth_credentials()
-    labels = (
-        ('client_id', 'GOOGLE_DATAMANAGER_CLIENT_ID'),
-        ('client_secret', 'GOOGLE_DATAMANAGER_CLIENT_SECRET'),
-        ('refresh_token', 'GOOGLE_DATAMANAGER_REFRESH_TOKEN'),
+    digit_names = {
+        'GOOGLE_ADS_CUSTOMER_ID',
+        'GOOGLE_ADS_CONVERSION_ACTION_ID',
+    }
+    required = (
+        'KEYCRM_API_KEY',
+        'GOOGLE_ADS_CLIENT_ID',
+        'GOOGLE_ADS_CLIENT_SECRET',
+        'GOOGLE_DATAMANAGER_REFRESH_TOKEN',
+        'GOOGLE_ADS_CUSTOMER_ID',
+        'GOOGLE_ADS_CONVERSION_ACTION_ID',
     )
-    for key, label in labels:
-        if not creds[key]:
-            missing.append(label)
-    for name in ('GOOGLE_ADS_CUSTOMER_ID', 'GOOGLE_ADS_CONVERSION_ACTION_ID'):
-        if not _digits(_setting(name)):
+    missing = []
+    for name in required:
+        value = _digits(_setting(name)) if name in digit_names else _setting(name)
+        if not value:
             missing.append(name)
     return missing
 
