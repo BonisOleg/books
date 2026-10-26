@@ -17,9 +17,13 @@ from orders.google_ads_conversions1 import (
     format_conversion_datetime,
     normalize_and_hash_email,
     normalize_and_hash_phone,
+    normalize_phone_e164,
     order_id_of,
     order_time,
     sha256_hash,
+    _field_violations,
+    _invalid_error,
+    _violations_by_event,
 )
 from orders.models import OfflineConversionLog
 
@@ -40,6 +44,7 @@ __all__ = [
     'format_conversion_datetime',
     'normalize_and_hash_email',
     'normalize_and_hash_phone',
+    'normalize_phone_e164',
     'sha256_hash',
     'upload_completed_orders',
 ]
@@ -60,6 +65,7 @@ def upload_completed_orders(validate_only=None) -> dict:
             'uploaded': 0,
             'skipped': 0,
             'failed': 0,
+            'invalid': 0,
         }
 
     orders = fetch_completed_orders()
@@ -91,14 +97,16 @@ def upload_completed_orders(validate_only=None) -> dict:
         event = build_event(order, now=now)
         if event is None:
             skipped += 1
-            logger.info('KeyCRM %s: немає телефону, email і gclid', order_id)
             continue
         pending.append((order_id, event))
 
     uploaded = 0
     failed = 0
+    invalid = 0
     if pending:
-        uploaded, failed = _upload_pending(pending, validate_only=validate_only)
+        uploaded, failed, invalid = _upload_pending(
+            pending, validate_only=validate_only,
+        )
 
     summary = {
         'not_configured': False,
@@ -109,11 +117,12 @@ def upload_completed_orders(validate_only=None) -> dict:
         'uploaded': uploaded,
         'skipped': skipped,
         'failed': failed,
+        'invalid': invalid,
     }
     logger.info(
         'Data Manager: отримано %s, вивантажено %s, пропущено %s, '
-        'помилки %s, перевірка %s',
-        summary['fetched'], uploaded, skipped, failed, validate_only,
+        'помилки %s, невалідні %s, перевірка %s',
+        summary['fetched'], uploaded, skipped, failed, invalid, validate_only,
     )
     return summary
 
@@ -139,34 +148,33 @@ def fetch_completed_orders() -> list:
     return []
 
 
-def _upload_pending(pending, *, validate_only: bool) -> tuple[int, int]:
+def _upload_pending(pending, *, validate_only: bool) -> tuple[int, int, int]:
     token = _google_access_token()
     uploaded = 0
     failed = 0
+    invalid = 0
     for offset in range(0, len(pending), UPLOAD_CHUNK):
-        chunk = pending[offset:offset + UPLOAD_CHUNK]
-        order_ids = [item[0] for item in chunk]
-        response = requests.post(
-            INGEST_URL,
-            headers=_google_headers(token),
-            json=_ingest_body([item[1] for item in chunk], validate_only),
-            timeout=TIMEOUT,
+        up, fail, bad = _ingest_chunk(
+            token,
+            pending[offset:offset + UPLOAD_CHUNK],
+            validate_only=validate_only,
+            can_drop=True,
         )
-        if response.status_code >= 400:
-            message = _safe_error(response)
-            if _is_duplicate_error(response):
-                logger.info(
-                    'Data Manager: дубль transactionId, чанк вважаємо вивантаженим: %s',
-                    message,
-                )
-                _mark_uploaded(order_ids, validate_only=validate_only)
-                uploaded += len(order_ids)
-                continue
-            logger.error('Data Manager HTTP %s: %s', response.status_code, message)
-            if not validate_only:
-                _mark_many(order_ids, OfflineConversionLog.STATUS_FAILED, message)
-            raise requests.HTTPError(message, response=response)
+        uploaded += up
+        failed += fail
+        invalid += bad
+    return uploaded, failed, invalid
 
+
+def _ingest_chunk(token, chunk, *, validate_only: bool, can_drop: bool):
+    order_ids = [item[0] for item in chunk]
+    response = requests.post(
+        INGEST_URL,
+        headers=_google_headers(token),
+        json=_ingest_body([item[1] for item in chunk], validate_only),
+        timeout=TIMEOUT,
+    )
+    if response.status_code < 400:
         payload = _json_body(response)
         logger.info(
             'Data Manager ingest requestId=%s fieldWarnings=%s',
@@ -174,8 +182,54 @@ def _upload_pending(pending, *, validate_only: bool) -> tuple[int, int]:
             payload.get('fieldWarnings') or [],
         )
         _mark_uploaded(order_ids, validate_only=validate_only)
-        uploaded += len(order_ids)
-    return uploaded, failed
+        return len(order_ids), 0, 0
+
+    violations = _field_violations(response)
+    for field, description in violations:
+        logger.error(
+            'Data Manager fieldViolation field=%s description=%s',
+            field, description,
+        )
+    if can_drop and response.status_code == 400:
+        grouped = _violations_by_event(violations, len(chunk))
+        if grouped:
+            return _drop_invalid_and_retry(
+                token, chunk, grouped, validate_only=validate_only,
+            )
+
+    message = _safe_error(response)
+    if _is_duplicate_error(response):
+        logger.info(
+            'Data Manager: дубль transactionId, чанк вважаємо вивантаженим: %s',
+            message,
+        )
+        _mark_uploaded(order_ids, validate_only=validate_only)
+        return len(order_ids), 0, 0
+    logger.error('Data Manager HTTP %s: %s', response.status_code, message)
+    if not validate_only:
+        _mark_many(order_ids, OfflineConversionLog.STATUS_FAILED, message)
+    raise requests.HTTPError(message, response=response)
+
+
+def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool):
+    keep = []
+    for index, item in enumerate(chunk):
+        if index not in grouped:
+            keep.append(item)
+            continue
+        if not validate_only:
+            _mark_many(
+                [item[0]],
+                OfflineConversionLog.STATUS_FAILED,
+                _invalid_error(grouped[index]),
+            )
+    dropped = len(chunk) - len(keep)
+    if not keep:
+        return 0, 0, dropped
+    uploaded, failed, _again = _ingest_chunk(
+        token, keep, validate_only=validate_only, can_drop=False,
+    )
+    return uploaded, failed, dropped
 
 
 def _mark_uploaded(order_ids, *, validate_only: bool) -> None:
@@ -438,5 +492,7 @@ def _safe_error(response) -> str:
         message = error.get('message') or message
     elif isinstance(error, str) and not message:
         message = error
-    text = str(message or response.text or '')
-    return text[:500]
+    text = str(message or '').strip()
+    if text:
+        return text[:500]
+    return f'HTTP {response.status_code}'

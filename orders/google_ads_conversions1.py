@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 from datetime import datetime, timedelta, timezone as dt_timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+logger = logging.getLogger(__name__)
 
 try:
     KYIV = ZoneInfo('Europe/Kyiv')
@@ -17,25 +20,47 @@ def sha256_hash(value: str) -> str:
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
 
-def normalize_and_hash_phone(phone) -> str | None:
-    if not phone:
+def normalize_phone_e164(phone) -> str | None:
+    if phone is None:
         return None
-    digits = re.sub(r'\D', '', str(phone))
+    cleaned = re.sub(r'[\s().\-]', '', str(phone).strip())
+    if not cleaned:
+        return None
+    has_plus = cleaned.startswith('+')
+    digits = cleaned[1:] if has_plus else cleaned
+    if not digits.isdigit():
+        return None
     if len(digits) == 10 and digits.startswith('0'):
-        digits = '38' + digits
-    elif len(digits) == 9:
-        digits = '380' + digits
-    if not digits.startswith('380') or len(digits) != 12:
+        return '+380' + digits[1:]
+    if len(digits) == 9:
+        return '+380' + digits
+    if len(digits) == 11 and digits.startswith('80'):
+        return '+380' + digits[2:]
+    if len(digits) == 12 and digits.startswith('380'):
+        return '+' + digits
+    if digits.startswith('380'):
         return None
-    return sha256_hash(f'+{digits}')
+    if has_plus and 8 <= len(digits) <= 15:
+        return '+' + digits
+    return None
+
+
+def normalize_and_hash_phone(phone) -> str | None:
+    normalized = normalize_phone_e164(phone)
+    if not normalized:
+        return None
+    return sha256_hash(normalized)
 
 
 def normalize_and_hash_email(email) -> str | None:
     if not email or '@' not in str(email):
         return None
-    local_part, domain = str(email).strip().lower().split('@', 1)
+    text = re.sub(r'\s+', '', str(email)).lower()
+    if '@' not in text:
+        return None
+    local_part, domain = text.split('@', 1)
     if domain in ('gmail.com', 'googlemail.com'):
-        local_part = local_part.replace('.', '')
+        local_part = local_part.replace('.', '').split('+', 1)[0]
     if not local_part or not domain:
         return None
     return sha256_hash(f'{local_part}@{domain}')
@@ -66,6 +91,7 @@ def build_event(order, *, now=None) -> dict | None:
     hashed_email = normalize_and_hash_email(buyer.get('email'))
     gclid = _gclid(order)
     if not hashed_phone and not hashed_email and not gclid:
+        logger.info('Пропуск події transactionId=%s', order_id)
         return None
 
     moment = now or datetime.now(dt_timezone.utc)
@@ -205,3 +231,51 @@ def _parse_dt(value):
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=KYIV)
     return moment.astimezone(dt_timezone.utc)
+
+
+_EVENT_INDEX = re.compile(r'events\[(\d+)\]')
+
+
+def _response_dict(response) -> dict:
+    try:
+        payload = response.json()
+    except ValueError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _field_violations(response):
+    error = _response_dict(response).get('error')
+    details = error.get('details') if isinstance(error, dict) else None
+    if not isinstance(details, list):
+        return []
+    found = []
+    for detail in details:
+        items = detail.get('fieldViolations') if isinstance(detail, dict) else None
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            field = ' '.join(str(item.get('field') or '').split())
+            description = ' '.join(str(item.get('description') or '').split())[:300]
+            if field or description:
+                found.append((field, description))
+    return found
+
+
+def _violations_by_event(violations, size):
+    grouped = {}
+    for field, description in violations:
+        match = _EVENT_INDEX.search(field)
+        if not match:
+            continue
+        index = int(match.group(1))
+        if 0 <= index < size:
+            grouped.setdefault(index, []).append((field, description))
+    return grouped
+
+
+def _invalid_error(items) -> str:
+    parts = [f'{field}: {description}' for field, description in items]
+    return ('invalid: ' + '; '.join(parts))[:2000]
