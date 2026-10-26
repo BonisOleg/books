@@ -1,4 +1,4 @@
-"""Вивантаження виконаних замовлень KeyCRM у Google Ads (offline conversions)."""
+"""Вивантаження виконаних замовлень KeyCRM у Google Data Manager."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from django.utils import timezone as dj_timezone
 
 from orders.google_ads_conversions1 import (
     build_conversion,
+    build_event,
     format_conversion_datetime,
     normalize_and_hash_email,
     normalize_and_hash_phone,
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 KEYCRM_API = 'https://openapi.keycrm.app/v1'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+INGEST_URL = 'https://datamanager.googleapis.com/v1/events:ingest'
 _DEFAULT_LOOKBACK_HOURS = 48
 PAGE_LIMIT = 50
 MAX_PAGES = 20
@@ -34,6 +36,7 @@ TIMEOUT = 20
 
 __all__ = [
     'build_conversion',
+    'build_event',
     'format_conversion_datetime',
     'normalize_and_hash_email',
     'normalize_and_hash_phone',
@@ -42,13 +45,15 @@ __all__ = [
 ]
 
 
-def upload_completed_orders() -> dict:
+def upload_completed_orders(validate_only=None) -> dict:
+    validate_only = _resolve_validate_only(validate_only)
     missing = _missing_settings()
     if missing:
-        message = 'Офлайн-конверсії вимкнено, не задано: ' + ', '.join(missing)
+        message = 'Вивантаження в Data Manager вимкнено, не задано: ' + ', '.join(missing)
         logger.warning(message)
         return {
             'not_configured': True,
+            'validate_only': validate_only,
             'message': message,
             'fetched': 0,
             'uploaded': 0,
@@ -57,8 +62,6 @@ def upload_completed_orders() -> dict:
         }
 
     orders = fetch_completed_orders()
-    customer_id = _digits(settings.GOOGLE_ADS_CUSTOMER_ID)
-    action_id = _digits(settings.GOOGLE_ADS_CONVERSION_ACTION_ID)
     now = datetime.now(dt_timezone.utc)
     pending = []
     skipped = 0
@@ -84,25 +87,21 @@ def upload_completed_orders() -> dict:
         if order_id in already:
             skipped += 1
             continue
-        conversion = build_conversion(
-            order,
-            customer_id=customer_id,
-            action_id=action_id,
-            now=now,
-        )
-        if conversion is None:
+        event = build_event(order, now=now)
+        if event is None:
             skipped += 1
-            logger.info('KeyCRM %s: немає телефону й email для хешу', order_id)
+            logger.info('KeyCRM %s: немає телефону, email і gclid', order_id)
             continue
-        pending.append((order_id, conversion))
+        pending.append((order_id, event))
 
     uploaded = 0
     failed = 0
     if pending:
-        uploaded, failed = _upload_pending(pending)
+        uploaded, failed = _upload_pending(pending, validate_only=validate_only)
 
     summary = {
         'not_configured': False,
+        'validate_only': validate_only,
         'message': '',
         'fetched': len(orders),
         'uploaded': uploaded,
@@ -110,8 +109,9 @@ def upload_completed_orders() -> dict:
         'failed': failed,
     }
     logger.info(
-        'Офлайн-конверсії: отримано %s, вивантажено %s, пропущено %s, помилки %s',
-        summary['fetched'], uploaded, skipped, failed,
+        'Data Manager: отримано %s, вивантажено %s, пропущено %s, '
+        'помилки %s, перевірка %s',
+        summary['fetched'], uploaded, skipped, failed, validate_only,
     )
     return summary
 
@@ -137,45 +137,49 @@ def fetch_completed_orders() -> list:
     return []
 
 
-def _upload_pending(pending) -> tuple[int, int]:
+def _upload_pending(pending, *, validate_only: bool) -> tuple[int, int]:
     token = _google_access_token()
     uploaded = 0
     failed = 0
     for offset in range(0, len(pending), UPLOAD_CHUNK):
         chunk = pending[offset:offset + UPLOAD_CHUNK]
-        body = {
-            'conversions': [item[1] for item in chunk],
-            'partialFailure': True,
-        }
+        order_ids = [item[0] for item in chunk]
         response = requests.post(
-            _upload_url(),
+            INGEST_URL,
             headers=_google_headers(token),
-            json=body,
+            json=_ingest_body([item[1] for item in chunk], validate_only),
             timeout=TIMEOUT,
         )
         if response.status_code >= 400:
             message = _safe_error(response)
-            logger.error('Google Ads HTTP %s: %s', response.status_code, message)
-            _mark_many(
-                [item[0] for item in chunk],
-                OfflineConversionLog.STATUS_FAILED,
-                message,
-            )
+            if _is_duplicate_error(response):
+                logger.info(
+                    'Data Manager: дубль transactionId, чанк вважаємо вивантаженим: %s',
+                    message,
+                )
+                _mark_uploaded(order_ids, validate_only=validate_only)
+                uploaded += len(order_ids)
+                continue
+            logger.error('Data Manager HTTP %s: %s', response.status_code, message)
+            if not validate_only:
+                _mark_many(order_ids, OfflineConversionLog.STATUS_FAILED, message)
             raise requests.HTTPError(message, response=response)
 
         payload = _json_body(response)
-        ok_indexes, bad = _classify_upload(payload, len(chunk))
-        ok_ids = [chunk[index][0] for index in ok_indexes]
-        _mark_many(ok_ids, OfflineConversionLog.STATUS_UPLOADED, '')
-        uploaded += len(ok_ids)
-        for index, message in bad.items():
-            _mark_many(
-                [chunk[index][0]],
-                OfflineConversionLog.STATUS_FAILED,
-                message,
-            )
-            failed += 1
+        logger.info(
+            'Data Manager ingest requestId=%s fieldWarnings=%s',
+            payload.get('requestId') or '',
+            payload.get('fieldWarnings') or [],
+        )
+        _mark_uploaded(order_ids, validate_only=validate_only)
+        uploaded += len(order_ids)
     return uploaded, failed
+
+
+def _mark_uploaded(order_ids, *, validate_only: bool) -> None:
+    if validate_only:
+        return
+    _mark_many(order_ids, OfflineConversionLog.STATUS_UPLOADED, '')
 
 
 def _collect_pages(mode, between, start) -> list:
@@ -231,12 +235,13 @@ def _keycrm_get(params) -> dict:
 
 
 def _google_access_token() -> str:
+    creds = _oauth_credentials()
     response = requests.post(
         GOOGLE_TOKEN_URL,
         data={
-            'client_id': _setting('GOOGLE_ADS_CLIENT_ID'),
-            'client_secret': _setting('GOOGLE_ADS_CLIENT_SECRET'),
-            'refresh_token': _setting('GOOGLE_ADS_REFRESH_TOKEN'),
+            'client_id': creds['client_id'],
+            'client_secret': creds['client_secret'],
+            'refresh_token': creds['refresh_token'],
             'grant_type': 'refresh_token',
         },
         timeout=TIMEOUT,
@@ -251,77 +256,86 @@ def _google_access_token() -> str:
 
 
 def _google_headers(token) -> dict:
-    headers = {
+    return {
         'Authorization': f'Bearer {token}',
-        'developer-token': _setting('GOOGLE_ADS_DEVELOPER_TOKEN'),
         'Content-Type': 'application/json',
     }
-    login_id = _digits(getattr(settings, 'GOOGLE_ADS_LOGIN_CUSTOMER_ID', ''))
+
+
+def _ingest_body(events, validate_only: bool) -> dict:
+    body = {
+        'destinations': [_destination()],
+        'events': events,
+        'encoding': 'HEX',
+        'validateOnly': validate_only,
+    }
+    if _flag('GOOGLE_DATAMANAGER_CONSENT_GRANTED'):
+        body['consent'] = {
+            'adUserData': 'CONSENT_GRANTED',
+            'adPersonalization': 'CONSENT_GRANTED',
+        }
+    return body
+
+
+def _destination() -> dict:
+    destination = {
+        'reference': 'keycrm',
+        'operatingAccount': {
+            'accountType': 'GOOGLE_ADS',
+            'accountId': _digits(_setting('GOOGLE_ADS_CUSTOMER_ID')),
+        },
+        'productDestinationId': _digits(_setting('GOOGLE_ADS_CONVERSION_ACTION_ID')),
+    }
+    login_id = _digits(_setting('GOOGLE_ADS_LOGIN_CUSTOMER_ID'))
     if login_id:
-        headers['login-customer-id'] = login_id
-    return headers
+        destination['loginAccount'] = {
+            'accountType': 'GOOGLE_ADS',
+            'accountId': login_id,
+        }
+    return destination
 
 
-def _upload_url() -> str:
-    version = (_setting('GOOGLE_ADS_API_VERSION') or 'v23').strip()
-    customer_id = _digits(settings.GOOGLE_ADS_CUSTOMER_ID)
-    return (
-        f'https://googleads.googleapis.com/{version}'
-        f'/customers/{customer_id}:uploadClickConversions'
-    )
+def _oauth_credentials() -> dict:
+    return {
+        'client_id': (
+            _setting('GOOGLE_DATAMANAGER_CLIENT_ID')
+            or _setting('GOOGLE_ADS_CLIENT_ID')
+        ),
+        'client_secret': (
+            _setting('GOOGLE_DATAMANAGER_CLIENT_SECRET')
+            or _setting('GOOGLE_ADS_CLIENT_SECRET')
+        ),
+        'refresh_token': (
+            _setting('GOOGLE_DATAMANAGER_REFRESH_TOKEN')
+            or _setting('GOOGLE_ADS_REFRESH_TOKEN')
+        ),
+    }
 
 
-def _classify_upload(payload, count) -> tuple[set, dict]:
-    results = payload.get('results') or []
-    error = payload.get('partialFailureError') or {}
-    indexed = {}
-    for detail in error.get('details') or []:
-        if not isinstance(detail, dict):
-            continue
-        for item in detail.get('errors') or []:
-            if not isinstance(item, dict):
-                continue
-            index = _error_index(item.get('location'))
-            if index is None:
-                continue
-            code = str(item.get('errorCode') or '')
-            message = item.get('message') or code
-            indexed.setdefault(index, []).append((code, message))
-
-    uploaded = set()
-    failed = {}
-    for index in range(count):
-        problems = indexed.get(index) or []
-        if problems and any(_is_duplicate(code, message) for code, message in problems):
-            uploaded.add(index)
-            continue
-        if problems:
-            failed[index] = str(problems[0][1])[:500]
-            continue
-        result = results[index] if index < len(results) else {}
-        if result or not error:
-            uploaded.add(index)
-            continue
-        failed[index] = str(error.get('message') or 'partial failure')[:500]
-    return uploaded, failed
+def _resolve_validate_only(value) -> bool:
+    if value is None:
+        return _flag('GOOGLE_DATAMANAGER_VALIDATE_ONLY')
+    return bool(value)
 
 
-def _is_duplicate(code, message) -> bool:
-    blob = f'{code} {message}'.upper()
-    return 'ORDER_ID' in blob and ('ALREADY' in blob or 'DUPLICATE' in blob)
+def _flag(name) -> bool:
+    raw = getattr(settings, name, False)
+    if isinstance(raw, bool):
+        return raw
+    text = str(raw or '').strip().lower()
+    if not text:
+        return False
+    return text in ('1', 'true', 'yes', 'on')
 
 
-def _error_index(location):
-    elements = (location or {}).get('fieldPathElements') or []
-    for element in elements:
-        if not isinstance(element, dict):
-            continue
-        if element.get('fieldName') == 'conversions' and 'index' in element:
-            try:
-                return int(element['index'])
-            except (TypeError, ValueError):
-                return None
-    return None
+def _is_duplicate_error(response) -> bool:
+    text = ''
+    try:
+        text = response.text or ''
+    except Exception:
+        text = ''
+    blob = f'{_safe_error(response)}\n{text[:4000]}'.upper()
+    return 'DUPLICATE' in blob or 'ALREADY' in blob
 
 
 def _mark_many(order_ids, status, error):
@@ -395,21 +409,20 @@ def _setting(name) -> str:
 
 
 def _missing_settings() -> list[str]:
-    required = [
-        'KEYCRM_API_KEY',
-        'GOOGLE_ADS_CLIENT_ID',
-        'GOOGLE_ADS_CLIENT_SECRET',
-        'GOOGLE_ADS_REFRESH_TOKEN',
-        'GOOGLE_ADS_DEVELOPER_TOKEN',
-        'GOOGLE_ADS_CUSTOMER_ID',
-        'GOOGLE_ADS_CONVERSION_ACTION_ID',
-    ]
     missing = []
-    for name in required:
-        raw = _setting(name)
-        if name in ('GOOGLE_ADS_CUSTOMER_ID', 'GOOGLE_ADS_CONVERSION_ACTION_ID'):
-            raw = _digits(raw)
-        if not raw:
+    if not _setting('KEYCRM_API_KEY'):
+        missing.append('KEYCRM_API_KEY')
+    creds = _oauth_credentials()
+    labels = (
+        ('client_id', 'GOOGLE_DATAMANAGER_CLIENT_ID'),
+        ('client_secret', 'GOOGLE_DATAMANAGER_CLIENT_SECRET'),
+        ('refresh_token', 'GOOGLE_DATAMANAGER_REFRESH_TOKEN'),
+    )
+    for key, label in labels:
+        if not creds[key]:
+            missing.append(label)
+    for name in ('GOOGLE_ADS_CUSTOMER_ID', 'GOOGLE_ADS_CONVERSION_ACTION_ID'):
+        if not _digits(_setting(name)):
             missing.append(name)
     return missing
 

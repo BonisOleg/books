@@ -1,4 +1,4 @@
-"""Нормалізація контактів і тіло офлайн-конверсії Google Ads."""
+"""Нормалізація контактів і подія Google Data Manager."""
 
 from __future__ import annotations
 
@@ -49,33 +49,48 @@ def format_conversion_datetime(moment: datetime) -> str:
     return f"{local.strftime('%Y-%m-%d %H:%M:%S')}{offset}"
 
 
-def build_conversion(order, *, customer_id, action_id, now=None) -> dict | None:
+def format_event_timestamp(moment: datetime) -> str:
+    local = moment.astimezone(KYIV)
+    offset = local.strftime('%z')
+    if len(offset) == 5:
+        offset = f'{offset[:3]}:{offset[3:]}'
+    return f"{local.strftime('%Y-%m-%dT%H:%M:%S')}{offset}"
+
+
+def build_event(order, *, now=None) -> dict | None:
     order_id = order_id_of(order)
     if order_id is None:
         return None
     buyer = _buyer(order)
     hashed_phone = normalize_and_hash_phone(buyer.get('phone'))
     hashed_email = normalize_and_hash_email(buyer.get('email'))
-    if not hashed_phone and not hashed_email:
+    gclid = _gclid(order)
+    if not hashed_phone and not hashed_email and not gclid:
         return None
 
+    moment = now or datetime.now(dt_timezone.utc)
+    event = {
+        'transactionId': str(order_id),
+        'eventTimestamp': format_event_timestamp(_event_moment(order, moment)),
+        'conversionValue': _conversion_value(order),
+        'currency': 'UAH',
+        'eventSource': 'WEB',
+    }
+    if gclid:
+        event['adIdentifiers'] = {'gclid': gclid}
     identifiers = []
     if hashed_phone:
-        identifiers.append({'hashedPhoneNumber': hashed_phone})
+        identifiers.append({'phoneNumber': hashed_phone})
     if hashed_email:
-        identifiers.append({'hashedEmail': hashed_email})
+        identifiers.append({'emailAddress': hashed_email})
+    if identifiers:
+        event['userData'] = {'userIdentifiers': identifiers}
+    return event
 
-    moment = now or datetime.now(dt_timezone.utc)
-    return {
-        'conversionAction': (
-            f'customers/{customer_id}/conversionActions/{action_id}'
-        ),
-        'conversionDateTime': _conversion_moment(order, moment),
-        'conversionValue': _conversion_value(order),
-        'currencyCode': 'UAH',
-        'orderId': str(order_id),
-        'userIdentifiers': identifiers,
-    }
+
+def build_conversion(order, *, now=None, **_legacy):
+    """Сумісний виклик build_event. customer_id/action_id ігноруються."""
+    return build_event(order, now=now)
 
 
 def order_id_of(order):
@@ -96,7 +111,7 @@ def order_time(order):
     return None
 
 
-def _conversion_moment(order, now: datetime) -> str:
+def _event_moment(order, now: datetime) -> datetime:
     moment = None
     for key in ('closed_at', 'status_changed_at', 'updated_at', 'created_at'):
         moment = _parse_dt(order.get(key))
@@ -106,7 +121,46 @@ def _conversion_moment(order, now: datetime) -> str:
         moment = now
     if moment > now:
         moment = now - timedelta(seconds=60)
-    return format_conversion_datetime(moment)
+    return moment
+
+
+_GCLID_KEYS = frozenset({'gclid', 'utm_gclid'})
+
+
+def _gclid(order) -> str:
+    if not isinstance(order, dict):
+        return ''
+    for container in _gclid_containers(order):
+        for key, value in container.items():
+            if str(key).lower() not in _GCLID_KEYS:
+                continue
+            text = _clean_gclid(value)
+            if text:
+                return text
+    return ''
+
+
+def _gclid_containers(order) -> list:
+    found = [order]
+    marketing = order.get('marketing')
+    if isinstance(marketing, dict):
+        found.append(marketing)
+        nested = marketing.get('utm')
+        if isinstance(nested, dict):
+            found.append(nested)
+    utm = order.get('utm')
+    if isinstance(utm, dict):
+        found.append(utm)
+    return found
+
+
+def _clean_gclid(value) -> str:
+    if not isinstance(value, str):
+        return ''
+    text = value.strip()
+    if not text or any(ch.isspace() for ch in text) or len(text) > 500:
+        return ''
+    return text
 
 
 def _conversion_value(order) -> float:

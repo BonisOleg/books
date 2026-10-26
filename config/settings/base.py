@@ -157,6 +157,21 @@ def _env_int(name, default):
         return default
 
 
+def _env_text(*names):
+    for name in names:
+        raw = (os.getenv(name) or '').strip()
+        if raw:
+            return raw
+    return ''
+
+
+def _env_bool(name, default=False):
+    raw = (os.getenv(name) or '').strip().lower()
+    if not raw:
+        return default
+    return raw in ('1', 'true', 'yes', 'on')
+
+
 KEYCRM_API_KEY = os.getenv('KEYCRM_API_KEY', '')
 KEYCRM_SOURCE_ID = os.getenv('KEYCRM_SOURCE_ID', '')
 KEYCRM_COMPLETED_STATUS_ID = _env_int('KEYCRM_COMPLETED_STATUS_ID', 12)
@@ -164,11 +179,22 @@ KEYCRM_COMPLETED_STATUS_ID = _env_int('KEYCRM_COMPLETED_STATUS_ID', 12)
 GOOGLE_ADS_CLIENT_ID = os.getenv('GOOGLE_ADS_CLIENT_ID', '')
 GOOGLE_ADS_CLIENT_SECRET = os.getenv('GOOGLE_ADS_CLIENT_SECRET', '')
 GOOGLE_ADS_REFRESH_TOKEN = os.getenv('GOOGLE_ADS_REFRESH_TOKEN', '')
-GOOGLE_ADS_DEVELOPER_TOKEN = os.getenv('GOOGLE_ADS_DEVELOPER_TOKEN', '')
 GOOGLE_ADS_CUSTOMER_ID = os.getenv('GOOGLE_ADS_CUSTOMER_ID', '')
 GOOGLE_ADS_CONVERSION_ACTION_ID = os.getenv('GOOGLE_ADS_CONVERSION_ACTION_ID', '')
 GOOGLE_ADS_LOGIN_CUSTOMER_ID = os.getenv('GOOGLE_ADS_LOGIN_CUSTOMER_ID', '')
-GOOGLE_ADS_API_VERSION = os.getenv('GOOGLE_ADS_API_VERSION', 'v23') or 'v23'
+
+# Порожні GOOGLE_DATAMANAGER_CLIENT_* беруть відповідні GOOGLE_ADS_*.
+GOOGLE_DATAMANAGER_CLIENT_ID = _env_text(
+    'GOOGLE_DATAMANAGER_CLIENT_ID', 'GOOGLE_ADS_CLIENT_ID',
+)
+GOOGLE_DATAMANAGER_CLIENT_SECRET = _env_text(
+    'GOOGLE_DATAMANAGER_CLIENT_SECRET', 'GOOGLE_ADS_CLIENT_SECRET',
+)
+GOOGLE_DATAMANAGER_REFRESH_TOKEN = _env_text(
+    'GOOGLE_DATAMANAGER_REFRESH_TOKEN', 'GOOGLE_ADS_REFRESH_TOKEN',
+)
+GOOGLE_DATAMANAGER_VALIDATE_ONLY = _env_bool('GOOGLE_DATAMANAGER_VALIDATE_ONLY', False)
+GOOGLE_DATAMANAGER_CONSENT_GRANTED = _env_bool('GOOGLE_DATAMANAGER_CONSENT_GRANTED', False)
 
 NOVAPOSHTA_API_KEY = os.getenv('NOVAPOSHTA_API_KEY', '')
 
