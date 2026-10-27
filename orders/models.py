@@ -112,6 +112,8 @@ class OfflineConversionLog(models.Model):
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES)
     uploaded_at = models.DateTimeField('Час вивантаження', null=True, blank=True)
     error = models.TextField('Помилка', blank=True)
+    attempts = models.PositiveIntegerField('Спроби', default=0)
+    last_attempt_at = models.DateTimeField('Остання спроба', null=True, blank=True)
     created_at = models.DateTimeField('Створено', auto_now_add=True)
 
     class Meta:

@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import logging
-import os
-import re
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timezone as dt_timezone
 
 import requests
 from django.conf import settings
-from django.utils import timezone as dj_timezone
 
 from orders.google_ads_conversions1 import (
     build_conversion,
@@ -21,9 +18,22 @@ from orders.google_ads_conversions1 import (
     order_id_of,
     order_time,
     sha256_hash,
+    _digits,
+    _extract_list,
     _field_violations,
     _invalid_error,
+    _lookback,
+    _missing_settings,
+    _page_last,
+    _setting,
     _violations_by_event,
+    _window,
+)
+from orders.google_ads_conversions2 import (
+    failed_retry_ids,
+    mark_conversion_logs,
+    retry_eligible,
+    select_pending,
 )
 from orders.models import OfflineConversionLog
 
@@ -32,7 +42,6 @@ logger = logging.getLogger(__name__)
 KEYCRM_API = 'https://openapi.keycrm.app/v1'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 INGEST_URL = 'https://datamanager.googleapis.com/v1/events:ingest'
-_DEFAULT_LOOKBACK_HOURS = 48
 PAGE_LIMIT = 50
 MAX_PAGES = 20
 UPLOAD_CHUNK = 200
@@ -50,81 +59,156 @@ __all__ = [
 ]
 
 
-def upload_completed_orders(validate_only=None) -> dict:
+def upload_completed_orders(validate_only=None, order_ids=None) -> dict:
     validate_only = _resolve_validate_only(validate_only)
     missing = _missing_settings()
     if missing:
         message = 'Вивантаження в Data Manager вимкнено, не задано: ' + ', '.join(missing)
         logger.warning(message)
-        return {
-            'not_configured': True,
-            'missing': missing,
-            'validate_only': validate_only,
-            'message': message,
-            'fetched': 0,
-            'uploaded': 0,
-            'skipped': 0,
-            'failed': 0,
-            'invalid': 0,
-        }
+        return _summary(
+            not_configured=True,
+            missing=missing,
+            validate_only=validate_only,
+            message=message,
+        )
 
-    orders = fetch_completed_orders()
     now = datetime.now(dt_timezone.utc)
-    pending = []
-    skipped = 0
-    order_ids = []
-    for order in orders:
-        order_id = order_id_of(order)
-        if order_id is None:
-            skipped += 1
-            continue
-        order_ids.append(order_id)
+    retried = 0
+    if order_ids is None:
+        orders = fetch_completed_orders()
+        pending, skipped = select_pending(orders, now)
+        for order_id in failed_retry_ids(_present_ids(orders)):
+            event = _event_for_retry(order_id, now)
+            if event is None:
+                continue
+            pending.append((order_id, event))
+            retried += 1
+    else:
+        orders, missing_count = _load_explicit_orders(order_ids)
+        pending, skipped = select_pending(
+            orders,
+            now,
+            ignore_attempt_cap=True,
+            require_completed=True,
+        )
+        skipped += missing_count
 
-    already = set(
-        OfflineConversionLog.objects.filter(
-            keycrm_order_id__in=order_ids,
-            status=OfflineConversionLog.STATUS_UPLOADED,
-        ).values_list('keycrm_order_id', flat=True)
-    )
-
-    for order in orders:
-        order_id = order_id_of(order)
-        if order_id is None:
-            continue
-        if order_id in already:
-            skipped += 1
-            continue
-        event = build_event(order, now=now)
-        if event is None:
-            skipped += 1
-            continue
-        pending.append((order_id, event))
-
-    uploaded = 0
-    failed = 0
-    invalid = 0
+    uploaded = failed = invalid = 0
     if pending:
         uploaded, failed, invalid = _upload_pending(
             pending, validate_only=validate_only,
         )
+    summary = _summary(
+        validate_only=validate_only,
+        fetched=len(orders),
+        uploaded=uploaded,
+        skipped=skipped,
+        failed=failed,
+        invalid=invalid,
+        retried=retried,
+    )
+    logger.info(
+        'Data Manager: отримано %s, повторів %s, вивантажено %s, пропущено %s, '
+        'помилки %s, невалідні %s, перевірка %s',
+        summary['fetched'], retried, uploaded, skipped, failed, invalid, validate_only,
+    )
+    return summary
 
+
+def _summary(**overrides) -> dict:
     summary = {
         'not_configured': False,
         'missing': [],
-        'validate_only': validate_only,
+        'validate_only': False,
         'message': '',
-        'fetched': len(orders),
-        'uploaded': uploaded,
-        'skipped': skipped,
-        'failed': failed,
-        'invalid': invalid,
+        'fetched': 0,
+        'uploaded': 0,
+        'skipped': 0,
+        'failed': 0,
+        'invalid': 0,
+        'retried': 0,
     }
-    logger.info(
-        'Data Manager: отримано %s, вивантажено %s, пропущено %s, '
-        'помилки %s, невалідні %s, перевірка %s',
-        summary['fetched'], uploaded, skipped, failed, invalid, validate_only,
-    )
+    summary.update(overrides)
     return summary
+
+
+def _present_ids(orders):
+    ids = []
+    for order in orders:
+        order_id = order_id_of(order)
+        if order_id is not None:
+            ids.append(order_id)
+    return ids
+
+
+def _event_for_retry(order_id, now):
+    order = _fetch_order(order_id, strict=False)
+    if order is None:
+        return None
+    if not retry_eligible(order, now):
+        logger.info(
+            'Пропуск повтору keycrm_order_id=%s: не виконано або поза вікном кліку',
+            order_id,
+        )
+        return None
+    return build_event(order, now=now)
+
+
+def _load_explicit_orders(order_ids):
+    found = []
+    missing = 0
+    seen = set()
+    for raw in order_ids:
+        try:
+            order_id = int(raw)
+        except (TypeError, ValueError):
+            missing += 1
+            continue
+        if order_id <= 0 or order_id in seen:
+            continue
+        seen.add(order_id)
+        order = _fetch_order(order_id, strict=True)
+        if order is None:
+            missing += 1
+        else:
+            found.append(order)
+    return found, missing
+
+
+def _fetch_order(order_id, *, strict):
+    try:
+        response = requests.get(
+            f'{KEYCRM_API}/order/{order_id}',
+            headers=_keycrm_headers(),
+            params={'include': 'buyer'},
+            timeout=TIMEOUT,
+        )
+    except requests.RequestException:
+        if strict:
+            raise
+        logger.warning('KeyCRM: не вдалося прочитати замовлення %s', order_id)
+        return None
+    if response.status_code == 404:
+        logger.info('KeyCRM: замовлення %s не знайдено', order_id)
+        return None
+    if response.status_code >= 400:
+        logger.error('KeyCRM HTTP %s для замовлення %s', response.status_code, order_id)
+        if strict:
+            response.raise_for_status()
+        return None
+    payload = _json_body(response)
+    if isinstance(payload.get('data'), dict):
+        payload = payload['data']
+    if order_id_of(payload) is None:
+        return None
+    return payload
+
+
+def _keycrm_headers():
+    return {
+        'Authorization': f'Bearer {_setting("KEYCRM_API_KEY")}',
+        'Accept': 'application/json',
+    }
 
 
 def fetch_completed_orders() -> list:
@@ -207,7 +291,7 @@ def _ingest_chunk(token, chunk, *, validate_only: bool, can_drop: bool):
         return len(order_ids), 0, 0
     logger.error('Data Manager HTTP %s: %s', response.status_code, message)
     if not validate_only:
-        _mark_many(order_ids, OfflineConversionLog.STATUS_FAILED, message)
+        mark_conversion_logs(order_ids, OfflineConversionLog.STATUS_FAILED, message)
     raise requests.HTTPError(message, response=response)
 
 
@@ -218,7 +302,7 @@ def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool):
             keep.append(item)
             continue
         if not validate_only:
-            _mark_many(
+            mark_conversion_logs(
                 [item[0]],
                 OfflineConversionLog.STATUS_FAILED,
                 _invalid_error(grouped[index]),
@@ -235,7 +319,7 @@ def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool):
 def _mark_uploaded(order_ids, *, validate_only: bool) -> None:
     if validate_only:
         return
-    _mark_many(order_ids, OfflineConversionLog.STATUS_UPLOADED, '')
+    mark_conversion_logs(order_ids, OfflineConversionLog.STATUS_UPLOADED, '')
 
 
 def _collect_pages(mode, between, start) -> list:
@@ -277,10 +361,7 @@ def _collect_pages(mode, between, start) -> list:
 def _keycrm_get(params) -> dict:
     response = requests.get(
         f'{KEYCRM_API}/order',
-        headers={
-            'Authorization': f'Bearer {_setting("KEYCRM_API_KEY")}',
-            'Accept': 'application/json',
-        },
+        headers=_keycrm_headers(),
         params=params,
         timeout=TIMEOUT,
     )
@@ -383,97 +464,6 @@ def _is_duplicate_error(response) -> bool:
         text = ''
     blob = f'{_safe_error(response)}\n{text[:4000]}'.upper()
     return 'DUPLICATE' in blob or 'ALREADY' in blob
-
-
-def _mark_many(order_ids, status, error):
-    now = dj_timezone.now() if status == OfflineConversionLog.STATUS_UPLOADED else None
-    for order_id in order_ids:
-        OfflineConversionLog.objects.update_or_create(
-            keycrm_order_id=order_id,
-            defaults={
-                'status': status,
-                'uploaded_at': now,
-                'error': '' if status == OfflineConversionLog.STATUS_UPLOADED else (error or '')[:2000],
-            },
-        )
-
-
-def _lookback() -> timedelta:
-    raw = getattr(settings, 'LOOKBACK_HOURS', None)
-    if raw is None:
-        raw = os.environ.get('LOOKBACK_HOURS')
-    hours = _DEFAULT_LOOKBACK_HOURS
-    if isinstance(raw, str):
-        raw = raw.strip()
-    if raw not in (None, '') and not isinstance(raw, bool):
-        try:
-            if isinstance(raw, float) and not raw.is_integer():
-                raise ValueError
-            parsed = int(raw)
-        except (TypeError, ValueError):
-            parsed = 0
-        if parsed > 0:
-            hours = parsed
-    return timedelta(hours=hours)
-
-
-def _window():
-    end = datetime.now(dt_timezone.utc)
-    return end - _lookback(), end
-
-
-def _extract_list(data):
-    if isinstance(data, list):
-        return data
-    if isinstance(data, dict):
-        for key in ('data', 'items'):
-            value = data.get(key)
-            if isinstance(value, list):
-                return value
-    return []
-
-
-def _page_last(data):
-    last_page = _as_int(data.get('last_page') if isinstance(data, dict) else None)
-    if last_page is None and isinstance(data, dict) and isinstance(data.get('meta'), dict):
-        last_page = _as_int(data['meta'].get('last_page'))
-    return last_page
-
-
-def _as_int(value):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _digits(value) -> str:
-    return re.sub(r'\D', '', str(value or ''))
-
-
-def _setting(name) -> str:
-    return str(getattr(settings, name, '') or '').strip()
-
-
-def _missing_settings() -> list[str]:
-    digit_names = {
-        'GOOGLE_ADS_CUSTOMER_ID',
-        'GOOGLE_ADS_CONVERSION_ACTION_ID',
-    }
-    required = (
-        'KEYCRM_API_KEY',
-        'GOOGLE_ADS_CLIENT_ID',
-        'GOOGLE_ADS_CLIENT_SECRET',
-        'GOOGLE_DATAMANAGER_REFRESH_TOKEN',
-        'GOOGLE_ADS_CUSTOMER_ID',
-        'GOOGLE_ADS_CONVERSION_ACTION_ID',
-    )
-    missing = []
-    for name in required:
-        value = _digits(_setting(name)) if name in digit_names else _setting(name)
-        if not value:
-            missing.append(name)
-    return missing
 
 
 def _json_body(response) -> dict:

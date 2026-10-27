@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -143,6 +144,7 @@ class UploadTests(TestCase):
             'grand_total': -2,
             'buyer': {'phone': 'abc', 'email': 'A.B+C@Example.com'},
         })
+        self.assertEqual(event['transactionId'], 'keycrm-9')
         self.assertEqual(event['userData']['userIdentifiers'], [
             {'emailAddress': _sha('a.b+c@example.com')},
         ])
@@ -171,7 +173,7 @@ class UploadTests(TestCase):
         self.assertEqual(summary['invalid'], 0)
         self.assertEqual(router.uploads, [])
         text = '\n'.join(captured.output)
-        self.assertIn('transactionId=4242', text)
+        self.assertIn('transactionId=keycrm-4242', text)
         for secret in secrets:
             self.assertNotIn(secret, text)
 
@@ -192,12 +194,14 @@ class UploadTests(TestCase):
                 )
                 log = OfflineConversionLog.objects.get(keycrm_order_id=103)
                 self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
+                self.assertEqual(log.attempts, 1)
+                self.assertIsNotNone(log.last_attempt_at)
                 self.assertEqual(log.error, f'invalid: {field}: User identifier rejected')
                 for order_id in (100, 101, 102):
-                    self.assertEqual(
-                        OfflineConversionLog.objects.get(keycrm_order_id=order_id).status,
-                        OfflineConversionLog.STATUS_UPLOADED,
-                    )
+                    uploaded = OfflineConversionLog.objects.get(keycrm_order_id=order_id)
+                    self.assertEqual(uploaded.status, OfflineConversionLog.STATUS_UPLOADED)
+                    self.assertEqual(uploaded.attempts, 0)
+                    self.assertIsNone(uploaded.last_attempt_at)
 
     def test_validate_only_field_violation_retries_without_log(self):
         router, secrets = _violation_router('events.events[3]')
@@ -222,11 +226,11 @@ class UploadTests(TestCase):
         self.assertIs(router.uploads[1]['validateOnly'], summary['validate_only'])
         self.assertEqual(
             [item['transactionId'] for item in router.uploads[0]['events']],
-            ['100', '101', '102', '103'],
+            ['keycrm-100', 'keycrm-101', 'keycrm-102', 'keycrm-103'],
         )
         self.assertEqual(
             [item['transactionId'] for item in router.uploads[1]['events']],
-            ['100', '101', '102'],
+            ['keycrm-100', 'keycrm-101', 'keycrm-102'],
         )
         text = '\n'.join(lines)
         self.assertIn(f'field={field}', text)
@@ -271,7 +275,7 @@ def _violation_router(field):
 class _Router:
     def __init__(
         self, orders, google_payload=None, google_status=200, reject_dated=False,
-        ingest_responses=None,
+        ingest_responses=None, by_id_orders=None,
     ):
         self.orders = orders
         self.google_payload = google_payload if google_payload is not None else {
@@ -281,9 +285,12 @@ class _Router:
         self.google_status = google_status
         self.reject_dated = reject_dated
         self.ingest_responses = ingest_responses
+        self.by_id_orders = by_id_orders
         self.uploads = []
         self.headers = {}
         self.gets = []
+        self.get_urls = []
+        self.by_id = []
         self.urls = []
         self.token_urls = []
         self.token_bodies = []
@@ -291,6 +298,24 @@ class _Router:
     def get(self, url, **kwargs):
         params = kwargs.get('params') or {}
         self.gets.append(params)
+        self.get_urls.append(url)
+        match = re.search(r'/order/(\d+)$', str(url).rstrip('/'))
+        if match:
+            order_id = int(match.group(1))
+            self.by_id.append(order_id)
+            if self.by_id_orders is not None:
+                found = self.by_id_orders.get(order_id)
+            else:
+                found = next(
+                    (item for item in self.orders if item.get('id') == order_id),
+                    None,
+                )
+            if isinstance(found, tuple):
+                status, payload = found
+                return _response(payload, status)
+            if found is None:
+                return _response({'message': 'not found'}, 404)
+            return _response(found)
         if self.reject_dated and 'filter[updated_between]' in params:
             return _response({'message': 'bad filter'}, 400)
         return _response({'data': self.orders, 'last_page': 1})

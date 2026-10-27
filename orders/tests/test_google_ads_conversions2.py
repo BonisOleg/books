@@ -102,7 +102,7 @@ class UploadTests(TestCase):
         self.assertEqual(destination['productDestinationId'], '999')
 
         event = body['events'][0]
-        self.assertEqual(event['transactionId'], '77')
+        self.assertEqual(event['transactionId'], 'keycrm-77')
         self.assertEqual(event['currency'], 'UAH')
         self.assertEqual(event['conversionValue'], 150.5)
         self.assertEqual(event['eventSource'], 'WEB')
@@ -115,10 +115,10 @@ class UploadTests(TestCase):
             event['eventTimestamp'],
             r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$',
         )
-        self.assertEqual(
-            OfflineConversionLog.objects.get(keycrm_order_id=77).status,
-            OfflineConversionLog.STATUS_UPLOADED,
-        )
+        log = OfflineConversionLog.objects.get(keycrm_order_id=77)
+        self.assertEqual(log.status, OfflineConversionLog.STATUS_UPLOADED)
+        self.assertEqual(log.attempts, 0)
+        self.assertIsNone(log.last_attempt_at)
 
     def test_skips_order_without_identifiers(self):
         order = _order()
@@ -161,10 +161,9 @@ class UploadTests(TestCase):
                 self.assertEqual(first['failed'], 0)
                 self.assertEqual(second['skipped'], 1)
                 self.assertEqual(len(router.uploads), 1)
-                self.assertEqual(
-                    OfflineConversionLog.objects.get(keycrm_order_id=77).status,
-                    OfflineConversionLog.STATUS_UPLOADED,
-                )
+                log = OfflineConversionLog.objects.get(keycrm_order_id=77)
+                self.assertEqual(log.status, OfflineConversionLog.STATUS_UPLOADED)
+                self.assertEqual(log.attempts, 0)
 
     def test_http_error_marks_failed_and_retries(self):
         router = _Router([_order()], google_status=400, google_payload={
@@ -178,6 +177,9 @@ class UploadTests(TestCase):
         self.assertEqual(len(router.uploads), 2)
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
+        self.assertEqual(log.attempts, 2)
+        self.assertIsNotNone(log.last_attempt_at)
+        self.assertEqual(router.by_id, [])
 
     @override_settings(GOOGLE_ADS_LOGIN_CUSTOMER_ID='999-111-2222')
     def test_login_account_only_when_set(self):
@@ -272,6 +274,7 @@ class UploadTests(TestCase):
             r'^2026-10-20T12:00:00\+0[23]:00$',
         )
         self.assertNotRegex(event['eventTimestamp'], r'\s')
+        self.assertEqual(event['transactionId'], 'keycrm-5')
         self.assertEqual(event['userData']['userIdentifiers'], [
             {'emailAddress': _sha('a@b.com')},
         ])
@@ -280,6 +283,7 @@ class UploadTests(TestCase):
             'buyer': {},
             'marketing': {'utm': {'utm_source': 'google', 'gclid': 'from-utm'}},
         })
+        self.assertEqual(gclid_event['transactionId'], 'keycrm-8')
         self.assertEqual(gclid_event['adIdentifiers'], {'gclid': 'from-utm'})
         self.assertNotIn('userData', gclid_event)
 
@@ -340,6 +344,7 @@ class CommandTests(TestCase):
                 call_command('upload_keycrm_conversions')
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
+        self.assertEqual(log.attempts, 1)
 
     def test_command_validate_flags_do_not_write_log(self):
         for flag in ('--validate-only', '--dry-run'):

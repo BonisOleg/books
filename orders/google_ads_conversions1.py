@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 import re
 from datetime import datetime, timedelta, timezone as dt_timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
+
+_DEFAULT_LOOKBACK_HOURS = 48
 
 try:
     KYIV = ZoneInfo('Europe/Kyiv')
@@ -91,12 +96,12 @@ def build_event(order, *, now=None) -> dict | None:
     hashed_email = normalize_and_hash_email(buyer.get('email'))
     gclid = _gclid(order)
     if not hashed_phone and not hashed_email and not gclid:
-        logger.info('Пропуск події transactionId=%s', order_id)
+        logger.info('Пропуск події transactionId=keycrm-%s', order_id)
         return None
 
     moment = now or datetime.now(dt_timezone.utc)
     event = {
-        'transactionId': str(order_id),
+        'transactionId': f'keycrm-{order_id}',
         'eventTimestamp': format_event_timestamp(_event_moment(order, moment)),
         'conversionValue': _conversion_value(order),
         'currency': 'UAH',
@@ -137,12 +142,19 @@ def order_time(order):
     return None
 
 
-def _event_moment(order, now: datetime) -> datetime:
-    moment = None
+def source_event_moment(order):
+    """Час події з KeyCRM: closed_at, далі status_changed_at, updated_at, created_at."""
+    if not isinstance(order, dict):
+        return None
     for key in ('closed_at', 'status_changed_at', 'updated_at', 'created_at'):
         moment = _parse_dt(order.get(key))
         if moment:
-            break
+            return moment
+    return None
+
+
+def _event_moment(order, now: datetime) -> datetime:
+    moment = source_event_moment(order)
     if moment is None or moment > now + timedelta(minutes=5):
         moment = now
     if moment > now:
@@ -279,3 +291,81 @@ def _violations_by_event(violations, size):
 def _invalid_error(items) -> str:
     parts = [f'{field}: {description}' for field, description in items]
     return ('invalid: ' + '; '.join(parts))[:2000]
+
+
+def _lookback() -> timedelta:
+    raw = getattr(settings, 'LOOKBACK_HOURS', None)
+    if raw is None:
+        raw = os.environ.get('LOOKBACK_HOURS')
+    hours = _DEFAULT_LOOKBACK_HOURS
+    if isinstance(raw, str):
+        raw = raw.strip()
+    if raw not in (None, '') and not isinstance(raw, bool):
+        try:
+            if isinstance(raw, float) and not raw.is_integer():
+                raise ValueError
+            parsed = int(raw)
+        except (TypeError, ValueError):
+            parsed = 0
+        if parsed > 0:
+            hours = parsed
+    return timedelta(hours=hours)
+
+
+def _window():
+    end = datetime.now(dt_timezone.utc)
+    return end - _lookback(), end
+
+
+def _extract_list(data):
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        for key in ('data', 'items'):
+            value = data.get(key)
+            if isinstance(value, list):
+                return value
+    return []
+
+
+def _page_last(data):
+    last_page = _as_int(data.get('last_page') if isinstance(data, dict) else None)
+    if last_page is None and isinstance(data, dict) and isinstance(data.get('meta'), dict):
+        last_page = _as_int(data['meta'].get('last_page'))
+    return last_page
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _digits(value) -> str:
+    return re.sub(r'\D', '', str(value or ''))
+
+
+def _setting(name) -> str:
+    return str(getattr(settings, name, '') or '').strip()
+
+
+def _missing_settings() -> list[str]:
+    digit_names = {
+        'GOOGLE_ADS_CUSTOMER_ID',
+        'GOOGLE_ADS_CONVERSION_ACTION_ID',
+    }
+    required = (
+        'KEYCRM_API_KEY',
+        'GOOGLE_ADS_CLIENT_ID',
+        'GOOGLE_ADS_CLIENT_SECRET',
+        'GOOGLE_DATAMANAGER_REFRESH_TOKEN',
+        'GOOGLE_ADS_CUSTOMER_ID',
+        'GOOGLE_ADS_CONVERSION_ACTION_ID',
+    )
+    missing = []
+    for name in required:
+        value = _digits(_setting(name)) if name in digit_names else _setting(name)
+        if not value:
+            missing.append(name)
+    return missing
