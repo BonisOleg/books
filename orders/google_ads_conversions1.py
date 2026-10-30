@@ -171,11 +171,23 @@ def order_id_of(order):
 
 
 def transaction_id_of(order) -> str | None:
-    """Номер сайту (source_uuid), інакше id KeyCRM."""
+    """Номер сайту: order_number якщо source_uuid = legacy Order.id; інакше source_uuid; fallback id KeyCRM."""
     if not isinstance(order, dict):
         return None
     source_uuid = str(order.get('source_uuid') or '').strip()
     if source_uuid:
+        if source_uuid.isdigit():
+            from orders.models import Order
+            try:
+                pk = int(source_uuid)
+            except (ValueError, OverflowError):
+                pk = None
+            if pk is not None:
+                local_id = (
+                    Order.objects.filter(pk=pk).values_list('id', flat=True).first()
+                )
+                if local_id is not None:
+                    return f'{local_id:06d}'
         return source_uuid
     order_id = order_id_of(order)
     if order_id is None:

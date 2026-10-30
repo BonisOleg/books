@@ -145,6 +145,39 @@ class KeyCrmSyncTests(TestCase):
         self.assertEqual(self.order.keycrm_order_id, 77)
         self.assertEqual(self.order.keycrm_payment_id, 88)
 
+    def test_reuses_existing_by_legacy_source_uuid(self):
+        lookups = []
+
+        def legacy_existing(method, url, **kwargs):
+            path = url.split('/v1', 1)[-1]
+            if (
+                method == 'GET'
+                and path.startswith('/order')
+                and not path.startswith('/order/payment')
+                and not path.startswith('/order/source')
+                and not path.startswith('/order/delivery')
+            ):
+                params = kwargs.get('params') or {}
+                source_uuid = params.get('filter[source_uuid]')
+                lookups.append(source_uuid)
+                if source_uuid == str(self.order.id):
+                    return _response({'data': [{
+                        'id': 66,
+                        'source_uuid': str(self.order.id),
+                        'payments': [{'id': 77}],
+                    }]})
+                return _response({'data': []})
+            return self.router(method, url, **kwargs)
+
+        with patch('orders.keycrm.requests.request', legacy_existing):
+            sync_order(self.order)
+
+        self.assertEqual(lookups, [self.order.order_number, str(self.order.id)])
+        self.assertEqual(self.router.posts, [])
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.keycrm_order_id, 66)
+        self.assertEqual(self.order.keycrm_payment_id, 77)
+
     def test_paid_status_updates_payment(self):
         self.order.keycrm_order_id = 501
         self.order.keycrm_payment_id = 900

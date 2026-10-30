@@ -157,7 +157,23 @@ def _store_ids(order, crm_order):
 
 
 def _find_existing(order):
-    source_uuid = order.order_number
+    """Шукає в KeyCRM за order_number і legacy source_uuid=str(order.id)."""
+    candidates = []
+    number = str(order.order_number or '').strip()
+    if number:
+        candidates.append(number)
+    legacy = str(order.id)
+    if legacy and legacy not in candidates:
+        candidates.append(legacy)
+
+    for source_uuid in candidates:
+        found = _lookup_by_source_uuid(source_uuid)
+        if found:
+            return found
+    return None
+
+
+def _lookup_by_source_uuid(source_uuid):
     try:
         data = _request(
             'GET',

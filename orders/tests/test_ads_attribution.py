@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +33,11 @@ from orders.middleware import AdsAttributionMiddleware
 from orders.models import OfflineConversionLog, Order, OrderItem
 from orders.tests.test_google_ads_conversions import ADS, _Router, _order, _patched
 from orders.tests.test_keycrm import LOC_MEM, KeyCrmRouter
+from orders.views import (
+    ORDER_SESSION_KEY,
+    PURCHASE_DATALAYER_SESSION_KEY,
+    _purchase_datalayer_payload,
+)
 from products.models import Product
 
 
@@ -154,6 +160,30 @@ class ConversionAttributionTests(TestCase):
         event = build_event(order)
         self.assertEqual(event['transactionId'], '000042')
         self.assertEqual(transaction_id_of({'id': 77}), '77')
+
+    def test_transaction_id_maps_legacy_order_id_to_order_number(self):
+        local = Order.objects.create(
+            first_name='А',
+            last_name='Б',
+            phone='+380501112233',
+            city='Київ',
+            warehouse='1',
+            total='10.00',
+        )
+        legacy = {'id': 9001, 'source_uuid': str(local.id), 'buyer': {'email': 'a@b.com'}}
+        self.assertEqual(transaction_id_of(legacy), local.order_number)
+        event = build_event(legacy)
+        self.assertEqual(event['transactionId'], local.order_number)
+
+        padded = {'id': 9002, 'source_uuid': local.order_number, 'buyer': {'email': 'a@b.com'}}
+        self.assertEqual(transaction_id_of(padded), local.order_number)
+
+        missing = {'id': 9003, 'source_uuid': '999999001', 'buyer': {'email': 'a@b.com'}}
+        self.assertEqual(transaction_id_of(missing), '999999001')
+        self.assertEqual(
+            transaction_id_of({'id': 55, 'source_uuid': ''}),
+            '55',
+        )
 
     def test_event_source_offline_vs_web(self):
         self.assertEqual(
@@ -291,3 +321,106 @@ class CheckoutAdsCookieTests(TestCase):
         self.assertEqual(order.gclid, 'OC1')
         self.assertEqual(order.utm_source, 'google')
         sync_mock.assert_called_once()
+
+
+class PurchaseDataLayerTests(TestCase):
+    def setUp(self):
+        self.order = Order.objects.create(
+            first_name='Іван',
+            last_name='Петренко',
+            phone='0501112233',
+            email='  Ivan.PETRENKO@Example.COM ',
+            city='Київ',
+            warehouse='1',
+            payment_method='cod',
+            total='125.50',
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            product_name='Книга <b>XSS</b>',
+            product_sku='SKU-"1"',
+            price='125.50',
+            quantity=2,
+        )
+
+    def test_payload_ecommerce_and_raw_user_data(self):
+        payload = _purchase_datalayer_payload(self.order)
+        items = [{
+            'item_id': 'SKU-"1"',
+            'item_name': 'Книга <b>XSS</b>',
+            'price': 125.5,
+            'quantity': 2,
+        }]
+        self.assertEqual(payload['event'], 'purchase')
+        self.assertEqual(payload['ecommerce'], {
+            'transaction_id': self.order.order_number,
+            'value': 125.5,
+            'currency': 'UAH',
+            'items': items,
+        })
+        # Top-level дублікати ecommerce (зворотна сумісність GTM)
+        self.assertEqual(payload['transaction_id'], self.order.order_number)
+        self.assertEqual(payload['value'], 125.5)
+        self.assertEqual(payload['currency'], 'UAH')
+        self.assertEqual(payload['items'], items)
+        self.assertEqual(payload['user_data'], {
+            'email': 'ivan.petrenko@example.com',
+            'phone_number': '+380501112233',
+        })
+        # email/phone лише в user_data, не на верхньому рівні
+        self.assertNotIn('email', payload)
+        self.assertNotIn('phone', payload)
+        self.assertNotIn('phone_number', payload)
+
+    def test_order_success_json_script_once_and_access_guard(self):
+        url = reverse('orders:success', args=[self.order.id])
+        denied = self.client.get(url)
+        self.assertEqual(denied.status_code, 404)
+
+        session = self.client.session
+        session[ORDER_SESSION_KEY] = [self.order.id]
+        session.save()
+
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, 200)
+        self.assertContains(first, 'id="purchase-datalayer"', html=False)
+        self.assertContains(first, "dataLayer.push({ ecommerce: null })", html=False)
+        self.assertContains(first, 'dataLayer.push(data)', html=False)
+        self.assertContains(first, 'gtm_purchase_', html=False)
+        self.assertNotContains(first, "gtag('event'", html=False)
+
+        script = first.context['purchase_datalayer']
+        self.assertEqual(script['ecommerce']['transaction_id'], self.order.order_number)
+        self.assertEqual(script['transaction_id'], self.order.order_number)
+        self.assertEqual(script['value'], script['ecommerce']['value'])
+        self.assertEqual(script['currency'], 'UAH')
+        self.assertEqual(script['items'], script['ecommerce']['items'])
+        self.assertEqual(script['user_data']['email'], 'ivan.petrenko@example.com')
+        self.assertEqual(script['user_data']['phone_number'], '+380501112233')
+        self.assertNotIn('email', script)
+        self.assertNotIn('phone_number', script)
+
+        node_match = (
+            b'<script id="purchase-datalayer" type="application/json">'
+            in first.content
+        )
+        self.assertTrue(node_match)
+        # XSS у назві товару має бути в JSON (екрановано), не як сирий HTML-тег
+        self.assertNotIn('Книга <b>XSS</b>', first.content.decode())
+        embedded = json.loads(
+            first.content.split(b'id="purchase-datalayer"', 1)[1]
+            .split(b'>', 1)[1]
+            .split(b'</script>', 1)[0]
+            .decode()
+        )
+        self.assertEqual(embedded['ecommerce']['items'][0]['item_name'], 'Книга <b>XSS</b>')
+
+        self.assertIn(
+            self.order.order_number,
+            self.client.session.get(PURCHASE_DATALAYER_SESSION_KEY, []),
+        )
+
+        second = self.client.get(url)
+        self.assertEqual(second.status_code, 200)
+        self.assertNotContains(second, 'id="purchase-datalayer"', html=False)
+        self.assertIsNone(second.context['purchase_datalayer'])

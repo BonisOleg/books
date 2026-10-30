@@ -18,6 +18,7 @@ from .models import Order, OrderItem
 from .utils import create_account_for_order, send_new_order_notification, send_order_confirmation_email
 
 ORDER_SESSION_KEY = 'allowed_order_ids'
+PURCHASE_DATALAYER_SESSION_KEY = 'purchase_datalayer_pushed'
 
 
 def _allow_order_access(request, order):
@@ -50,7 +51,9 @@ def _checkout_rate_limited(request):
 
 
 def _purchase_datalayer_payload(order) -> dict:
-    """GA4 purchase payload for GTM dataLayer (value/currency/transaction_id/items)."""
+    """GA4 purchase для GTM: ecommerce + сирі user_data (без хешу)."""
+    from orders.google_ads_conversions1 import normalize_phone_e164
+
     items = [
         {
             'item_id': item.product_sku,
@@ -60,18 +63,43 @@ def _purchase_datalayer_payload(order) -> dict:
         }
         for item in order.items.all()
     ]
-    payload = {
-        'event': 'purchase',
+    ecommerce = {
+        'transaction_id': order.order_number,
         'value': float(order.total),
         'currency': 'UAH',
-        'transaction_id': order.order_number,
         'items': items,
     }
-    if order.email:
-        payload['email'] = order.email
-    if order.phone:
-        payload['phone'] = order.phone
+    # Top-level дублікати ecommerce — зворотна сумісність зі змінними GTM.
+    # email/phone лише в user_data, не на верхньому рівні.
+    payload = {
+        'event': 'purchase',
+        'ecommerce': ecommerce,
+        'transaction_id': ecommerce['transaction_id'],
+        'value': ecommerce['value'],
+        'currency': ecommerce['currency'],
+        'items': ecommerce['items'],
+    }
+    user_data = {}
+    email = (order.email or '').strip().lower()
+    if email:
+        user_data['email'] = email
+    phone = normalize_phone_e164(order.phone)
+    if phone:
+        user_data['phone_number'] = phone
+    if user_data:
+        payload['user_data'] = user_data
     return payload
+
+
+def _consume_purchase_datalayer(request, order) -> dict | None:
+    """Повертає payload лише один раз на order_number у сесії."""
+    pushed = list(request.session.get(PURCHASE_DATALAYER_SESSION_KEY, []))
+    tx_id = order.order_number
+    if tx_id in pushed:
+        return None
+    pushed.append(tx_id)
+    request.session[PURCHASE_DATALAYER_SESSION_KEY] = pushed
+    return _purchase_datalayer_payload(order)
 
 
 def _oneclick_rate_limited(request):
@@ -162,7 +190,7 @@ def order_success(request, order_id):
     return render(request, 'orders/order_success.html', {
         'order': order,
         'page_title': f'Замовлення #{order.order_number}',
-        'purchase_datalayer': _purchase_datalayer_payload(order),
+        'purchase_datalayer': _consume_purchase_datalayer(request, order),
     })
 
 
