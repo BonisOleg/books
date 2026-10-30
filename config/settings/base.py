@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'orders.middleware.AdsAttributionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -166,7 +167,16 @@ def _env_bool(name, default=False):
 
 KEYCRM_API_KEY = os.getenv('KEYCRM_API_KEY', '')
 KEYCRM_SOURCE_ID = os.getenv('KEYCRM_SOURCE_ID', '')
+KEYCRM_SITE_SOURCE_ID = os.getenv('KEYCRM_SITE_SOURCE_ID', '') or KEYCRM_SOURCE_ID
 KEYCRM_COMPLETED_STATUS_ID = _env_int('KEYCRM_COMPLETED_STATUS_ID', 12)
+KEYCRM_COMPLETED_STATUS_IDS = os.getenv(
+    'KEYCRM_COMPLETED_STATUS_IDS',
+    str(KEYCRM_COMPLETED_STATUS_ID),
+)
+KEYCRM_CONVERSION_DAYS = _env_int('KEYCRM_CONVERSION_DAYS', 10)
+KEYCRM_CF_GCLID_UUID = os.getenv('KEYCRM_CF_GCLID_UUID', '')
+KEYCRM_CF_GBRAID_UUID = os.getenv('KEYCRM_CF_GBRAID_UUID', '')
+KEYCRM_CF_WBRAID_UUID = os.getenv('KEYCRM_CF_WBRAID_UUID', '')
 
 GOOGLE_ADS_CLIENT_ID = os.getenv('GOOGLE_ADS_CLIENT_ID', '')
 GOOGLE_ADS_CLIENT_SECRET = os.getenv('GOOGLE_ADS_CLIENT_SECRET', '')
@@ -182,6 +192,8 @@ GOOGLE_DATAMANAGER_CONSENT_GRANTED = _env_bool('GOOGLE_DATAMANAGER_CONSENT_GRANT
 
 NOVAPOSHTA_API_KEY = os.getenv('NOVAPOSHTA_API_KEY', '')
 
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
 TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', '')
 VIBER_BOT_URI = os.getenv('VIBER_BOT_URI', '')
 

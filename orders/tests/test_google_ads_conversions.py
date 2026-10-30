@@ -49,6 +49,8 @@ def _order():
     moment = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     return {
         'id': 77,
+        'source_uuid': '000077',
+        'source_id': 22,
         'grand_total': '150.50',
         'closed_at': moment,
         'updated_at': moment,
@@ -153,6 +155,7 @@ class UploadTests(TestCase):
     def test_skip_without_identifiers_logs_transaction_id_only(self):
         order = _order()
         order['id'] = 4242
+        order['source_uuid'] = '004242'
         phone = '0509998877'
         email = 'hidden.person+tag@'
         order['buyer'] = {'phone': f'xx{phone}', 'email': email}
@@ -171,7 +174,7 @@ class UploadTests(TestCase):
         self.assertEqual(summary['invalid'], 0)
         self.assertEqual(router.uploads, [])
         text = '\n'.join(captured.output)
-        self.assertIn('transactionId=4242', text)
+        self.assertIn('transactionId=004242', text)
         for secret in secrets:
             self.assertNotIn(secret, text)
 
@@ -222,11 +225,11 @@ class UploadTests(TestCase):
         self.assertIs(router.uploads[1]['validateOnly'], summary['validate_only'])
         self.assertEqual(
             [item['transactionId'] for item in router.uploads[0]['events']],
-            ['100', '101', '102', '103'],
+            ['000100', '000101', '000102', '000103'],
         )
         self.assertEqual(
             [item['transactionId'] for item in router.uploads[1]['events']],
-            ['100', '101', '102'],
+            ['000100', '000101', '000102'],
         )
         text = '\n'.join(lines)
         self.assertIn(f'field={field}', text)
@@ -256,6 +259,8 @@ def _violation_router(field):
     moment = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     orders = [{
         'id': 100 + index,
+        'source_uuid': f'{100 + index:06d}',
+        'source_id': 22,
         'grand_total': '10',
         'closed_at': moment,
         'updated_at': moment,

@@ -3,9 +3,7 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 from unittest.mock import patch
 
-import requests
 from django.core.management import call_command
-from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from orders.google_ads_conversions import (
@@ -13,6 +11,7 @@ from orders.google_ads_conversions import (
     _window,
     build_conversion,
     build_event,
+    clamp_lookback_days,
     upload_completed_orders,
 )
 from orders.models import OfflineConversionLog
@@ -29,39 +28,38 @@ INGEST_URL = 'https://datamanager.googleapis.com/v1/events:ingest'
 
 
 class LookbackTests(TestCase):
-    def test_default_is_48_hours(self):
+    def test_default_is_10_days(self):
         with patch.dict(os.environ):
-            os.environ.pop('LOOKBACK_HOURS', None)
-            self.assertEqual(_lookback(), timedelta(hours=48))
-            start, end = _window()
-        self.assertEqual(end - start, timedelta(hours=48))
+            os.environ.pop('KEYCRM_CONVERSION_DAYS', None)
+            os.environ.pop('LOOKBACK_DAYS', None)
+            with override_settings(KEYCRM_CONVERSION_DAYS=10, LOOKBACK_DAYS=None):
+                self.assertEqual(clamp_lookback_days(), 10)
+                self.assertEqual(_lookback(), timedelta(days=10))
+                start, end = _window()
+        self.assertEqual(end - start, timedelta(days=10))
 
-    def test_env_240_hours(self):
-        with patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
-            self.assertEqual(_lookback(), timedelta(hours=240))
-            start, end = _window()
-        self.assertEqual(end - start, timedelta(hours=240))
+    def test_days_clamped_to_7_14(self):
+        self.assertEqual(clamp_lookback_days(3), 7)
+        self.assertEqual(clamp_lookback_days(7), 7)
+        self.assertEqual(clamp_lookback_days(14), 14)
+        self.assertEqual(clamp_lookback_days(30), 14)
 
-    @override_settings(LOOKBACK_HOURS=72)
+    @override_settings(KEYCRM_CONVERSION_DAYS=12)
     def test_settings_override_env(self):
-        with patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
-            self.assertEqual(_lookback(), timedelta(hours=72))
+        with patch.dict(os.environ, {'KEYCRM_CONVERSION_DAYS': '8'}):
+            self.assertEqual(clamp_lookback_days(), 12)
 
-    def test_invalid_falls_back_to_48(self):
-        invalid = ('', '   ', '0', '-3', 'nope', '12.5')
+    def test_invalid_falls_back_then_clamped(self):
+        invalid = ('', '   ', 'nope', '12.5')
         for raw in invalid:
             with self.subTest(source='env', raw=raw):
-                with patch.dict(os.environ, {'LOOKBACK_HOURS': raw}):
-                    self.assertEqual(_lookback(), timedelta(hours=48))
-            with self.subTest(source='settings', raw=raw):
-                with override_settings(LOOKBACK_HOURS=raw), \
-                        patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
-                    self.assertEqual(_lookback(), timedelta(hours=48))
-        for raw in (0, -1, 12.5, True):
-            with self.subTest(source='settings', raw=raw):
-                with override_settings(LOOKBACK_HOURS=raw), \
-                        patch.dict(os.environ, {'LOOKBACK_HOURS': '240'}):
-                    self.assertEqual(_lookback(), timedelta(hours=48))
+                with patch.dict(os.environ, {'KEYCRM_CONVERSION_DAYS': raw}):
+                    with override_settings(KEYCRM_CONVERSION_DAYS=None, LOOKBACK_DAYS=None):
+                        self.assertEqual(clamp_lookback_days(), 10)
+        with override_settings(KEYCRM_CONVERSION_DAYS=0):
+            self.assertEqual(clamp_lookback_days(), 7)
+        with override_settings(KEYCRM_CONVERSION_DAYS=-1):
+            self.assertEqual(clamp_lookback_days(), 7)
 
 
 @override_settings(**ADS)
@@ -102,7 +100,7 @@ class UploadTests(TestCase):
         self.assertEqual(destination['productDestinationId'], '999')
 
         event = body['events'][0]
-        self.assertEqual(event['transactionId'], '77')
+        self.assertEqual(event['transactionId'], '000077')
         self.assertEqual(event['currency'], 'UAH')
         self.assertEqual(event['conversionValue'], 150.5)
         self.assertEqual(event['eventSource'], 'WEB')
@@ -171,10 +169,11 @@ class UploadTests(TestCase):
             'error': {'message': 'Invalid productDestinationId'},
         })
         with _patched(router):
-            with self.assertRaises(requests.HTTPError):
-                upload_completed_orders()
-            with self.assertRaises(requests.HTTPError):
-                upload_completed_orders()
+            first = upload_completed_orders()
+            second = upload_completed_orders()
+        self.assertEqual(first['failed'], 1)
+        self.assertEqual(first['uploaded'], 0)
+        self.assertEqual(second['failed'], 1)
         self.assertEqual(len(router.uploads), 2)
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
@@ -241,8 +240,8 @@ class UploadTests(TestCase):
             'error': {'message': 'permission denied'},
         })
         with _patched(router):
-            with self.assertRaises(requests.HTTPError):
-                upload_completed_orders(validate_only=True)
+            summary = upload_completed_orders(validate_only=True)
+        self.assertEqual(summary['failed'], 1)
         self.assertFalse(OfflineConversionLog.objects.exists())
 
     def test_date_filter_fallback(self):
@@ -333,11 +332,12 @@ class CommandTests(TestCase):
             call_command('upload_keycrm_conversions')
         get_mock.assert_not_called()
 
-    def test_command_fails_on_http_error(self):
+    def test_command_continues_on_http_error(self):
         router = _Router([_order()], google_status=401)
+        out = StringIO()
         with _patched(router):
-            with self.assertRaises(CommandError):
-                call_command('upload_keycrm_conversions')
+            call_command('upload_keycrm_conversions', stdout=out)
+        self.assertIn('помилки: 1', out.getvalue())
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
 

@@ -97,7 +97,7 @@ class KeyCrmSyncTests(TestCase):
         self.assertEqual(len(self.router.posts), 1)
         payload = self.router.posts[0]
         self.assertEqual(payload['source_id'], 22)
-        self.assertEqual(payload['source_uuid'], str(self.order.id))
+        self.assertEqual(payload['source_uuid'], self.order.order_number)
         self.assertEqual(payload['buyer']['full_name'], 'Іван Іванович Петренко')
         self.assertEqual(payload['buyer']['phone'], '+380501112233')
         self.assertEqual(payload['buyer_comment'], 'Передзвоніть')
@@ -132,7 +132,7 @@ class KeyCrmSyncTests(TestCase):
             ):
                 return _response({'data': [{
                     'id': 77,
-                    'source_uuid': str(self.order.id),
+                    'source_uuid': self.order.order_number,
                     'payments': [{'id': 88}],
                 }]})
             return self.router(method, url, **kwargs)

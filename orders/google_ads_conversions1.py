@@ -6,7 +6,10 @@ import hashlib
 import logging
 import re
 from datetime import datetime, timedelta, timezone as dt_timezone
+from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +18,28 @@ try:
 except ZoneInfoNotFoundError:
     KYIV = dt_timezone(timedelta(hours=3))
 
+_UTM_CAMPAIGN_KEYS = frozenset({'utm_campaign'})
+
 
 def sha256_hash(value: str) -> str:
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
 
+def first_contact_value(value) -> str:
+    """email/телефон у KeyCRM можуть бути рядком або списком."""
+    if value is None:
+        return ''
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            text = str(item or '').strip()
+            if text:
+                return text
+        return ''
+    return str(value).strip()
+
+
 def normalize_phone_e164(phone) -> str | None:
+    phone = first_contact_value(phone)
     if phone is None:
         return None
     cleaned = re.sub(r'[\s().\-]', '', str(phone).strip())
@@ -53,6 +72,7 @@ def normalize_and_hash_phone(phone) -> str | None:
 
 
 def normalize_and_hash_email(email) -> str | None:
+    email = first_contact_value(email)
     if not email or '@' not in str(email):
         return None
     text = re.sub(r'\s+', '', str(email)).lower()
@@ -82,28 +102,49 @@ def format_event_timestamp(moment: datetime) -> str:
     return f"{local.strftime('%Y-%m-%dT%H:%M:%S')}{offset}"
 
 
+def is_offline_order(order) -> bool:
+    """Офлайн = порожній source_uuid і (якщо задано) source_id ≠ KEYCRM_SITE_SOURCE_ID."""
+    if not isinstance(order, dict):
+        return True
+    source_uuid = str(order.get('source_uuid') or '').strip()
+    if source_uuid:
+        return False
+    site_source = str(getattr(settings, 'KEYCRM_SITE_SOURCE_ID', '') or '').strip()
+    if not site_source:
+        return True
+    return str(order.get('source_id') or '').strip() != site_source
+
+
+def resolve_event_source(order) -> str:
+    """WEB для сайту, OTHER для офлайн (Data Manager). Одна точка зміни."""
+    return 'OTHER' if is_offline_order(order) else 'WEB'
+
+
 def build_event(order, *, now=None) -> dict | None:
     order_id = order_id_of(order)
     if order_id is None:
         return None
+    transaction_id = transaction_id_of(order)
+    if not transaction_id:
+        return None
     buyer = _buyer(order)
     hashed_phone = normalize_and_hash_phone(buyer.get('phone'))
     hashed_email = normalize_and_hash_email(buyer.get('email'))
-    gclid = _gclid(order)
-    if not hashed_phone and not hashed_email and not gclid:
-        logger.info('Пропуск події transactionId=%s', order_id)
+    clicks = click_ids(order)
+    if not hashed_phone and not hashed_email and not clicks:
+        logger.info('Пропуск події transactionId=%s', transaction_id)
         return None
 
     moment = now or datetime.now(dt_timezone.utc)
     event = {
-        'transactionId': str(order_id),
+        'transactionId': transaction_id,
         'eventTimestamp': format_event_timestamp(_event_moment(order, moment)),
         'conversionValue': _conversion_value(order),
         'currency': 'UAH',
-        'eventSource': 'WEB',
+        'eventSource': resolve_event_source(order),
     }
-    if gclid:
-        event['adIdentifiers'] = {'gclid': gclid}
+    if clicks:
+        event['adIdentifiers'] = clicks
     identifiers = []
     if hashed_phone:
         identifiers.append({'phoneNumber': hashed_phone})
@@ -129,12 +170,87 @@ def order_id_of(order):
     return value
 
 
+def transaction_id_of(order) -> str | None:
+    """Номер сайту (source_uuid), інакше id KeyCRM."""
+    if not isinstance(order, dict):
+        return None
+    source_uuid = str(order.get('source_uuid') or '').strip()
+    if source_uuid:
+        return source_uuid
+    order_id = order_id_of(order)
+    if order_id is None:
+        return None
+    return str(order_id)
+
+
 def order_time(order):
     for key in ('updated_at', 'closed_at', 'status_changed_at', 'created_at'):
         moment = _parse_dt(order.get(key))
         if moment:
             return moment
     return None
+
+
+def click_ids(order) -> dict[str, str]:
+    found = {}
+    for key in ('gclid', 'gbraid', 'wbraid'):
+        text = _click_value(order, key)
+        if text:
+            found[key] = text
+    return found
+
+
+def utm_campaign_of(order) -> str:
+    if not isinstance(order, dict):
+        return ''
+    for container in _value_containers(order):
+        for key, value in container.items():
+            if str(key).lower() not in _UTM_CAMPAIGN_KEYS:
+                continue
+            text = str(value or '').strip()
+            if text:
+                return text[:255]
+    return ''
+
+
+def order_amount(order) -> Decimal | None:
+    raw = order.get('grand_total') if isinstance(order, dict) else None
+    if raw in (None, ''):
+        raw = order.get('total') if isinstance(order, dict) else None
+    if raw in (None, ''):
+        return None
+    try:
+        value = Decimal(str(raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if value < 0:
+        return Decimal('0')
+    return value.quantize(Decimal('0.01'))
+
+
+def order_status_label(order) -> str:
+    if not isinstance(order, dict):
+        return ''
+    for key in ('status_name', 'status', 'status_id'):
+        value = order.get(key)
+        if value is None or value == '':
+            continue
+        if isinstance(value, dict):
+            text = str(value.get('name') or value.get('id') or '').strip()
+        else:
+            text = str(value).strip()
+        if text:
+            return text[:100]
+    return ''
+
+
+def has_contact(order) -> bool:
+    buyer = _buyer(order)
+    phone = first_contact_value(buyer.get('phone'))
+    email = first_contact_value(buyer.get('email'))
+    return bool(
+        normalize_phone_e164(phone) or normalize_and_hash_email(email)
+    )
 
 
 def _event_moment(order, now: datetime) -> datetime:
@@ -150,23 +266,40 @@ def _event_moment(order, now: datetime) -> datetime:
     return moment
 
 
-_GCLID_KEYS = frozenset({'gclid', 'utm_gclid'})
-
-
-def _gclid(order) -> str:
+def _click_value(order, name: str) -> str:
     if not isinstance(order, dict):
         return ''
-    for container in _gclid_containers(order):
+    aliases = {'gclid', 'utm_gclid'} if name == 'gclid' else {name}
+    for container in _value_containers(order):
         for key, value in container.items():
-            if str(key).lower() not in _GCLID_KEYS:
+            if str(key).lower() not in aliases:
                 continue
-            text = _clean_gclid(value)
+            text = _clean_click_id(value)
             if text:
                 return text
+    env_map = {
+        'gclid': 'KEYCRM_CF_GCLID_UUID',
+        'gbraid': 'KEYCRM_CF_GBRAID_UUID',
+        'wbraid': 'KEYCRM_CF_WBRAID_UUID',
+    }
+    uuid = str(getattr(settings, env_map[name], '') or '').strip().casefold()
+    if not uuid:
+        return ''
+    for item in _custom_fields(order):
+        if not isinstance(item, dict):
+            continue
+        item_uuid = str(
+            item.get('uuid') or item.get('id') or item.get('field_uuid') or ''
+        ).strip().casefold()
+        if item_uuid != uuid:
+            continue
+        text = _clean_click_id(item.get('value'))
+        if text:
+            return text
     return ''
 
 
-def _gclid_containers(order) -> list:
+def _value_containers(order) -> list:
     found = [order]
     marketing = order.get('marketing')
     if isinstance(marketing, dict):
@@ -180,7 +313,14 @@ def _gclid_containers(order) -> list:
     return found
 
 
-def _clean_gclid(value) -> str:
+def _custom_fields(order) -> list:
+    raw = order.get('custom_fields') or order.get('customFields') or []
+    if isinstance(raw, dict):
+        raw = raw.get('data') or raw.get('items') or []
+    return raw if isinstance(raw, list) else []
+
+
+def _clean_click_id(value) -> str:
     if not isinstance(value, str):
         return ''
     text = value.strip()
@@ -190,16 +330,10 @@ def _clean_gclid(value) -> str:
 
 
 def _conversion_value(order) -> float:
-    raw = order.get('grand_total')
-    if raw in (None, ''):
-        raw = order.get('total') or 0
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
+    amount = order_amount(order)
+    if amount is None:
         return 0.0
-    if value < 0:
-        return 0.0
-    return value
+    return float(amount)
 
 
 def _buyer(order) -> dict:

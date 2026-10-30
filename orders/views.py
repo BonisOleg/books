@@ -11,6 +11,7 @@ from cart.cart import Cart
 from core.ratelimit import is_rate_limited
 from products.models import Product
 
+from .ads_attribution import apply_ads_to_order
 from .forms import CheckoutForm, OneClickForm
 from .keycrm import sync_order
 from .models import Order, OrderItem
@@ -98,6 +99,7 @@ def checkout(request):
             if request.user.is_authenticated:
                 order.user = request.user
             order.total = cart.total_price
+            apply_ads_to_order(order, request)
             order.save()
 
             for item in cart.get_items():
@@ -171,7 +173,7 @@ def oneclick(request, product_id):
         if _oneclick_rate_limited(request):
             form.add_error(None, _('Забагато спроб. Спробуйте пізніше.'))
         elif form.is_valid():
-            order = Order.objects.create(
+            order = Order(
                 first_name=form.cleaned_data.get('name', ''),
                 last_name='',
                 phone=form.cleaned_data['phone'],
@@ -181,6 +183,8 @@ def oneclick(request, product_id):
                 total=product.price,
                 comment='Замовлення в 1 клік — уточнити доставку',
             )
+            apply_ads_to_order(order, request)
+            order.save()
             OrderItem.objects.create(
                 order=order,
                 product=product,

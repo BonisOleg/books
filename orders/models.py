@@ -52,6 +52,14 @@ class Order(models.Model):
     keycrm_payment_id = models.PositiveBigIntegerField(
         'ID оплати KeyCRM', null=True, blank=True,
     )
+    gclid = models.CharField('gclid', max_length=500, blank=True)
+    gbraid = models.CharField('gbraid', max_length=500, blank=True)
+    wbraid = models.CharField('wbraid', max_length=500, blank=True)
+    utm_source = models.CharField('utm_source', max_length=255, blank=True)
+    utm_medium = models.CharField('utm_medium', max_length=255, blank=True)
+    utm_campaign = models.CharField('utm_campaign', max_length=255, blank=True)
+    utm_term = models.CharField('utm_term', max_length=255, blank=True)
+    utm_content = models.CharField('utm_content', max_length=255, blank=True)
     status = models.CharField(
         'Статус', max_length=20, choices=STATUS_CHOICES, default='new'
     )
@@ -110,6 +118,16 @@ class OfflineConversionLog(models.Model):
         'ID замовлення KeyCRM', unique=True,
     )
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES)
+    order_date = models.DateTimeField('Дата замовлення', null=True, blank=True)
+    order_status = models.CharField(
+        'Статус KeyCRM', max_length=100, blank=True,
+    )
+    amount = models.DecimalField(
+        'Сума', max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    utm_campaign = models.CharField('utm_campaign', max_length=255, blank=True)
+    has_gclid = models.BooleanField('Є click id', default=False)
+    has_contact = models.BooleanField('Є контакт', default=False)
     uploaded_at = models.DateTimeField('Час вивантаження', null=True, blank=True)
     error = models.TextField('Помилка', blank=True)
     created_at = models.DateTimeField('Створено', auto_now_add=True)

@@ -157,12 +157,13 @@ def _store_ids(order, crm_order):
 
 
 def _find_existing(order):
+    source_uuid = order.order_number
     try:
         data = _request(
             'GET',
             '/order',
             params={
-                'filter[source_uuid]': str(order.id),
+                'filter[source_uuid]': source_uuid,
                 'include': 'payments',
                 'limit': 5,
             },
@@ -175,7 +176,7 @@ def _find_existing(order):
         raise
 
     for item in _extract_list(data):
-        if str(item.get('source_uuid')) == str(order.id):
+        if str(item.get('source_uuid') or '') == source_uuid:
             return item
     return None
 
@@ -256,6 +257,8 @@ def _buyer_name(order):
 
 
 def _build_payload(order, source_id):
+    from orders.ads_attribution import click_custom_fields, marketing_from_order
+
     buyer = {'full_name': _buyer_name(order)}
     if order.email:
         buyer['email'] = order.email
@@ -294,7 +297,7 @@ def _build_payload(order, source_id):
 
     payload = {
         'source_id': source_id,
-        'source_uuid': str(order.id),
+        'source_uuid': order.order_number,
         'buyer': buyer,
         'products': products,
         'payments': [payment],
@@ -303,6 +306,12 @@ def _build_payload(order, source_id):
         payload['buyer_comment'] = order.comment
     if shipping:
         payload['shipping'] = shipping
+    marketing = marketing_from_order(order)
+    if marketing:
+        payload['marketing'] = marketing
+    custom_fields = click_custom_fields(order)
+    if custom_fields:
+        payload['custom_fields'] = custom_fields
     return payload
 
 
