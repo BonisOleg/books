@@ -3,7 +3,9 @@ from datetime import datetime, timedelta, timezone
 from io import StringIO
 from unittest.mock import patch
 
+import requests
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 
 from orders.google_ads_conversions import (
@@ -65,7 +67,10 @@ class LookbackTests(TestCase):
 @override_settings(**ADS)
 class UploadTests(TestCase):
     def test_payload_and_dedup(self):
-        router = _Router([_order()])
+        order = _order()
+        order['source_uuid'] = '000077'
+        order['source_id'] = 22
+        router = _Router([order])
         with _patched(router):
             first = upload_completed_orders()
             second = upload_completed_orders()
@@ -169,14 +174,14 @@ class UploadTests(TestCase):
             'error': {'message': 'Invalid productDestinationId'},
         })
         with _patched(router):
-            first = upload_completed_orders()
-            second = upload_completed_orders()
-        self.assertEqual(first['failed'], 1)
-        self.assertEqual(first['uploaded'], 0)
-        self.assertEqual(second['failed'], 1)
+            with self.assertRaises(requests.HTTPError):
+                upload_completed_orders()
+            with self.assertRaises(requests.HTTPError):
+                upload_completed_orders()
         self.assertEqual(len(router.uploads), 2)
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
+        self.assertEqual(log.attempts, 2)
 
     @override_settings(GOOGLE_ADS_LOGIN_CUSTOMER_ID='999-111-2222')
     def test_login_account_only_when_set(self):
@@ -240,8 +245,8 @@ class UploadTests(TestCase):
             'error': {'message': 'permission denied'},
         })
         with _patched(router):
-            summary = upload_completed_orders(validate_only=True)
-        self.assertEqual(summary['failed'], 1)
+            with self.assertRaises(requests.HTTPError):
+                upload_completed_orders(validate_only=True)
         self.assertFalse(OfflineConversionLog.objects.exists())
 
     def test_date_filter_fallback(self):
@@ -271,6 +276,7 @@ class UploadTests(TestCase):
             r'^2026-10-20T12:00:00\+0[23]:00$',
         )
         self.assertNotRegex(event['eventTimestamp'], r'\s')
+        self.assertEqual(event['transactionId'], 'keycrm-5')
         self.assertEqual(event['userData']['userIdentifiers'], [
             {'emailAddress': _sha('a@b.com')},
         ])
@@ -279,6 +285,7 @@ class UploadTests(TestCase):
             'buyer': {},
             'marketing': {'utm': {'utm_source': 'google', 'gclid': 'from-utm'}},
         })
+        self.assertEqual(gclid_event['transactionId'], 'keycrm-8')
         self.assertEqual(gclid_event['adIdentifiers'], {'gclid': 'from-utm'})
         self.assertNotIn('userData', gclid_event)
 
@@ -315,6 +322,29 @@ class UploadTests(TestCase):
 
 
 @override_settings(**ADS)
+class LegacyTransactionDedupTests(TestCase):
+    def test_uploaded_legacy_keycrm_id_skips_when_source_uuid_present(self):
+        """Dedup за keycrm_order_id, навіть якщо новий transactionId = order_number."""
+        OfflineConversionLog.objects.create(
+            keycrm_order_id=77,
+            status=OfflineConversionLog.STATUS_UPLOADED,
+        )
+        order = _order()
+        order['source_uuid'] = '000077'
+        order['source_id'] = 22
+        router = _Router([order])
+        with _patched(router):
+            summary = upload_completed_orders()
+        self.assertEqual(summary['uploaded'], 0)
+        self.assertEqual(summary['skipped'], 1)
+        self.assertEqual(router.uploads, [])
+        self.assertEqual(
+            OfflineConversionLog.objects.get(keycrm_order_id=77).status,
+            OfflineConversionLog.STATUS_UPLOADED,
+        )
+
+
+@override_settings(**ADS)
 class CommandTests(TestCase):
     def test_command_prints_summary(self):
         router = _Router([_order()])
@@ -332,12 +362,11 @@ class CommandTests(TestCase):
             call_command('upload_keycrm_conversions')
         get_mock.assert_not_called()
 
-    def test_command_continues_on_http_error(self):
+    def test_command_fails_on_http_error(self):
         router = _Router([_order()], google_status=401)
-        out = StringIO()
         with _patched(router):
-            call_command('upload_keycrm_conversions', stdout=out)
-        self.assertIn('помилки: 1', out.getvalue())
+            with self.assertRaises(CommandError):
+                call_command('upload_keycrm_conversions')
         log = OfflineConversionLog.objects.get(keycrm_order_id=77)
         self.assertEqual(log.status, OfflineConversionLog.STATUS_FAILED)
 

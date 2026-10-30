@@ -1,6 +1,8 @@
 """Щогодинне вивантаження виконаних замовлень KeyCRM у Google Data Manager."""
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+
+import requests
 
 from orders.google_ads_conversions import upload_completed_orders
 
@@ -33,31 +35,70 @@ class Command(BaseCommand):
             action='store_true',
             help='Надіслати щоденний підсумок у Telegram.',
         )
+        parser.add_argument(
+            '--order-ids',
+            default='',
+            help=(
+                'ID замовлень KeyCRM через кому. Без вікна lookback; '
+                'уже вивантажені пропускаються, невдалі надсилаються знову '
+                'без ліміту спроб.'
+            ),
+        )
 
     def handle(self, *args, **options):
         flagged = options['validate_only'] or options['dry_run']
         validate_only = True if flagged else None
-        summary = upload_completed_orders(
-            validate_only=validate_only,
-            days=options.get('days'),
-            send_summary=bool(options.get('summary')),
-        )
+        raw_ids = str(options.get('order_ids') or '').strip()
+        order_ids = _parse_order_ids(raw_ids) if raw_ids else None
+        try:
+            summary = upload_completed_orders(
+                validate_only=validate_only,
+                order_ids=order_ids,
+                days=options.get('days'),
+                send_summary=bool(options.get('summary')),
+            )
+        except requests.RequestException as exc:
+            raise CommandError(f'Вивантаження не вдалося: {exc}') from exc
 
         if summary.get('validate_only'):
             self.stdout.write(
                 'Режим перевірки: validateOnly, лог конверсій не змінюється.'
             )
+        if order_ids is not None:
+            shown = ','.join(str(item) for item in order_ids)
+            self.stdout.write(f'ID: {shown}')
 
         if summary['not_configured']:
             self.stdout.write(self.style.WARNING(summary['message']))
             return
 
         self.stdout.write(
-            'Отримано: {fetched}, вивантажено: {uploaded}, '
-            'пропущено: {skipped}, помилки: {failed}, '
+            'Отримано: {fetched}, повторів: {retried}, вивантажено: {uploaded}, '
+            'пропущено: {skipped}, помилки: {failed}, невалідні: {invalid}, '
             'вікно: {lookback_days} дн.'.format(**summary)
         )
         if summary.get('failed'):
             self.stdout.write(self.style.WARNING(
                 'Були помилки імпорту; деталі в логах / Telegram.'
             ))
+
+
+def _parse_order_ids(raw):
+    order_ids = []
+    seen = set()
+    for part in str(raw).split(','):
+        text = part.strip()
+        if not text:
+            continue
+        if not text.isdigit():
+            raise CommandError(f'Некоректний ID замовлення: {text}')
+        value = int(text)
+        if value <= 0:
+            raise CommandError(f'Некоректний ID замовлення: {text}')
+        if value in seen:
+            continue
+        seen.add(value)
+        order_ids.append(value)
+    if not order_ids:
+        raise CommandError('Параметр --order-ids не містить ID.')
+    return order_ids

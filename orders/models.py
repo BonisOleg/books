@@ -130,6 +130,8 @@ class OfflineConversionLog(models.Model):
     has_contact = models.BooleanField('Є контакт', default=False)
     uploaded_at = models.DateTimeField('Час вивантаження', null=True, blank=True)
     error = models.TextField('Помилка', blank=True)
+    attempts = models.PositiveIntegerField('Спроби', default=0)
+    last_attempt_at = models.DateTimeField('Остання спроба', null=True, blank=True)
     created_at = models.DateTimeField('Створено', auto_now_add=True)
 
     class Meta:

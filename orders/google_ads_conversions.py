@@ -9,26 +9,26 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 
 import requests
 from django.conf import settings
-from django.utils import timezone as dj_timezone
 
 from orders.google_ads_conversions1 import (
     build_conversion,
     build_event,
-    click_ids,
     format_conversion_datetime,
-    has_contact,
     normalize_and_hash_email,
     normalize_and_hash_phone,
     normalize_phone_e164,
-    order_amount,
     order_id_of,
-    order_status_label,
     order_time,
     sha256_hash,
-    utm_campaign_of,
     _field_violations,
     _invalid_error,
     _violations_by_event,
+)
+from orders.google_ads_conversions2 import (
+    failed_retry_ids,
+    mark_conversion_logs,
+    retry_eligible,
+    select_pending,
 )
 from orders.models import OfflineConversionLog
 
@@ -58,124 +58,109 @@ __all__ = [
 ]
 
 
-def upload_completed_orders(validate_only=None, *, days=None, send_summary=False) -> dict:
+def upload_completed_orders(
+    validate_only=None,
+    order_ids=None,
+    *,
+    days=None,
+    send_summary=False,
+) -> dict:
     validate_only = _resolve_validate_only(validate_only)
+    lookback_days = clamp_lookback_days(days)
     missing = _missing_settings()
     if missing:
         message = 'Вивантаження в Data Manager вимкнено, не задано: ' + ', '.join(missing)
         logger.warning(message)
-        summary = {
-            'not_configured': True,
-            'missing': missing,
-            'validate_only': validate_only,
-            'message': message,
-            'fetched': 0,
-            'uploaded': 0,
-            'skipped': 0,
-            'failed': 0,
-            'invalid': 0,
-            'lookback_days': clamp_lookback_days(days),
-        }
-        if send_summary:
-            _safe_summary(summary)
-        return summary
-
-    lookback_days = clamp_lookback_days(days)
-    try:
-        orders = fetch_completed_orders(days=lookback_days)
-    except Exception:
-        logger.exception('KeyCRM: не вдалося отримати замовлення')
-        summary = {
-            'not_configured': False,
-            'missing': [],
-            'validate_only': validate_only,
-            'message': 'keycrm_fetch_failed',
-            'fetched': 0,
-            'uploaded': 0,
-            'skipped': 0,
-            'failed': 0,
-            'invalid': 0,
-            'lookback_days': lookback_days,
-        }
-        _safe_failure(summary, 'keycrm_fetch_failed')
+        summary = _summary(
+            not_configured=True,
+            missing=missing,
+            validate_only=validate_only,
+            message=message,
+            lookback_days=lookback_days,
+        )
         if send_summary:
             _safe_summary(summary)
         return summary
 
     now = datetime.now(dt_timezone.utc)
-    pending = []
-    skipped = 0
-    order_ids = []
+    retried = 0
     orders_by_id = {}
-    for order in orders:
-        order_id = order_id_of(order)
-        if order_id is None:
-            skipped += 1
-            continue
-        order_ids.append(order_id)
-        orders_by_id[order_id] = order
-
-    already = set(
-        OfflineConversionLog.objects.filter(
-            keycrm_order_id__in=order_ids,
-            status=OfflineConversionLog.STATUS_UPLOADED,
-        ).values_list('keycrm_order_id', flat=True)
-    )
-
-    for order in orders:
-        order_id = order_id_of(order)
-        if order_id is None:
-            continue
-        if order_id in already:
-            skipped += 1
-            continue
-        try:
-            event = build_event(order, now=now)
-        except Exception:
-            logger.exception(
-                'Data Manager: помилка побудови події order_id=%s',
-                order_id,
+    try:
+        if order_ids is None:
+            orders = fetch_completed_orders(days=lookback_days)
+            pending, skipped, orders_by_id = select_pending(orders, now)
+            for order_id in failed_retry_ids(_present_ids(orders)):
+                event = _event_for_retry(order_id, now, orders_by_id)
+                if event is None:
+                    continue
+                pending.append((order_id, event))
+                retried += 1
+        else:
+            orders, missing_count = _load_explicit_orders(order_ids)
+            pending, skipped, orders_by_id = select_pending(
+                orders,
+                now,
+                ignore_attempt_cap=True,
+                require_completed=True,
             )
-            if not validate_only:
-                _mark_many(
-                    [order_id],
-                    OfflineConversionLog.STATUS_FAILED,
-                    'build_event_failed',
-                    orders_by_id=orders_by_id,
-                )
-            skipped += 1
-            continue
-        if event is None:
-            skipped += 1
-            continue
-        pending.append((order_id, event))
-
-    uploaded = 0
-    failed = 0
-    invalid = 0
-    if pending:
-        uploaded, failed, invalid = _upload_pending(
-            pending,
+            skipped += missing_count
+    except Exception:
+        logger.exception('KeyCRM: не вдалося отримати замовлення')
+        summary = _summary(
             validate_only=validate_only,
-            orders_by_id=orders_by_id,
+            message='keycrm_fetch_failed',
+            lookback_days=lookback_days,
         )
+        _safe_failure(summary, 'keycrm_fetch_failed')
+        if send_summary:
+            _safe_summary(summary)
+        return summary
 
-    summary = {
-        'not_configured': False,
-        'missing': [],
-        'validate_only': validate_only,
-        'message': '',
-        'fetched': len(orders),
-        'uploaded': uploaded,
-        'skipped': skipped,
-        'failed': failed,
-        'invalid': invalid,
-        'lookback_days': lookback_days,
-    }
+    uploaded = failed = invalid = 0
+    if pending:
+        try:
+            uploaded, failed, invalid = _upload_pending(
+                pending,
+                validate_only=validate_only,
+                orders_by_id=orders_by_id,
+            )
+        except requests.HTTPError as exc:
+            failed = len(pending)
+            summary = _summary(
+                validate_only=validate_only,
+                fetched=len(orders),
+                uploaded=0,
+                skipped=skipped,
+                failed=failed,
+                invalid=0,
+                retried=retried,
+                lookback_days=lookback_days,
+                message=str(exc)[:500],
+            )
+            logger.info(
+                'Data Manager: отримано %s, повторів %s, вивантажено 0, пропущено %s, '
+                'помилки %s, невалідні 0, перевірка %s, вікно %s дн.',
+                summary['fetched'], retried, skipped, failed,
+                validate_only, lookback_days,
+            )
+            _safe_failure(summary, summary['message'])
+            if send_summary:
+                _safe_summary(summary)
+            raise
+    summary = _summary(
+        validate_only=validate_only,
+        fetched=len(orders),
+        uploaded=uploaded,
+        skipped=skipped,
+        failed=failed,
+        invalid=invalid,
+        retried=retried,
+        lookback_days=lookback_days,
+    )
     logger.info(
-        'Data Manager: отримано %s, вивантажено %s, пропущено %s, '
+        'Data Manager: отримано %s, повторів %s, вивантажено %s, пропущено %s, '
         'помилки %s, невалідні %s, перевірка %s, вікно %s дн.',
-        summary['fetched'], uploaded, skipped, failed, invalid,
+        summary['fetched'], retried, uploaded, skipped, failed, invalid,
         validate_only, lookback_days,
     )
     if failed:
@@ -183,6 +168,115 @@ def upload_completed_orders(validate_only=None, *, days=None, send_summary=False
     if send_summary:
         _safe_summary(summary)
     return summary
+
+
+def _summary(**overrides) -> dict:
+    summary = {
+        'not_configured': False,
+        'missing': [],
+        'validate_only': False,
+        'message': '',
+        'fetched': 0,
+        'uploaded': 0,
+        'skipped': 0,
+        'failed': 0,
+        'invalid': 0,
+        'retried': 0,
+        'lookback_days': clamp_lookback_days(),
+    }
+    summary.update(overrides)
+    return summary
+
+
+def _present_ids(orders):
+    ids = []
+    for order in orders:
+        order_id = order_id_of(order)
+        if order_id is not None:
+            ids.append(order_id)
+    return ids
+
+
+def _event_for_retry(order_id, now, orders_by_id):
+    try:
+        order = _fetch_order(order_id, strict=False)
+    except Exception:
+        logger.exception('KeyCRM: збій повтору order_id=%s', order_id)
+        return None
+    if order is None:
+        return None
+    orders_by_id[order_id] = order
+    if not retry_eligible(order, now):
+        logger.info(
+            'Пропуск повтору keycrm_order_id=%s: не виконано або поза вікном кліку',
+            order_id,
+        )
+        return None
+    try:
+        return build_event(order, now=now)
+    except Exception:
+        logger.exception(
+            'Data Manager: помилка побудови події order_id=%s',
+            order_id,
+        )
+        return None
+
+
+def _load_explicit_orders(order_ids):
+    found = []
+    missing = 0
+    seen = set()
+    for raw in order_ids:
+        try:
+            order_id = int(raw)
+        except (TypeError, ValueError):
+            missing += 1
+            continue
+        if order_id <= 0 or order_id in seen:
+            continue
+        seen.add(order_id)
+        order = _fetch_order(order_id, strict=True)
+        if order is None:
+            missing += 1
+        else:
+            found.append(order)
+    return found, missing
+
+
+def _fetch_order(order_id, *, strict):
+    try:
+        response = requests.get(
+            f'{KEYCRM_API}/order/{order_id}',
+            headers=_keycrm_headers(),
+            params={'include': 'buyer'},
+            timeout=TIMEOUT,
+        )
+    except requests.RequestException:
+        if strict:
+            raise
+        logger.warning('KeyCRM: не вдалося прочитати замовлення %s', order_id)
+        return None
+    if response.status_code == 404:
+        logger.info('KeyCRM: замовлення %s не знайдено', order_id)
+        return None
+    if response.status_code >= 400:
+        logger.error('KeyCRM HTTP %s для замовлення %s', response.status_code, order_id)
+        if strict:
+            response.raise_for_status()
+        return None
+    payload = _json_body(response)
+    if isinstance(payload.get('data'), dict):
+        payload = payload['data']
+    if order_id_of(payload) is None:
+        return None
+    return payload
+
+
+def _keycrm_headers():
+    return {
+        'Authorization': f'Bearer {_setting("KEYCRM_API_KEY")}',
+        'Accept': 'application/json',
+    }
 
 
 def fetch_completed_orders(*, days=None) -> list:
@@ -251,7 +345,7 @@ def _upload_pending(pending, *, validate_only: bool, orders_by_id: dict) -> tupl
         logger.exception('Google OAuth: не вдалося отримати токен')
         order_ids = [item[0] for item in pending]
         if not validate_only:
-            _mark_many(
+            mark_conversion_logs(
                 order_ids,
                 OfflineConversionLog.STATUS_FAILED,
                 'oauth_failed',
@@ -275,6 +369,8 @@ def _upload_pending(pending, *, validate_only: bool, orders_by_id: dict) -> tupl
             uploaded += up
             failed += fail
             invalid += bad
+        except requests.HTTPError:
+            raise
         except Exception:
             logger.exception(
                 'Data Manager: помилка пачки offset=%s size=%s',
@@ -282,7 +378,7 @@ def _upload_pending(pending, *, validate_only: bool, orders_by_id: dict) -> tupl
             )
             order_ids = [item[0] for item in chunk]
             if not validate_only:
-                _mark_many(
+                mark_conversion_logs(
                     order_ids,
                     OfflineConversionLog.STATUS_FAILED,
                     'chunk_failed',
@@ -335,13 +431,13 @@ def _ingest_chunk(token, chunk, *, validate_only: bool, can_drop: bool, orders_b
         return len(order_ids), 0, 0
     logger.error('Data Manager HTTP %s: %s', response.status_code, message)
     if not validate_only:
-        _mark_many(
+        mark_conversion_logs(
             order_ids,
             OfflineConversionLog.STATUS_FAILED,
             message,
             orders_by_id=orders_by_id,
         )
-    return 0, len(order_ids), 0
+    raise requests.HTTPError(message, response=response)
 
 
 def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool, orders_by_id: dict):
@@ -351,7 +447,7 @@ def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool, order
             keep.append(item)
             continue
         if not validate_only:
-            _mark_many(
+            mark_conversion_logs(
                 [item[0]],
                 OfflineConversionLog.STATUS_FAILED,
                 _invalid_error(grouped[index]),
@@ -372,7 +468,7 @@ def _drop_invalid_and_retry(token, chunk, grouped, *, validate_only: bool, order
 def _mark_uploaded(order_ids, *, validate_only: bool, orders_by_id: dict) -> None:
     if validate_only:
         return
-    _mark_many(
+    mark_conversion_logs(
         order_ids,
         OfflineConversionLog.STATUS_UPLOADED,
         '',
@@ -458,10 +554,7 @@ def _completed_status_ids() -> list[int]:
 def _keycrm_get(params) -> dict:
     response = requests.get(
         f'{KEYCRM_API}/order',
-        headers={
-            'Authorization': f'Bearer {_setting("KEYCRM_API_KEY")}',
-            'Accept': 'application/json',
-        },
+        headers=_keycrm_headers(),
         params=params,
         timeout=TIMEOUT,
     )
@@ -564,37 +657,6 @@ def _is_duplicate_error(response) -> bool:
         text = ''
     blob = f'{_safe_error(response)}\n{text[:4000]}'.upper()
     return 'DUPLICATE' in blob or 'ALREADY' in blob
-
-
-def _mark_many(order_ids, status, error, *, orders_by_id=None):
-    now = dj_timezone.now() if status == OfflineConversionLog.STATUS_UPLOADED else None
-    orders_by_id = orders_by_id or {}
-    for order_id in order_ids:
-        defaults = {
-            'status': status,
-            'uploaded_at': now,
-            'error': '' if status == OfflineConversionLog.STATUS_UPLOADED else (error or '')[:2000],
-        }
-        order = orders_by_id.get(order_id)
-        if order is not None:
-            defaults.update(_log_meta(order))
-        OfflineConversionLog.objects.update_or_create(
-            keycrm_order_id=order_id,
-            defaults=defaults,
-        )
-
-
-def _log_meta(order) -> dict:
-    clicks = click_ids(order)
-    amount = order_amount(order)
-    return {
-        'order_date': order_time(order),
-        'order_status': order_status_label(order),
-        'amount': amount,
-        'utm_campaign': utm_campaign_of(order),
-        'has_gclid': bool(clicks),
-        'has_contact': has_contact(order),
-    }
 
 
 def _extract_list(data):

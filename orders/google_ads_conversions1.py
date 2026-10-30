@@ -171,7 +171,7 @@ def order_id_of(order):
 
 
 def transaction_id_of(order) -> str | None:
-    """Номер сайту: order_number якщо source_uuid = legacy Order.id; інакше source_uuid; fallback id KeyCRM."""
+    """Номер сайту: order_number якщо source_uuid = legacy Order.id; інакше source_uuid; fallback keycrm-<id>."""
     if not isinstance(order, dict):
         return None
     source_uuid = str(order.get('source_uuid') or '').strip()
@@ -192,7 +192,7 @@ def transaction_id_of(order) -> str | None:
     order_id = order_id_of(order)
     if order_id is None:
         return None
-    return str(order_id)
+    return f'keycrm-{order_id}'
 
 
 def order_time(order):
@@ -265,17 +265,31 @@ def has_contact(order) -> bool:
     )
 
 
-def _event_moment(order, now: datetime) -> datetime:
-    moment = None
+def source_event_moment(order):
+    """Час події з KeyCRM: closed_at, далі status_changed_at, updated_at, created_at."""
+    if not isinstance(order, dict):
+        return None
     for key in ('closed_at', 'status_changed_at', 'updated_at', 'created_at'):
         moment = _parse_dt(order.get(key))
         if moment:
-            break
+            return moment
+    return None
+
+
+def _event_moment(order, now: datetime) -> datetime:
+    moment = source_event_moment(order)
     if moment is None or moment > now + timedelta(minutes=5):
         moment = now
     if moment > now:
         moment = now - timedelta(seconds=60)
     return moment
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _click_value(order, name: str) -> str:

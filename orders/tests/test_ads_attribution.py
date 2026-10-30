@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import requests
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -159,7 +160,7 @@ class ConversionAttributionTests(TestCase):
         self.assertEqual(transaction_id_of(order), '000042')
         event = build_event(order)
         self.assertEqual(event['transactionId'], '000042')
-        self.assertEqual(transaction_id_of({'id': 77}), '77')
+        self.assertEqual(transaction_id_of({'id': 77}), 'keycrm-77')
 
     def test_transaction_id_maps_legacy_order_id_to_order_number(self):
         local = Order.objects.create(
@@ -182,7 +183,7 @@ class ConversionAttributionTests(TestCase):
         self.assertEqual(transaction_id_of(missing), '999999001')
         self.assertEqual(
             transaction_id_of({'id': 55, 'source_uuid': ''}),
-            '55',
+            'keycrm-55',
         )
 
     def test_event_source_offline_vs_web(self):
@@ -280,8 +281,8 @@ class ExportAndTelegramTests(TestCase):
         bad = _Router([_order()], google_status=500)
         with _patched(bad), \
                 patch('orders.telegram_notify.send_message', return_value=True) as fail_mock:
-            summary = upload_completed_orders()
-        self.assertEqual(summary['failed'], 1)
+            with self.assertRaises(requests.HTTPError):
+                upload_completed_orders()
         self.assertTrue(fail_mock.called)
         self.assertIn('збій', fail_mock.call_args.args[0].lower())
 
