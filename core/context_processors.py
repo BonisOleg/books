@@ -2,7 +2,7 @@ from django.conf import settings
 from django.utils.translation import get_language_from_path
 
 from .models import Page, ProfileCabinetTexts, SiteSettings
-from .seo import canonical_for_request
+from .seo import canonical_for_request, request_has_facet_filters
 
 
 def site_settings(request):
@@ -84,4 +84,7 @@ def site_settings(request):
         'VIBER_BOT_URI': getattr(settings, 'VIBER_BOT_URI', ''),
         'profile_cabinet': ProfileCabinetTexts.get_merged_safe(),
         'canonical_url': canonical_for_request(request),
+        'meta_robots': (
+            'noindex,follow' if request_has_facet_filters(request) else 'index, follow'
+        ),
     }

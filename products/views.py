@@ -9,10 +9,16 @@ from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
+from .attribute_filters import attribute_filter_choices, category_branch_ids, preserved_query
 from .models import FilterGroup, Product, Category, ProductGroup
 from .filters import filter_products
 from .schema import get_product_schema, get_breadcrumb_schema
 from .search import apply_search, search_tokens
+
+
+def _attach_attribute_filters(ctx, product_qs, category, params):
+    ctx['attribute_filters'] = attribute_filter_choices(product_qs, category, params)
+    ctx['preserved_query'] = preserved_query(params)
 
 
 def _get_filter_groups(category=None):
@@ -26,6 +32,24 @@ def _get_filter_groups(category=None):
         if not cats or (category and category in cats):
             result.append(g)
     return result
+
+
+def _group_renders_options(group, subcategories):
+    """True when the legacy sidebar would output real controls, not an empty shell."""
+    if group.filter_type == 'price_range':
+        return True
+    if group.filter_type in ('stock', 'badge'):
+        return any(option.is_active for option in group.options.all())
+    if group.filter_type == 'subcategory':
+        return bool(subcategories)
+    return False
+
+
+def _renderable_filter_groups(category, subcategories):
+    return [
+        group for group in _get_filter_groups(category)
+        if _group_renders_options(group, subcategories)
+    ]
 
 
 def _with_active_promotions(qs):
@@ -63,6 +87,9 @@ class CatalogView(ListView):
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
         ctx['selected_badges'] = self.request.GET.getlist('badge')
         ctx['selected_subcategories'] = self.request.GET.getlist('subcategory')
+        _attach_attribute_filters(
+            ctx, Product.objects.filter(is_active=True), None, self.request.GET,
+        )
         page_obj = ctx.get('page_obj')
         apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx
@@ -75,12 +102,8 @@ class CategoryDetailView(ListView):
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, slug=self.kwargs['slug'], is_active=True)
-        cat_ids = [self.category.id]
-        children = Category.objects.filter(parent=self.category, is_active=True)
-        cat_ids.extend(children.values_list('id', flat=True))
-
         qs = Product.objects.filter(
-            is_active=True, categories__id__in=cat_ids
+            is_active=True, categories__id__in=category_branch_ids(self.category),
         ).prefetch_related('images', 'categories').distinct()
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
@@ -105,7 +128,18 @@ class CategoryDetailView(ListView):
         breadcrumbs.append((self.category.name, None))
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
-        ctx['filter_groups'] = _get_filter_groups(self.category)
+        ctx['filter_groups'] = _renderable_filter_groups(
+            self.category, ctx['subcategories'],
+        )
+        _attach_attribute_filters(
+            ctx,
+            Product.objects.filter(
+                is_active=True,
+                categories__id__in=category_branch_ids(self.category),
+            ).distinct(),
+            self.category,
+            self.request.GET,
+        )
         page_obj = ctx.get('page_obj')
         apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx
@@ -257,7 +291,7 @@ class SearchView(ListView):
         qs = filter_products(qs, self.request.GET)
         sort = self.request.GET.get('sort', 'default') or 'default'
         if sort == 'default':
-            qs = qs.order_by('rank', '-created_at')
+            qs = qs.order_by('stock_sort', 'rank', '-created_at')
         return qs
 
     def get_context_data(self, **kwargs):
