@@ -15,11 +15,17 @@
     <div class="mobile-menu__nav">
         <a href="{% url 'core:home' %}" class="mobile-menu__link">{% trans 'Головна' %}</a>
         <a href="{% url 'products:catalog' %}" class="mobile-menu__link">{% trans 'Каталог' %}</a>
+        {% for cat in nav_categories %}
+        <a href="{{ cat.get_absolute_url }}" class="mobile-menu__link">{{ cat.name }}</a>
+        {% endfor %}
         <a href="{% url 'promotions:gift_picker' %}" class="mobile-menu__link">{% trans 'Підібрати подарунок' %}</a>
         <a href="{% url 'blog:articles' %}" class="mobile-menu__link">{% trans 'Статті' %}</a>
         <a href="{% url 'blog:news_list' %}" class="mobile-menu__link">{% trans 'Новини' %}</a>
         {% for page in header_pages %}
         <a href="{{ page.get_absolute_url }}" class="mobile-menu__link">{{ page.title }}</a>
+        {% endfor %}
+        {% for group in menu_groups %}
+        <a href="{{ group.get_absolute_url }}" class="mobile-menu__link">{{ group.name }}</a>
         {% endfor %}
         {% for page in footer_pages %}
         <a href="{{ page.get_absolute_url }}" class="mobile-menu__link">{{ page.title }}</a>

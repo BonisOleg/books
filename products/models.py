@@ -156,6 +156,11 @@ class Product(models.Model):
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     is_active = models.BooleanField('Активний', default=True)
+    is_bestseller = models.BooleanField(
+        'Топ продажів',
+        default=False,
+        help_text='Товар потрапляє в групи з автодобором «Топ продажів».',
+    )
     exclude_from_feeds = models.BooleanField(
         'Виключити з VIP/Middle фідів',
         default=False,
@@ -353,3 +358,100 @@ class FilterOption(models.Model):
 
     def __str__(self):
         return f"{self.group.name}: {self.label}"
+
+
+class ProductGroupQuerySet(models.QuerySet):
+    def visible_now(self, now=None):
+        from django.utils import timezone
+
+        moment = timezone.now() if now is None else now
+        return self.filter(is_active=True).filter(
+            models.Q(date_from__isnull=True) | models.Q(date_from__lte=moment),
+        ).filter(
+            models.Q(date_to__isnull=True) | models.Q(date_to__gte=moment),
+        )
+
+
+class ProductGroup(models.Model):
+    AUTO_MANUAL = ''
+    AUTO_BESTSELLER = 'bestseller'
+    AUTO_SOURCE_CHOICES = [
+        (AUTO_MANUAL, 'Лише вручну'),
+        (AUTO_BESTSELLER, 'Товари з прапорцем «Топ продажів»'),
+    ]
+
+    name = models.CharField('Назва', max_length=200)
+    slug = models.SlugField(
+        'URL', unique=True, max_length=200,
+        help_text='Латиницею. Адреса сторінки: /group/<slug>/.',
+    )
+    products = models.ManyToManyField(
+        Product, verbose_name='Товари', blank=True, related_name='groups',
+    )
+    show_in_header = models.BooleanField(
+        'Показувати в меню «Усі товари»', default=False,
+        help_text='Якщо увімкнено — посилання з’явиться у випадаючому меню «Усі товари» та в мобільному меню.',
+    )
+    auto_source = models.CharField(
+        'Автодобір',
+        max_length=20,
+        choices=AUTO_SOURCE_CHOICES,
+        blank=True,
+        default=AUTO_MANUAL,
+        help_text='До обраних товарів можна автоматично додати товари з прапорцем «Топ продажів».',
+    )
+    order = models.PositiveIntegerField('Порядок', default=0)
+    date_from = models.DateTimeField(
+        'Початок показу', null=True, blank=True,
+        help_text='Якщо порожньо — без обмеження початку.',
+    )
+    date_to = models.DateTimeField(
+        'Кінець показу', null=True, blank=True,
+        help_text='Якщо порожньо — без обмеження кінця.',
+    )
+    is_active = models.BooleanField('Активна', default=True)
+    meta_title = models.CharField('SEO Title', max_length=200, blank=True)
+    meta_description = models.TextField('SEO Description', blank=True)
+
+    objects = ProductGroupQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = 'Група товарів'
+        verbose_name_plural = 'Групи товарів'
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        if self.date_from and self.date_to and self.date_from > self.date_to:
+            raise ValidationError({
+                'date_to': 'Дата завершення має бути не раніше за дату початку.',
+            })
+
+    def visible_now(self, now=None):
+        from django.utils import timezone
+
+        moment = timezone.now() if now is None else now
+        if not self.is_active:
+            return False
+        if self.date_from is not None and self.date_from > moment:
+            return False
+        if self.date_to is not None and self.date_to < moment:
+            return False
+        return True
+
+    def get_absolute_url(self):
+        return reverse('product_group', kwargs={'slug': self.slug})
+
+    def get_products(self):
+        if self.pk:
+            manual = self.products.all()
+        else:
+            manual = Product.objects.none()
+        if self.auto_source != self.AUTO_BESTSELLER:
+            return manual
+        return Product.objects.filter(
+            models.Q(pk__in=manual.values('pk')) | models.Q(is_bestseller=True)
+        )

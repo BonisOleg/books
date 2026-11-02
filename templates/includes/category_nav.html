@@ -17,6 +17,13 @@
                     </svg>
                 </a>
                 <div class="megamenu" role="menu">
+                    {% if menu_groups %}
+                    <div class="megamenu__grid">
+                        {% for group in menu_groups %}
+                        <a href="{{ group.get_absolute_url }}" class="megamenu__title">{{ group.name }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="megamenu__grid">
                         {% for cat in nav_categories %}
                         <a href="{{ cat.get_absolute_url }}" class="megamenu__title">{{ cat.name }}</a>

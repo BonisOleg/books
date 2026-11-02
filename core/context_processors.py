@@ -11,15 +11,24 @@ def site_settings(request):
     except Exception:
         site = None
 
-    from products.models import Category
+    from products.models import Category, ProductGroup
     try:
         nav_categories = list(
             Category.objects.filter(
                 parent__isnull=True, is_active=True
-            ).order_by('order')[:12]
+            ).order_by('order', 'name')
         )
     except Exception:
         nav_categories = []
+
+    try:
+        menu_groups = list(
+            ProductGroup.objects.visible_now().filter(
+                show_in_header=True,
+            ).order_by('order', 'name')
+        )
+    except Exception:
+        menu_groups = []
 
     try:
         footer_pages = Page.objects.filter(
@@ -63,6 +72,7 @@ def site_settings(request):
     return {
         'site_settings': site,
         'nav_categories': nav_categories,
+        'menu_groups': menu_groups,
         'footer_pages': footer_pages,
         'header_pages': header_pages,
         'available_languages': available_languages,

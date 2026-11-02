@@ -1,6 +1,8 @@
 from modeltranslation.translator import TranslationOptions, register
 
-from .models import Badge, Category, FilterGroup, FilterOption, Product, ProductAttribute
+from .models import (
+    Badge, Category, FilterGroup, FilterOption, Product, ProductAttribute, ProductGroup,
+)
 
 
 @register(Badge)
@@ -31,3 +33,8 @@ class FilterGroupTranslationOptions(TranslationOptions):
 @register(FilterOption)
 class FilterOptionTranslationOptions(TranslationOptions):
     fields = ('label',)
+
+
+@register(ProductGroup)
+class ProductGroupTranslationOptions(TranslationOptions):
+    fields = ('name', 'meta_title', 'meta_description')
