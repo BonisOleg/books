@@ -29,32 +29,43 @@ def _call(model, method, properties=None):
 
 
 def search_cities(query):
-    if len(query) < 2:
+    return [
+        {
+            'ref': item['ref'],
+            'name': item['name'],
+            'settlement_ref': item.get('settlement_ref', ''),
+        }
+        for item in search_city_records(query)
+    ]
+
+
+def search_city_records(query):
+    """DeliveryCity (ref), Settlement Ref і підпис міста."""
+    if len((query or '').strip()) < 2:
         return []
 
     search_query = resolve_city_query(query)
-    cities = _fetch_settlements(search_query)
-
-    if not cities and search_query != query.strip():
-        cities = _fetch_settlements(query.strip())
-
-    return cities
+    records = _fetch_settlement_records(search_query)
+    if not records and search_query != query.strip():
+        records = _fetch_settlement_records(query.strip())
+    return records
 
 
-def _fetch_settlements(city_name):
+def _fetch_settlement_records(city_name):
     results = _call('Address', 'searchSettlements', {
         'CityName': city_name,
         'Limit': '20',
         'Page': '1',
     })
-    cities = []
+    records = []
     for item in results:
         for addr in item.get('Addresses', []):
-            cities.append({
+            records.append({
                 'ref': addr.get('DeliveryCity', ''),
+                'settlement_ref': addr.get('Ref', ''),
                 'name': addr.get('Present', ''),
             })
-    return cities
+    return records
 
 
 def search_warehouses(city_ref, query=''):
@@ -76,3 +87,34 @@ def search_warehouses(city_ref, query=''):
             'short_address': item.get('ShortAddress', ''),
         })
     return warehouses
+
+
+def search_streets(settlement_ref, query=''):
+    needle = (query or '').strip()
+    if not settlement_ref or len(needle) < 2:
+        return []
+
+    results = _call('Address', 'searchSettlementStreets', {
+        'StreetName': needle,
+        'SettlementRef': settlement_ref,
+        'Limit': '50',
+    })
+    streets = []
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        nested = item.get('Addresses')
+        rows = nested if isinstance(nested, list) else [item]
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            ref = row.get('SettlementStreetRef') or row.get('Ref') or ''
+            name = (
+                row.get('Present')
+                or row.get('SettlementStreetDescription')
+                or row.get('Description')
+                or ''
+            )
+            if ref or name:
+                streets.append({'ref': ref, 'name': name})
+    return streets

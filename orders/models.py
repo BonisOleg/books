@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import DatabaseError, models
 from django.conf import settings
 from products.models import Product
 
@@ -35,8 +35,12 @@ class Order(models.Model):
     phone = models.CharField('Телефон', max_length=30)
     email = models.EmailField('Email', blank=True)
     city = models.CharField('Місто', max_length=200)
-    warehouse = models.CharField('Відділення НП', max_length=300)
+    warehouse = models.CharField('Відділення НП', max_length=300, blank=True)
     warehouse_ref = models.CharField('Ref відділення', max_length=100, blank=True)
+    recipient_area = models.CharField('Область отримувача', max_length=200, blank=True)
+    recipient_street = models.CharField('Вулиця отримувача', max_length=200, blank=True)
+    recipient_house = models.CharField('Будинок отримувача', max_length=50, blank=True)
+    recipient_flat = models.CharField('Квартира отримувача', max_length=50, blank=True)
     comment = models.TextField('Коментар', blank=True)
     payment_method = models.CharField(
         'Спосіб оплати', max_length=20, choices=PAYMENT_CHOICES, default='cod'
@@ -64,6 +68,52 @@ class Order(models.Model):
         'Статус', max_length=20, choices=STATUS_CHOICES, default='new'
     )
     total = models.DecimalField('Сума', max_digits=12, decimal_places=2, default=0)
+    shipment_origin = models.ForeignKey(
+        'shipping.ShipmentOrigin',
+        verbose_name='Точка відправки',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders',
+    )
+    parcel_weight = models.DecimalField(
+        'Вага посилки, кг',
+        max_digits=7,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text='Якщо порожньо — вага з налаштувань ТТН.',
+    )
+    parcel_length = models.PositiveIntegerField(
+        'Довжина, см',
+        null=True,
+        blank=True,
+        help_text='Якщо порожньо — значення з налаштувань ТТН.',
+    )
+    parcel_width = models.PositiveIntegerField('Ширина, см', null=True, blank=True)
+    parcel_height = models.PositiveIntegerField('Висота, см', null=True, blank=True)
+    ttn_number = models.CharField('Номер ТТН', max_length=50, blank=True, db_index=True)
+    ttn_ref = models.CharField('Ref ТТН', max_length=64, blank=True)
+    ttn_status = models.CharField(
+        'Статус ТТН',
+        max_length=20,
+        blank=True,
+        default='',
+        choices=[
+            ('', '—'),
+            ('created', 'Створено'),
+            ('error', 'Помилка'),
+        ],
+    )
+    ttn_error = models.TextField('Помилка ТТН', blank=True)
+    ttn_created_at = models.DateTimeField('ТТН створено', null=True, blank=True)
+    ttn_delivery_cost = models.DecimalField(
+        'Вартість доставки НП',
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField('Дата створення', auto_now_add=True)
     updated_at = models.DateTimeField('Дата оновлення', auto_now=True)
 
@@ -72,12 +122,36 @@ class Order(models.Model):
         verbose_name_plural = 'Замовлення'
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.shipment_origin_id:
+            origin_id = _active_default_origin_id()
+            if origin_id:
+                self.shipment_origin_id = origin_id
+                update_fields = kwargs.get('update_fields')
+                if update_fields is not None:
+                    kwargs['update_fields'] = list(
+                        dict.fromkeys([*update_fields, 'shipment_origin'])
+                    )
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Замовлення #{self.id}"
 
     @property
     def order_number(self):
         return f"{self.id:06d}"
+
+
+def _active_default_origin_id():
+    try:
+        from shipping.models import ShipmentOrigin
+        return (
+            ShipmentOrigin.objects.filter(is_default=True, is_active=True)
+            .values_list('pk', flat=True)
+            .first()
+        )
+    except DatabaseError:
+        return None
 
 
 class OrderItem(models.Model):

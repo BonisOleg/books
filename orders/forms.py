@@ -76,6 +76,8 @@ class CheckoutForm(forms.ModelForm):
         if user and user.is_authenticated:
             self.fields['checkout_mode'].initial = 'account'
             self.fields['checkout_mode'].widget = forms.HiddenInput()
+        self.fields['city'].required = True
+        self.fields['warehouse'].required = True
 
     def clean_phone(self):
         return validate_ua_phone(self.cleaned_data.get('phone', ''))

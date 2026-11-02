@@ -1,0 +1,10 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+<div id="np-origin-lookup"
+     data-cities-url="{% url 'admin:shipping_shipmentorigin_city_search' %}"
+     data-warehouses-url="{% url 'admin:shipping_shipmentorigin_warehouse_search' %}"
+     data-streets-url="{% url 'admin:shipping_shipmentorigin_street_search' %}"
+     hidden></div>
+{{ block.super }}
+{% endblock %}

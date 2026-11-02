@@ -1,0 +1,34 @@
+.np-origin-lookup__button,
+.np-origin-lookup__option {
+    min-height: 44px;
+    margin: 8px 0;
+    padding: 8px 14px;
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.np-origin-lookup__results {
+    max-width: 40rem;
+    margin: 0 0 12px;
+}
+
+.np-origin-lookup__option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.np-origin-lookup__empty {
+    margin: 8px 0;
+}
+
+@media (max-width: 767px) {
+    .np-origin-lookup__button,
+    .np-origin-lookup__option {
+        display: block;
+        width: 100%;
+    }
+}
