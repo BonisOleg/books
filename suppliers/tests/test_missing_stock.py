@@ -4,10 +4,10 @@ from django.db import connection
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 
-from suppliers.models import Supplier, SupplierSyncRun
+from suppliers.models import Supplier, SupplierProduct, SupplierSyncRun
 from suppliers.services import sync_supplier
 
-from .utils import feed_bytes, make_product, make_supplier
+from .utils import feed_bytes, make_link, make_product, make_supplier
 
 
 class SupplierDefaultTests(TestCase):
@@ -23,6 +23,16 @@ class SupplierDefaultTests(TestCase):
         supplier.refresh_from_db()
         self.assertEqual(supplier.price_rule, 'as_is')
         self.assertEqual(supplier.markup_percent, Decimal('0.00'))
+
+    def test_max_price_change_percent_defaults_to_30(self):
+        field = Supplier._meta.get_field('max_price_change_percent')
+        self.assertEqual(field.default, Decimal('30.00'))
+        supplier = Supplier.objects.create(
+            name='Поріг',
+            feed_url='https://example.com/threshold.xml',
+        )
+        supplier.refresh_from_db()
+        self.assertEqual(supplier.max_price_change_percent, Decimal('30.00'))
 
     def test_mark_missing_out_of_stock_defaults_to_true(self):
         flag = Supplier._meta.get_field('mark_missing_out_of_stock')
@@ -75,6 +85,11 @@ class MissingStockDryRunTests(TestCase):
             price=Decimal('8.00'),
         )
         supplier = make_supplier()
+        make_link(supplier, missing)
+        make_link(supplier, already)
+        make_link(supplier, dup_a)
+        make_link(supplier, dup_b)
+        make_link(supplier, feed_dup)
         with CaptureQueriesContext(connection) as ctx:
             run = sync_supplier(supplier, dry_run=True, source=feed_bytes([
                 {'id': 'KEEP', 'price': '9 UAH', 'title': 'Лишається'},
@@ -145,7 +160,17 @@ class MissingStockDryRunTests(TestCase):
             sku_manufacturer='ZZ', stock_status='in_stock',
             price=Decimal('8.00'),
         )
-        run = sync_supplier(make_supplier(), source=feed_bytes([
+        loose = make_product(
+            name='Без привʼязки', slug='apply-loose', sku='APPLY-LOOSE',
+            sku_manufacturer='LOOSE-APPLY', stock_status='in_stock',
+            price=Decimal('7.00'),
+        )
+        supplier = make_supplier()
+        make_link(supplier, missing)
+        make_link(supplier, dup_a)
+        make_link(supplier, dup_b)
+        make_link(supplier, feed_dup)
+        run = sync_supplier(supplier, source=feed_bytes([
             {'id': 'OTHER', 'price': '5 UAH', 'title': 'Інший'},
             {'id': 'ZZ', 'price': '30 UAH', 'title': 'Дубль'},
             {'id': 'zz', 'price': '31 UAH', 'title': 'Дубль 2'},
@@ -156,13 +181,18 @@ class MissingStockDryRunTests(TestCase):
         dup_a.refresh_from_db()
         dup_b.refresh_from_db()
         feed_dup.refresh_from_db()
+        loose.refresh_from_db()
         self.assertEqual(run.status, SupplierSyncRun.Status.OK)
         self.assertEqual(missing.stock_status, 'out')
+        self.assertTrue(SupplierProduct.objects.get(product=missing).marked_out_by_sync)
         self.assertEqual(blank.stock_status, 'in_stock')
         self.assertEqual(already.stock_status, 'out')
         self.assertEqual(dup_a.stock_status, 'in_stock')
         self.assertEqual(dup_b.stock_status, 'in_stock')
+        self.assertFalse(SupplierProduct.objects.get(product=dup_a).marked_out_by_sync)
         self.assertEqual(feed_dup.stock_status, 'in_stock')
         self.assertEqual(feed_dup.price, Decimal('8.00'))
+        self.assertEqual(loose.stock_status, 'in_stock')
+        self.assertFalse(SupplierProduct.objects.filter(product=loose).exists())
         self.assertEqual(run.marked_out, 1)
         self.assertIn('Позначено «Немає в наявності»: 1', run.report)

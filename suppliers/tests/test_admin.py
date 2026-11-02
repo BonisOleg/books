@@ -11,7 +11,7 @@ from django.urls import reverse
 from suppliers.admin import SupplierSyncRunAdmin
 from suppliers.models import SupplierSyncRun
 
-from .utils import FIXTURE, make_product, make_supplier
+from .utils import FIXTURE, make_link, make_product, make_supplier
 
 User = get_user_model()
 
@@ -74,6 +74,7 @@ class SupplierAdminTests(TestCase):
             price=Decimal('11.00'),
             stock_status='in_stock',
         )
+        make_link(self.supplier, missing)
         url = reverse('admin:suppliers_supplier_dry_run', args=[self.supplier.pk])
         response = self.client.post(url, follow=True)
         self.assertEqual(response.status_code, 200)

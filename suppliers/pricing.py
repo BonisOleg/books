@@ -12,6 +12,7 @@ _TEN = Decimal('10')
 _HUNDRED = Decimal('100')
 _CENTS = Decimal('0.01')
 _MAX_PRICE = Decimal('10000000000')
+_PERCENT_CAP = Decimal('99999999999999.99')
 
 
 def compute_price(feed_price: Decimal, supplier) -> Decimal:
@@ -25,6 +26,29 @@ def compute_price(feed_price: Decimal, supplier) -> Decimal:
     if rounded >= _MAX_PRICE:
         raise PriceComputeError('Ціна не вміщається в поле каталогу.')
     return rounded
+
+
+def change_percent(old: Decimal, new: Decimal) -> Decimal | None:
+    """Відсоток |нова − стара| / стара × 100. None, якщо стара ціна 0."""
+    old = Decimal(old)
+    new = Decimal(new)
+    if old == 0:
+        return None
+    raw = (abs(new - old) * _HUNDRED / old).quantize(_CENTS, rounding=ROUND_HALF_UP)
+    if raw > _PERCENT_CAP:
+        return _PERCENT_CAP
+    return raw
+
+
+def needs_confirmation(old: Decimal, new: Decimal, threshold: Decimal) -> bool:
+    """Поріг 0 не стримує зміну. Порівняння за відсотком, округленим до копійки відсотка."""
+    threshold = Decimal(threshold)
+    if threshold <= 0:
+        return False
+    percent = change_percent(old, new)
+    if percent is None:
+        return Decimal(new) != Decimal(old)
+    return percent > threshold
 
 
 def _round(value: Decimal, rounding: str) -> Decimal:

@@ -13,6 +13,28 @@ class PriceChange:
     code: str
     old: Decimal
     new: Decimal
+    percent: Decimal | None = None
+
+
+@dataclass
+class PlannedLink:
+    product_id: int
+    name: str
+    code: str
+    feed_code: str
+
+
+@dataclass
+class SeenLink:
+    product_id: int
+    feed_code: str
+
+
+@dataclass
+class StockNote:
+    product_id: int
+    name: str
+    code: str
 
 
 @dataclass
@@ -35,9 +57,15 @@ class SyncPlan:
     items_in_feed: int = 0
     matched: int = 0
     price_changes: list[PriceChange] = field(default_factory=list)
+    pending_changes: list[PriceChange] = field(default_factory=list)
+    to_link: list[PlannedLink] = field(default_factory=list)
+    seen: list[SeenLink] = field(default_factory=list)
     not_in_feed: list[MissingInFeed] = field(default_factory=list)
     not_in_catalog: list[MissingInCatalog] = field(default_factory=list)
     mark_out_ids: list[int] = field(default_factory=list)
+    restore: list[StockNote] = field(default_factory=list)
+    clear_flag_ids: list[int] = field(default_factory=list)
+    unchanged_ids: list[int] = field(default_factory=list)
     error_messages: list[str] = field(default_factory=list)
     error_count: int = 0
 
@@ -46,5 +74,17 @@ class SyncPlan:
         return len(self.price_changes)
 
     @property
+    def pending_count(self) -> int:
+        return len(self.pending_changes)
+
+    @property
     def marked_out(self) -> int:
         return len(self.mark_out_ids)
+
+    @property
+    def restore_count(self) -> int:
+        return len(self.restore)
+
+    @property
+    def link_count(self) -> int:
+        return len(self.to_link)

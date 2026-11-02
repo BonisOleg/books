@@ -8,10 +8,10 @@ from django.test import SimpleTestCase, TestCase
 from django.test.utils import CaptureQueriesContext
 
 from suppliers.matching import normalize_code
-from suppliers.models import SupplierSyncRun
+from suppliers.models import PendingPriceChange, SupplierProduct, SupplierSyncRun
 from suppliers.services import sync_supplier
 
-from .utils import FIXTURE, feed_bytes, make_product, make_supplier
+from .utils import FIXTURE, feed_bytes, make_link, make_product, make_supplier
 
 
 class SyncSupplierTests(TestCase):
@@ -55,7 +55,7 @@ class SyncSupplierTests(TestCase):
         self.assertEqual(spaced.old_price, Decimal('80.00'))
         self.assertGreaterEqual(run.matched, 2)
         self.assertIn('Купол', run.report)
-        self.assertIn('10.00 → 28630.00', run.report)
+        self.assertIn('10,00 грн → 28 630,00 грн', run.report)
 
     def test_casefold_match(self):
         product = make_product(
@@ -183,7 +183,12 @@ class SyncSupplierTests(TestCase):
             name='Вже немає', slug='already', sku='OUT',
             sku_manufacturer='ALREADY-OUT', stock_status='out',
         )
+        loose = make_product(
+            name='Без привʼязки', slug='loose', sku='LOOSE',
+            sku_manufacturer='LOOSE-SKU', price=Decimal('10.00'),
+        )
         supplier = make_supplier(mark_missing_out_of_stock=False)
+        make_link(supplier, missing)
         off = sync_supplier(supplier, source=FIXTURE)
         missing.refresh_from_db()
         self.assertEqual(missing.stock_status, 'in_stock')
@@ -198,11 +203,17 @@ class SyncSupplierTests(TestCase):
         blank.refresh_from_db()
         spaces.refresh_from_db()
         already.refresh_from_db()
+        loose.refresh_from_db()
         self.assertEqual(in_feed.stock_status, 'in_stock')
         self.assertEqual(missing.stock_status, 'out')
+        self.assertTrue(
+            SupplierProduct.objects.get(product=missing).marked_out_by_sync
+        )
         self.assertEqual(blank.stock_status, 'in_stock')
         self.assertEqual(spaces.stock_status, 'in_stock')
         self.assertEqual(already.stock_status, 'out')
+        self.assertEqual(loose.stock_status, 'in_stock')
+        self.assertFalse(SupplierProduct.objects.filter(product=loose).exists())
         self.assertEqual(on.marked_out, 1)
         self.assertIn('Немає у фіді', on.report)
         self.assertIn('Позначено «Немає в наявності»: 1', on.report)
@@ -376,6 +387,8 @@ class SyncSupplierTests(TestCase):
         product.refresh_from_db()
         self.assertEqual(run.status, SupplierSyncRun.Status.FAILED)
         self.assertEqual(product.price, Decimal('9.00'))
+        self.assertEqual(SupplierProduct.objects.count(), 0)
+        self.assertEqual(PendingPriceChange.objects.count(), 0)
 
     def test_not_in_catalog_is_reported(self):
         run = sync_supplier(make_supplier(), source=feed_bytes([

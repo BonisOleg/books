@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from suppliers.models import SupplierSyncRun
 
-from .utils import FIXTURE, feed_bytes, make_product, make_supplier
+from .utils import FIXTURE, feed_bytes, make_link, make_product, make_supplier
 
 
 class SyncCommandTests(TestCase):
@@ -33,7 +33,7 @@ class SyncCommandTests(TestCase):
         text = out.getvalue()
         self.assertIn('Активний', text)
         self.assertNotIn('Вимкнений', text)
-        self.assertIn('10.00 → 28630.00', text)
+        self.assertIn('10,00 грн → 28 630,00 грн', text)
         self.assertIn('Купол церковний малий', text)
         self.assertEqual(SupplierSyncRun.objects.count(), 1)
         self.assertTrue(SupplierSyncRun.objects.get().dry_run)
@@ -93,6 +93,7 @@ class SyncCommandTests(TestCase):
             stock_status='in_stock',
         )
         supplier = make_supplier()
+        make_link(supplier, missing)
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'feed.xml'
             path.write_bytes(feed_bytes([

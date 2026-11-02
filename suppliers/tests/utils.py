@@ -2,9 +2,11 @@ import io
 from decimal import Decimal
 from pathlib import Path
 
+from django.utils import timezone
+
 from products.models import Product
 
-from suppliers.models import Supplier
+from suppliers.models import Supplier, SupplierProduct
 
 FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'kupola_sample.xml'
 
@@ -29,9 +31,22 @@ def make_supplier(**kwargs):
         'feed_url': 'https://example.com/kupola.xml',
         'feed_format': Supplier.FeedFormat.GOOGLE_MERCHANT_RSS,
         'is_active': True,
+        # 0 вимикає поріг: старі тести перевіряють запис ціни, а не підтвердження.
+        'max_price_change_percent': Decimal('0'),
     }
     defaults.update(kwargs)
     return Supplier.objects.create(**defaults)
+
+
+def make_link(supplier, product, **kwargs):
+    now = timezone.now()
+    defaults = {
+        'feed_code': (product.sku_manufacturer or '').strip(),
+        'linked_at': now,
+        'last_seen_at': now,
+    }
+    defaults.update(kwargs)
+    return SupplierProduct.objects.create(supplier=supplier, product=product, **defaults)
 
 
 def feed_bytes(items):
