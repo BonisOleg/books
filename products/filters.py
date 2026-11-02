@@ -1,4 +1,4 @@
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Case, Exists, IntegerField, OuterRef, Q, Value, When
 
 
 def _param_list(params, key):
@@ -96,15 +96,25 @@ def filter_products(queryset, params):
             queryset = queryset.filter(categories__slug__in=slug_list).distinct()
 
     queryset = apply_attribute_filters(queryset, params)
+    return _order_in_stock_first(queryset, sort)
 
-    sort_map = {
-        'price_asc': 'price',
-        'price_desc': '-price',
-        'newest': '-created_at',
-        'name': 'name',
-        'default': 'id',
-    }
-    order = sort_map.get(sort, 'id')
-    queryset = queryset.order_by(order)
 
-    return queryset
+_SORT_FIELDS = {
+    'price_asc': ('price', 'id'),
+    'price_desc': ('-price', 'id'),
+    'newest': ('-created_at', 'id'),
+    'name': ('name', 'id'),
+    'default': ('id',),
+}
+
+
+def _order_in_stock_first(queryset, sort):
+    """«Немає в наявності» завжди в кінці. «Під замовлення» лишається у своїй групі."""
+    fields = _SORT_FIELDS.get(sort or 'default', _SORT_FIELDS['default'])
+    return queryset.annotate(
+        stock_sort=Case(
+            When(stock_status='out', then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+    ).order_by('stock_sort', *fields)

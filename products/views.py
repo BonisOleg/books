@@ -235,7 +235,7 @@ class SearchView(ListView):
         qs = filter_products(qs, self.request.GET)
         sort = self.request.GET.get('sort', 'default') or 'default'
         if sort == 'default':
-            qs = qs.order_by('rank', '-created_at')
+            qs = qs.order_by('stock_sort', 'rank', '-created_at')
         return qs
 
     def get_context_data(self, **kwargs):
