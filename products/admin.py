@@ -13,7 +13,8 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from core.admin_mixins import LangFilteredFieldsets
 
-from .forms import BulkImageUploadForm, FilterOptionForm
+from .filter_admin import add_filter_values_action
+from .forms import BulkImageUploadForm, FilterOptionForm, ProductAdminForm
 from .models import (
     Badge,
     Category,
@@ -128,7 +129,12 @@ class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
 
 @admin.register(Product)
 class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
-    actions = ['set_sale_end_date_action', 'clear_sale_end_date_action']
+    actions = [
+        'set_sale_end_date_action',
+        'clear_sale_end_date_action',
+        add_filter_values_action,
+    ]
+    form = ProductAdminForm
     list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
                     'stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds')
     list_display_links = ('image_thumb', 'name')
@@ -143,6 +149,9 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
 
         ('Ідентифікація', {
             'fields': ('slug', 'sku', 'sku_manufacturer', 'categories'),
+        }),
+        ('Фільтри', {
+            'fields': ('filter_values',),
         }),
         ('Ціна та наявність', {
             'fields': (
