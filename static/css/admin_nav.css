@@ -1,0 +1,44 @@
+.admin-global-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 18px;
+    background: #417690;
+    padding: 4px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+}
+
+.admin-global-tools__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 0;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    color: #fff;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.admin-global-tools__link:hover,
+.admin-global-tools__link:focus {
+    text-decoration: underline;
+}
+
+.admin-global-tools__link:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+    .admin-global-tools {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+    }
+
+    .admin-global-tools__link {
+        width: 100%;
+    }
+}

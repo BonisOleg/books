@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+{% if not can_quick_save %}
+<script>window.ADMIN_QUICK_SAVE_ENABLED = false;</script>
+{% endif %}
+{% endblock %}

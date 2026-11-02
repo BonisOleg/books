@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import permission_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
 from products.feed_utils import get_feed_dashboard_context
@@ -7,10 +9,24 @@ from products.feed_utils import get_feed_dashboard_context
 from .exporters import export_csv, export_excel, export_xml
 from .importers import import_csv, import_excel
 
+PRODUCT_VIEW_PERM = 'products.view_product'
+PRODUCT_IMPORT_PERMS = ('products.add_product', 'products.change_product')
+
+
+def user_can_import_products(user):
+    return user.has_perms(PRODUCT_IMPORT_PERMS)
+
+
+def user_can_open_import_export(user):
+    return user.has_perm(PRODUCT_VIEW_PERM) or user_can_import_products(user)
+
 
 def _admin_ctx(request, extra=None):
+    user = request.user
     ctx = {
-        'has_permission': request.user.is_active and request.user.is_staff,
+        'has_permission': user.is_active and user.is_staff,
+        'can_export_products': user.has_perm(PRODUCT_VIEW_PERM),
+        'can_import_products': user_can_import_products(user),
     }
     if extra:
         ctx.update(extra)
@@ -18,6 +34,7 @@ def _admin_ctx(request, extra=None):
 
 
 @staff_member_required
+@permission_required(PRODUCT_VIEW_PERM, raise_exception=True)
 def export_view(request):
     fmt = request.GET.get('format', 'csv')
     if fmt == 'csv':
@@ -30,6 +47,7 @@ def export_view(request):
 
 
 @staff_member_required
+@permission_required(PRODUCT_IMPORT_PERMS, raise_exception=True)
 def import_view(request):
     if request.method != 'POST':
         return redirect('import_export_app:dashboard')
@@ -70,6 +88,8 @@ def import_view(request):
 
 @staff_member_required
 def dashboard(request):
+    if not user_can_open_import_export(request.user):
+        raise PermissionDenied
     return render(
         request,
         'import_export_app/dashboard.html',

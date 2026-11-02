@@ -65,7 +65,8 @@
     margin-top: 4px;
 }
 .ie-file-row input[type="file"] {
-    font-size: 0.85rem;
+    font-size: 16px;
+    max-width: 100%;
 }
 .ie-options {
     display: flex;
@@ -124,6 +125,7 @@
 </ul>
 {% endif %}
 
+{% if can_export_products %}
 <div class="ie-section">
     <h2>Експорт товарів</h2>
     <p class="ie-hint">Завантажте список усіх товарів у зручному форматі.</p>
@@ -133,9 +135,13 @@
         <a href="{% url 'import_export_app:export' %}?format=xml">XML</a>
     </div>
 </div>
+{% endif %}
 
+{% if can_export_products %}
 {% include "import_export_app/partials/feeds_panel.html" %}
+{% endif %}
 
+{% if can_import_products %}
 <div class="ie-section">
     <h2>Імпорт товарів</h2>
     <p class="ie-hint">
@@ -172,6 +178,7 @@
         </div>
     </form>
 </div>
+{% endif %}
 
 <p style="margin-top:8px;">
     <a href="{% url 'admin:index' %}" class="ie-btn ie-btn--outline">&larr; До адмінки</a>
