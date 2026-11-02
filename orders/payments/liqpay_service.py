@@ -79,3 +79,5 @@ def process_callback(request):
     order.save()
     from orders.keycrm import sync_order
     sync_order(order)
+    from orders.ttn_hooks import schedule_auto_ttn_quietly
+    schedule_auto_ttn_quietly(order)

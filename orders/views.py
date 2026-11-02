@@ -15,6 +15,7 @@ from .ads_attribution import apply_ads_to_order
 from .forms import CheckoutForm, OneClickForm
 from .keycrm import sync_order
 from .models import Order, OrderItem
+from .ttn_hooks import schedule_auto_ttn_quietly
 from .utils import create_account_for_order, send_new_order_notification, send_order_confirmation_email
 
 ORDER_SESSION_KEY = 'allowed_order_ids'
@@ -153,6 +154,7 @@ def checkout(request):
                 process_cod_order(order)
 
             sync_order(order)
+            schedule_auto_ttn_quietly(order)
 
             if order.payment_method == 'liqpay':
                 return redirect('orders:pay_liqpay', order_id=order.id)
@@ -223,6 +225,7 @@ def oneclick(request, product_id):
             )
             send_new_order_notification(order)
             sync_order(order)
+            schedule_auto_ttn_quietly(order)
             html = render_to_string('orders/partials/oneclick_success.html', {})
             return HttpResponse(html)
     else:

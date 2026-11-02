@@ -1,0 +1,33 @@
+.np-ttn-submit-row .np-ttn-submit {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 16px;
+}
+
+@media (max-width: 767px) {
+    .np-ttn-submit-row .np-ttn-submit,
+    .np-ttn-confirm__button {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        margin-top: 8px;
+        font-size: 16px;
+    }
+}
+
+.np-ttn-confirm {
+    max-width: 40rem;
+}
+
+.np-ttn-confirm__item {
+    margin: 0 0 12px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.np-ttn-confirm__button {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 16px;
+}
