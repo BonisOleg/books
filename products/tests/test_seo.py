@@ -250,11 +250,17 @@ class SeoPagesClientTests(TestCase):
         self.assertEqual(p.name, 'Обрізана назва')
 
 
-@override_settings(CACHES=LOC_MEM)
+@override_settings(CACHES=LOC_MEM, SITE_DOMAIN='example.test', SITE_PROTOCOL='https')
 class MoveBibleProductsCommandTests(TestCase):
     def setUp(self):
-        self.src = Category.objects.create(name='Дитячі', slug='dityachi-knigi')
-        self.dst = Category.objects.create(name='Біблія', slug='bibliya')
+        self.src = Category.objects.create(
+            name='Дитячі книги',
+            slug='dityachi-knigi',
+            parent=None,
+            order=5,
+            is_active=True,
+            google_product_category='784',
+        )
         self.hit = Product.objects.create(
             name='Дитяча Біблія',
             slug='dytyacha-bibliya',
@@ -271,18 +277,102 @@ class MoveBibleProductsCommandTests(TestCase):
             price='1.00',
         )
         self.miss.categories.add(self.src)
+        self.other_cat = Category.objects.create(
+            name='Інше',
+            slug='inshe-seo',
+            parent=None,
+            order=1,
+            is_active=True,
+        )
+        self.outside = Product.objects.create(
+            name='Біблія поза джерелом',
+            slug='bibliya-poza',
+            sku='BIB-3',
+            description='d',
+            price='1.00',
+        )
+        self.outside.categories.add(self.other_cat)
+
+    def test_creates_category_with_translations(self):
+        self.assertFalse(Category.objects.filter(slug='bibliya').exists())
+        call_command(
+            'move_bible_products',
+            '--apply',
+            '--ids', str(self.hit.pk),
+        )
+        cat = Category.objects.get(slug='bibliya')
+        self.assertEqual(cat.name_uk, 'Біблія')
+        self.assertEqual(cat.name_en, 'Bible')
+        self.assertEqual(cat.name_ru, 'Библия')
+        self.assertIsNone(cat.parent_id)
+        self.assertTrue(cat.is_active)
+        self.assertEqual(cat.order, self.src.order + 1)
+        self.assertEqual(cat.google_product_category, '784')
 
     def test_dry_run_default_no_changes(self):
-        call_command('move_bible_products')
+        call_command('move_bible_products', '--ids', str(self.hit.pk))
+        self.assertFalse(Category.objects.filter(slug='bibliya').exists())
         self.assertTrue(self.hit.categories.filter(slug='dityachi-knigi').exists())
         self.assertFalse(self.hit.categories.filter(slug='bibliya').exists())
 
-    def test_apply_moves(self):
+    def test_without_ids_lists_candidates_no_move(self):
         call_command('move_bible_products', '--apply')
+        self.assertFalse(Category.objects.filter(slug='bibliya').exists())
+        self.assertTrue(self.hit.categories.filter(slug='dityachi-knigi').exists())
+
+    def test_apply_moves_only_listed_ids(self):
+        call_command(
+            'move_bible_products',
+            '--apply',
+            '--ids', f'{self.hit.pk},{self.miss.pk}',
+            str(self.outside.pk),
+        )
         self.hit.refresh_from_db()
+        self.miss.refresh_from_db()
+        self.outside.refresh_from_db()
         self.assertTrue(self.hit.categories.filter(slug='bibliya').exists())
         self.assertFalse(self.hit.categories.filter(slug='dityachi-knigi').exists())
-        self.assertTrue(self.miss.categories.filter(slug='dityachi-knigi').exists())
+        # miss is in source but was listed — moved even without «Біблі» in name
+        self.assertTrue(self.miss.categories.filter(slug='bibliya').exists())
+        self.assertFalse(self.miss.categories.filter(slug='dityachi-knigi').exists())
+        # outside: not in dityachi-knigi → skipped
+        self.assertTrue(self.outside.categories.filter(slug='inshe-seo').exists())
+        self.assertFalse(self.outside.categories.filter(slug='bibliya').exists())
+
+    def test_apply_idempotent(self):
+        args = ['move_bible_products', '--apply', '--ids', str(self.hit.pk)]
+        call_command(*args)
+        call_command(*args)
+        self.hit.refresh_from_db()
+        self.assertEqual(
+            list(self.hit.categories.values_list('slug', flat=True)),
+            ['bibliya'],
+        )
+        self.assertEqual(Category.objects.filter(slug='bibliya').count(), 1)
+
+    def test_category_in_sitemap_and_nav(self):
+        call_command(
+            'move_bible_products',
+            '--apply',
+            '--ids', str(self.hit.pk),
+        )
+        cat = Category.objects.get(slug='bibliya')
+        from core.sitemaps import CategorySitemap
+        from core.context_processors import site_settings
+
+        sitemap_ids = {c.pk for c in CategorySitemap().items()}
+        self.assertIn(cat.pk, sitemap_ids)
+
+        r = self.client.get('/sitemap.xml')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('/catalog/bibliya/', r.content.decode())
+
+        class _Req:
+            path = '/'
+
+        ctx = site_settings(_Req())
+        nav_slugs = {c.slug for c in ctx['nav_categories']}
+        self.assertIn('bibliya', nav_slugs)
 
     def test_product_url_independent_of_category(self):
         url = self.hit.get_absolute_url()
