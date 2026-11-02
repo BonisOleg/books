@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Купола — Google Merchant</title>
+    <link>https://kupola.example/feed</link>
+    <description>Фід постачальника Купола</description>
+    <item>
+      <g:id>4812345001001</g:id>
+      <title>Купол церковний малий</title>
+      <g:title>Купол церковний малий</g:title>
+      <description>Мідний купол, діаметр 60 см</description>
+      <link>https://kupola.example/p/4812345001001</link>
+      <g:image_link>https://kupola.example/img/1001.jpg</g:image_link>
+      <g:price>28630 UAH</g:price>
+      <g:availability>in_stock</g:availability>
+      <g:condition>new</g:condition>
+      <g:brand>Купола</g:brand>
+      <g:mpn>KUP-1001</g:mpn>
+      <g:shipping>
+        <g:country>UA</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 UAH</g:price>
+      </g:shipping>
+    </item>
+    <item>
+      <g:id>4812345001002</g:id>
+      <title>Хрест накупольний</title>
+      <g:title>Хрест накупольний</g:title>
+      <link>https://kupola.example/p/4812345001002</link>
+      <g:price>28630.00 UAH</g:price>
+      <g:availability>in stock</g:availability>
+      <g:condition>new</g:condition>
+      <g:brand>Купола</g:brand>
+    </item>
+    <item>
+      <g:id>4812345001003</g:id>
+      <title>Підсвічник бронзовий</title>
+      <g:title>Підсвічник бронзовий</g:title>
+      <link>https://kupola.example/p/4812345001003</link>
+      <g:price>28 630,50 UAH</g:price>
+      <g:availability>out of stock</g:availability>
+      <g:condition>new</g:condition>
+      <g:brand>Купола</g:brand>
+    </item>
+    <item>
+      <g:id>4812345001004</g:id>
+      <title>Ліхтар вівтарний</title>
+      <g:title>Ліхтар вівтарний</g:title>
+      <link>https://kupola.example/p/4812345001004</link>
+      <g:price>999.49 UAH</g:price>
+      <g:availability>preorder</g:availability>
+      <g:condition>new</g:condition>
+      <g:brand>Купола</g:brand>
+    </item>
+  </channel>
+</rss>
