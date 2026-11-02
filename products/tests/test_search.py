@@ -60,17 +60,37 @@ class SearchTests(TestCase):
         self.assertContains(by_sku, product.slug)
         self.assertContains(by_brand, product.slug)
 
-    def test_supplier_sku_is_not_public(self):
+    def test_manufacturer_code_found_case_insensitive(self):
         product = make_product(
             name='Звичайна книга',
             slug='plain-book',
             sku='BOOK-1',
-            sku_manufacturer='SUP-999-SECRET',
+            sku_manufacturer='B6SEN2PG',
         )
-        response = self.client.get(reverse('products:search'), {'q': 'SUP-999-SECRET'})
-        self.assertNotContains(response, product.slug)
+        for query in ('B6SEN2PG', 'b6sen2pg', 'B6sen2', 'sen2pg'):
+            response = self.client.get(reverse('products:search'), {'q': query})
+            self.assertContains(response, product.slug)
         product.refresh_from_db()
-        self.assertNotIn('sup-999-secret', product.search_text)
+        self.assertNotIn('b6sen2pg', product.search_text)
+
+    def test_exact_manufacturer_code_ranks_above_mention(self):
+        exact = make_product(
+            name='Точний код',
+            slug='exact-code',
+            sku='EX-1',
+            sku_manufacturer='B6SEN2PG',
+            price='100.00',
+        )
+        mentioned = make_product(
+            name='Згадка коду',
+            slug='mentioned-code',
+            sku='MN-1',
+            description='<p>код B6SEN2PG у тексті</p>',
+            price='10.00',
+        )
+        response = self.client.get(reverse('products:search'), {'q': 'B6SEN2PG'})
+        html = response.content.decode()
+        self.assertLess(html.index(exact.slug), html.index(mentioned.slug))
 
     def test_tokens_are_independent_of_order(self):
         product = make_product(name='Фентезійна книга', slug='fantasy', sku='FAN-1')

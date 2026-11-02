@@ -1,7 +1,11 @@
-"""Нормалізований пошук товарів: кирилиця, лапки, усі мови, без службового артикула."""
+"""Нормалізований пошук товарів: кирилиця, лапки, усі мови.
+
+Код виробника (sku_manufacturer) шукається в запиті через iexact/icontains
+і не потрапляє в search_text: окремий індекс цієї колонки змінив би Product.
+"""
 import re
 
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import Case, IntegerField, Q, Value, When
 
 from products.schema import _plain_text
 
@@ -80,12 +84,15 @@ def apply_search(queryset, raw):
     phrase = ' '.join(tokens)
     query = queryset
     for token in tokens:
-        query = query.filter(search_text__contains=token)
+        query = query.filter(
+            Q(search_text__contains=token) | Q(sku_manufacturer__icontains=token)
+        )
 
     stripped = ' '.join(str(raw or '').split())[:MAX_QUERY_LEN]
     return query.annotate(
         rank=Case(
             When(sku__iexact=stripped, then=Value(0)),
+            When(sku_manufacturer__iexact=stripped, then=Value(0)),
             When(search_name__startswith=phrase, then=Value(1)),
             When(search_name__contains=phrase, then=Value(2)),
             default=Value(3),
