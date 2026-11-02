@@ -62,7 +62,7 @@ class ArticleSitemap(AbsoluteSitemap):
     priority = 0.6
 
     def items(self):
-        return Article.objects.filter(is_published=True)
+        return Article.objects.published()
 
     def lastmod(self, obj):
         return obj.updated_at
@@ -76,7 +76,7 @@ class NewsSitemap(AbsoluteSitemap):
     priority = 0.5
 
     def items(self):
-        return News.objects.filter(is_published=True)
+        return News.objects.published()
 
     def lastmod(self, obj):
         return obj.updated_at

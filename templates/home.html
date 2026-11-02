@@ -78,7 +78,7 @@
                 {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}
                 {% endif %}
                 <div class="content-card__body">
-                    <div class="content-card__date">{{ item.created_at|date:"d.m.Y" }}</div>
+                    <div class="content-card__date">{{ item.published_at|date:"d.m.Y" }}</div>
                     <div class="content-card__title">{{ item.title }}</div>
                     {% if item.excerpt %}
                     <div class="content-card__excerpt">{{ item.excerpt }}</div>
@@ -104,7 +104,7 @@
                 {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}
                 {% endif %}
                 <div class="content-card__body">
-                    <div class="content-card__date">{{ item.created_at|date:"d.m.Y" }}</div>
+                    <div class="content-card__date">{{ item.published_at|date:"d.m.Y" }}</div>
                     <div class="content-card__title">{{ item.title }}</div>
                     {% if item.excerpt %}
                     <div class="content-card__excerpt">{{ item.excerpt }}</div>

@@ -2,13 +2,17 @@
 {% load static core_tags image_tags %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+<link rel="stylesheet" href="{% static 'css/blog.css' %}?v=2">
+{% endblock %}
+
+{% block structured_data %}
+{% json_ld article_schema %}
 {% endblock %}
 
 {% block content %}
 <div class="container blog-detail">
     <div class="blog-detail__header">
-        <div class="blog-detail__date">{{ article.created_at|date:"d.m.Y" }}</div>
+        <div class="blog-detail__date">{{ article.published_at|date:"d.m.Y" }}</div>
         <h1 class="blog-detail__title">{{ article.title }}</h1>
     </div>
 
