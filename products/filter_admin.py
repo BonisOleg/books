@@ -30,8 +30,9 @@ class FilterAttributeAdmin(LangFilteredFieldsets, admin.ModelAdmin):
         ('Загальне', {
             'fields': ('slug', 'categories', 'position', 'is_active'),
             'description': (
-                'Порожній список категорій — фільтр доступний у каталозі '
-                'і в усіх категоріях, де є товари з цими значеннями.'
+                'Порожній список категорій — фільтр у каталозі й у всіх категоріях, '
+                'де є товари з цими значеннями. Обрана категорія діє і на всі '
+                'її підкатегорії, на будь-якій глибині.'
             ),
         }),
         ('🇺🇦 Українська', {
@@ -43,6 +44,14 @@ class FilterAttributeAdmin(LangFilteredFieldsets, admin.ModelAdmin):
     class Media:
         css = {'all': ('css/admin-previews.css', 'css/admin_lang_panels.css')}
         js = ('js/admin_lang_panels.js',)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'categories':
+            kwargs['help_text'] = (
+                'Порожньо — у каталозі та всіх категоріях. '
+                'Обрана категорія — також у всіх її підкатегоріях.'
+            )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     @admin.display(description='Категорії')
     def get_categories(self, obj):

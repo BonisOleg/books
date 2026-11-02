@@ -62,14 +62,29 @@ def attribute_filter_choices(product_qs, category, params):
     return result
 
 
+def _category_scope_ids(category):
+    """Поточна категорія і всі предки. Каталог (category=None) — порожня множина."""
+    if category is None:
+        return set()
+    scope = {category.pk}
+    scope.update(ancestor.pk for ancestor in category.get_ancestors())
+    return scope
+
+
 def _visible_attributes(category):
+    """Порожні categories — скрізь, включно з /catalog/.
+
+    Інакше атрибут видно в обраній категорії і в усіх її підкатегоріях:
+    збіг із поточною категорією або з будь-яким її предком.
+    """
     attributes = FilterAttribute.objects.filter(is_active=True).prefetch_related(
         'categories',
     ).order_by('position', 'name', 'pk')
+    scope_ids = _category_scope_ids(category)
     visible = []
     for attr in attributes:
-        categories = list(attr.categories.all())
-        if not categories or (category is not None and category in categories):
+        bound_ids = {cat.pk for cat in attr.categories.all()}
+        if not bound_ids or (category is not None and bound_ids & scope_ids):
             visible.append(attr)
     return visible
 

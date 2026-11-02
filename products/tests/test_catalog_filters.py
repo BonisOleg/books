@@ -1,7 +1,8 @@
 import re
+from pathlib import Path
 
 from django.http import QueryDict
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 from products.filters import filter_products
@@ -183,6 +184,58 @@ class AttributeFilterQueryTests(TestCase):
         )
         self.assertEqual(_cards(response.content.decode()), 1)
 
+    def test_attribute_on_ancestor_is_visible_in_descendants_only(self):
+        binding = FilterAttribute.objects.create(name='Палітурка', slug='binding')
+        binding.categories.add(self.books)
+        sewn = FilterValue.objects.create(attribute=binding, name='Зшита', slug='sewn')
+        sewn.products.add(self.grand, self.other)
+        self.leather_cover.products.add(self.grand)
+
+        child_html = self.client.get(
+            reverse('products:category', kwargs={'slug': 'mini'}),
+        ).content.decode()
+        self.assertIn('name="f_binding"', child_html)
+        self.assertIn('Зшита', child_html)
+        self.assertNotIn('name="f_cover"', child_html)
+
+        parent_html = self.client.get(
+            reverse('products:category', kwargs={'slug': 'leather'}),
+        ).content.decode()
+        self.assertIn('name="f_binding"', parent_html)
+        self.assertNotIn('name="f_cover"', parent_html)
+
+        sibling_html = self.client.get(
+            reverse('products:category', kwargs={'slug': 'gifts'}),
+        ).content.decode()
+        self.assertNotIn('name="f_binding"', sibling_html)
+        self.assertIn('name="f_cover"', sibling_html)
+
+    def test_catalog_shows_only_attributes_bound_nowhere(self):
+        html = self.client.get(reverse('products:catalog')).content.decode()
+        self.assertIn('name="f_color"', html)
+        self.assertIn('name="f_size"', html)
+        self.assertNotIn('name="f_cover"', html)
+        self.assertNotIn('name="f_hidden"', html)
+
+    def test_value_rows_have_no_product_counts(self):
+        html = self.client.get(
+            reverse('products:category', kwargs={'slug': 'books'}),
+            {'f_color': 'red'},
+        ).content.decode()
+        options = re.findall(
+            r'<label class="attr-filter__option">(.*?)</label>',
+            html,
+            re.S,
+        )
+        self.assertGreaterEqual(len(options), 1)
+        for option in options:
+            self.assertNotRegex(option, r'\(\s*\d+\s*\)')
+        self.assertIn('Колір (1)', html)
+        self.assertRegex(
+            html,
+            r'<button[^>]*type="submit"[^>]*class="[^"]*attr-filter__apply[^"]*"[^>]*>\s*Застосувати\s*</button>',
+        )
+
 
 @override_settings(CACHES=LOC_MEM)
 class LegacyFilterGroupTests(TestCase):
@@ -302,3 +355,29 @@ class FilterSeoTests(TestCase):
         html = page.content.decode()
         self.assertIn('page=2', _canonical(html))
         self.assertEqual(_robots(html), 'index, follow')
+
+
+class AttributeFilterApplyTests(SimpleTestCase):
+    def test_script_does_not_submit_on_change_and_template_has_apply(self):
+        root = Path(__file__).resolve().parents[2]
+        script = (root / 'static/js/catalog-filters.js').read_text(encoding='utf-8')
+        code = re.sub(r'/\*[\s\S]*?\*/', '', script)
+        code = re.sub(r'//.*?$', '', code, flags=re.M)
+        self.assertIsNone(re.search(r'requestSubmit\s*\(', code))
+        self.assertIsNone(re.search(r'\.submit\s*\(', code))
+        self.assertIsNone(re.search(
+            r"""addEventListener\(\s*['"]change['"][\s\S]{0,600}?(?:\.submit\s*\(|requestSubmit\s*\()""",
+            code,
+        ))
+
+        template = (
+            root / 'templates/products/partials/attribute_filters.html'
+        ).read_text(encoding='utf-8')
+        self.assertRegex(
+            template,
+            r'<button[^>]*\btype="submit"[^>]*>\s*\{% trans [\'"]Застосувати[\'"] %\}\s*</button>',
+        )
+        self.assertNotRegex(
+            template,
+            r'onchange\s*=\s*["\'][^"\']*(?:\.submit\s*\(|requestSubmit)',
+        )

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
@@ -77,3 +79,51 @@ class FilterAttributeModelTests(TestCase):
                 self.assertEqual(products.remote_field.related_name, 'filter_values')
                 self.assertTrue(products.blank)
         self.assertEqual(names, ['FilterAttribute', 'FilterValue'])
+
+    def test_attribute_migration_does_not_seed_rows(self):
+        import importlib
+        migration = importlib.import_module(
+            'products.migrations.0021_filter_attribute_value',
+        )
+        source = Path(migration.__file__).read_text(encoding='utf-8')
+        self.assertNotIn('RunPython', source)
+        self.assertNotIn('FilterAttribute.objects', source)
+        self.assertNotIn('FilterValue.objects', source)
+
+    def test_no_starter_filter_rows_outside_tests(self):
+        root = Path(__file__).resolve().parents[2]
+        calls = (
+            'FilterAttribute.objects.create',
+            'FilterAttribute.objects.get_or_create',
+            'FilterAttribute.objects.update_or_create',
+            'FilterAttribute.objects.bulk_create',
+            'FilterValue.objects.create',
+            'FilterValue.objects.get_or_create',
+            'FilterValue.objects.update_or_create',
+            'FilterValue.objects.bulk_create',
+        )
+        skip = {
+            'tests', 'books', '.git', 'node_modules', '__pycache__', '.venv', 'venv',
+        }
+        hits = []
+        for path in root.rglob('*.py'):
+            rel = path.relative_to(root)
+            if skip.intersection(rel.parts):
+                continue
+            text = path.read_text(encoding='utf-8')
+            for call in calls:
+                if call in text:
+                    hits.append(f'{rel}: {call}')
+        for folder in root.rglob('fixtures'):
+            if not folder.is_dir() or skip.intersection(folder.relative_to(root).parts):
+                continue
+            for path in folder.rglob('*'):
+                if not path.is_file() or path.suffix.lower() not in {'.json', '.yaml', '.yml'}:
+                    continue
+                rel = path.relative_to(root)
+                if skip.intersection(rel.parts):
+                    continue
+                text = path.read_text(encoding='utf-8').lower()
+                if 'filterattribute' in text or 'filtervalue' in text:
+                    hits.append(str(rel))
+        self.assertEqual(hits, [])

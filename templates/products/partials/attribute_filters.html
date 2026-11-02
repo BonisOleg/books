@@ -15,12 +15,14 @@
                 </svg>
             </summary>
             <div class="attr-filter__panel" role="group" aria-label="{{ attr.name }}">
-                {% for value in attr.values %}
-                <label class="attr-filter__option">
-                    <input type="checkbox" name="f_{{ attr.slug }}" value="{{ value.slug }}" {% if value.selected %}checked{% endif %}>
-                    <span>{{ value.name }}</span>
-                </label>
-                {% endfor %}
+                <div class="attr-filter__options">
+                    {% for value in attr.values %}
+                    <label class="attr-filter__option">
+                        <input type="checkbox" name="f_{{ attr.slug }}" value="{{ value.slug }}" {% if value.selected %}checked{% endif %}>
+                        <span>{{ value.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
                 <button type="submit" class="btn btn--primary btn--sm attr-filter__apply">{% trans 'Застосувати' %}</button>
             </div>
         </details>
