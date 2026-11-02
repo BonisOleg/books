@@ -47,7 +47,7 @@ class CatalogView(ListView):
     paginate_by = 24
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'categories'
         )
         qs = _with_active_promotions(qs)
@@ -82,7 +82,7 @@ class CategoryDetailView(ListView):
 
         qs = Product.objects.filter(
             is_active=True, categories__id__in=cat_ids
-        ).prefetch_related('images', 'categories').distinct()
+        ).with_rating().prefetch_related('images', 'categories').distinct()
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
@@ -123,7 +123,7 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'videos', 'attributes', 'categories'
         )
         return _with_active_promotions(qs)
@@ -152,7 +152,7 @@ class ProductDetailView(DetailView):
         if previous_viewed:
             recently_viewed_qs = Product.objects.filter(
                 id__in=previous_viewed[:12], is_active=True
-            ).prefetch_related('images')
+            ).with_rating().prefetch_related('images')
             recently_viewed_map = {p.id: p for p in recently_viewed_qs}
             ctx['recently_viewed'] = [
                 recently_viewed_map[pid] for pid in previous_viewed[:12]
@@ -175,7 +175,9 @@ class ProductDetailView(DetailView):
         if primary_category:
             ctx['related_products'] = Product.objects.filter(
                 categories=primary_category, is_active=True
-            ).exclude(id=product.id).prefetch_related('images').distinct()[:8]
+            ).exclude(id=product.id).with_rating().prefetch_related(
+                'images'
+            ).distinct()[:8]
 
         from promotions.models import UpsellGroup, Promotion
         from django.utils import timezone
@@ -184,7 +186,11 @@ class ProductDetailView(DetailView):
                 trigger_product=product, is_active=True
             ).prefetch_related('suggested_products__images').first()
             if upsell:
-                ctx['upsell_products'] = upsell.suggested_products.filter(is_active=True)
+                ctx['upsell_products'] = (
+                    upsell.suggested_products.filter(is_active=True)
+                    .with_rating()
+                    .prefetch_related('images')
+                )
         except Exception:
             pass
 
@@ -217,7 +223,7 @@ class SearchView(ListView):
 
     def get_queryset(self):
         q = self.request.GET.get('q', '')
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'categories'
         )
         qs = _with_active_promotions(qs)

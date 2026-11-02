@@ -1,0 +1,28 @@
+{% if product.rating_count %}
+<div class="rating" role="img"
+     style="--rating-pct: {% widthratio product.rating_avg 5 100 %}%"
+     aria-label="Середня оцінка {{ product.rating_avg|floatformat:1 }} з 5, кількість відгуків: {{ product.rating_count }}">
+    <span class="rating__stars" aria-hidden="true">
+        <svg class="rating__base" viewBox="0 0 88 16" focusable="false">
+            <path fill="currentColor" transform="translate(0 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+            <path fill="currentColor" transform="translate(18 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+            <path fill="currentColor" transform="translate(36 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+            <path fill="currentColor" transform="translate(54 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+            <path fill="currentColor" transform="translate(72 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+        </svg>
+        <span class="rating__fill">
+            <svg viewBox="0 0 88 16" focusable="false">
+                <path fill="currentColor" transform="translate(0 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+                <path fill="currentColor" transform="translate(18 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+                <path fill="currentColor" transform="translate(36 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+                <path fill="currentColor" transform="translate(54 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+                <path fill="currentColor" transform="translate(72 0)" d="M8 0.7l1.8 4.5 4.9.4-3.7 3.2 1.1 4.8L8 11.4 3.9 13.6l1.1-4.8L1.3 5.6l4.9-.4L8 .7z"/>
+            </svg>
+        </span>
+    </span>
+    <span class="rating__meta" aria-hidden="true">
+        <span class="rating__value">{{ product.rating_avg|floatformat:1 }}</span>
+        <span class="rating__count">({{ product.rating_count }})</span>
+    </span>
+</div>
+{% endif %}

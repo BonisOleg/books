@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Avg, Count, Q
 from django.urls import reverse
 
 from tinymce.models import HTMLField
@@ -92,7 +93,19 @@ class Category(models.Model):
         return ancestors
 
 
+class ProductQuerySet(models.QuerySet):
+    def with_rating(self):
+        """Середнє і кількість лише схвалених відгуків, одним annotate."""
+        approved = Q(reviews__is_approved=True)
+        return self.annotate(
+            rating_avg=Avg('reviews__rating', filter=approved),
+            rating_count=Count('reviews', distinct=True, filter=approved),
+        )
+
+
 class Product(models.Model):
+    objects = ProductQuerySet.as_manager()
+
     STOCK_CHOICES = [
         ('in_stock', 'В наявності'),
         ('ready', 'Готово до відправки'),

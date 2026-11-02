@@ -101,6 +101,8 @@
             <div class="product-info__sku">{% trans 'Код:' %} {{ product.sku }}</div>
             <h1 class="product-info__title">{{ product.name|trim_seo }}</h1>
 
+            {% include "includes/product_rating.html" %}
+
             <div class="product-info__stock">
                 <span class="stock-status stock-status--{{ product.stock_status }}">
                     {{ product.get_stock_status_display }}
