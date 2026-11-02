@@ -6,6 +6,9 @@
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
 <link rel="stylesheet" href="{% static 'css/timer.css' %}">
 <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
+{% if product.show_consult_button %}
+<link rel="stylesheet" href="{% static 'css/consult-modal.css' %}">
+{% endif %}
 {% endblock %}
 
 {% block structured_data %}
@@ -155,6 +158,14 @@
                     {% trans 'Товар тимчасово відсутній. Зателефонуйте для уточнення.' %}
                 </p>
                 {% endif %}
+                {% if product.show_consult_button %}
+                <a class="btn btn--outline btn--block"
+                   href="#consult-modal"
+                   data-consult-open
+                   aria-controls="consult-modal">
+                    {% trans 'Проконсультуватися' %}
+                </a>
+                {% endif %}
             </div>
 
             <div class="product-info__phones">
@@ -286,6 +297,10 @@
     {% faq "product" %}
 
     {% banners "product_bottom" %}
+
+    {% if product.show_consult_button %}
+    {% include "products/partials/consult_modal.html" %}
+    {% endif %}
 </div>
 {% endblock %}
 
@@ -293,4 +308,7 @@
 <script src="{% static 'js/gallery.js' %}"></script>
 <script src="{% static 'js/timer.js' %}"></script>
 <script src="{% static 'js/product-tabs.js' %}"></script>
+{% if product.show_consult_button %}
+<script src="{% static 'js/consult-modal.js' %}"></script>
+{% endif %}
 {% endblock %}

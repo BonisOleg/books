@@ -1,4 +1,8 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
+
+from core.form_guards import form_ts_field, honeypot_field, issue_form_ts, validate_form_guards
+from core.validators import PHONE_WIDGET_ATTRS, validate_ua_phone
 
 from .models import Badge, FilterOption, Product, ProductVideo
 
@@ -58,3 +62,69 @@ class BulkImageUploadForm(forms.Form):
         label='Зображення',
         help_text='Виберіть кілька файлів одночасно (Ctrl/Cmd+клік).',
     )
+
+
+class ConsultationForm(forms.Form):
+    name = forms.CharField(
+        label=_('Ім\'я'),
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': _('Ім\'я'),
+            'autocomplete': 'name',
+            'autocapitalize': 'words',
+            'maxlength': '150',
+            'enterkeyhint': 'next',
+        }),
+        error_messages={
+            'required': _('Вкажіть ім\'я.'),
+            'max_length': _('Ім\'я занадто довге.'),
+        },
+    )
+    phone = forms.CharField(
+        label=_('Телефон'),
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            **PHONE_WIDGET_ATTRS,
+            'enterkeyhint': 'next',
+        }),
+        error_messages={
+            'required': _('Вкажіть телефон.'),
+        },
+    )
+    question = forms.CharField(
+        label=_('Питання'),
+        max_length=2000,
+        widget=forms.Textarea(attrs={
+            'class': 'form-textarea',
+            'rows': 4,
+            'placeholder': _('Ваше питання'),
+            'autocomplete': 'off',
+            'autocapitalize': 'sentences',
+            'maxlength': '2000',
+        }),
+        error_messages={
+            'required': _('Напишіть питання.'),
+            'max_length': _('Питання занадто довге.'),
+        },
+    )
+    website = honeypot_field()
+    form_ts = form_ts_field()
+
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+        if not self.is_bound:
+            self.fields['form_ts'].initial = issue_form_ts()
+
+    def clean_phone(self):
+        return validate_ua_phone(self.cleaned_data.get('phone', ''))
+
+    def clean(self):
+        cleaned = super().clean()
+        validate_form_guards(
+            cleaned.get('website', ''),
+            cleaned.get('form_ts', ''),
+            request=self.request,
+        )
+        return cleaned

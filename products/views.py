@@ -9,6 +9,7 @@ from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
+from .forms import ConsultationForm
 from .models import FilterGroup, Product, Category
 from .filters import filter_products
 from .schema import get_product_schema, get_breadcrumb_schema
@@ -202,6 +203,9 @@ class ProductDetailView(DetailView):
                 ctx['timer_end'] = product.sale_end_date
         except Exception:
             pass
+
+        if product.show_consult_button:
+            ctx['consult_form'] = ConsultationForm(request=self.request)
 
         return ctx
 

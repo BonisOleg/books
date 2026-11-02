@@ -1,0 +1,157 @@
+.consult-modal {
+    display: none;
+    overflow: hidden;
+    padding:
+        calc(12px + env(safe-area-inset-top))
+        calc(12px + env(safe-area-inset-right))
+        calc(12px + env(safe-area-inset-bottom))
+        calc(12px + env(safe-area-inset-left));
+}
+
+.consult-modal.is-open,
+.consult-modal:target {
+    display: flex;
+}
+
+.consult-modal .modal__dialog {
+    width: min(420px, 100%);
+    max-width: 100%;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.consult-modal .modal__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    top: 4px;
+    right: 4px;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.consult-modal .modal__title {
+    padding-right: 36px;
+    overflow-wrap: anywhere;
+}
+
+.consult-modal .modal__text {
+    overflow-wrap: anywhere;
+}
+
+.consult-modal form {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.consult-modal .form-group {
+    margin-bottom: 14px;
+    min-width: 0;
+}
+
+.consult-modal .form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--color-text);
+}
+
+.consult-modal .form-label--required::after {
+    content: ' *';
+    color: var(--color-danger);
+}
+
+.consult-modal .form-input,
+.consult-modal .form-textarea {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    line-height: 1.4;
+    background: var(--color-bg);
+    color: var(--color-text);
+    caret-color: var(--color-accent);
+    -webkit-appearance: none;
+    appearance: none;
+    scroll-margin-top: 48px;
+    scroll-margin-bottom: 24px;
+}
+
+.consult-modal .form-textarea {
+    min-height: 120px;
+    max-height: 240px;
+    resize: vertical;
+}
+
+.consult-modal .form-input::placeholder,
+.consult-modal .form-textarea::placeholder {
+    color: var(--color-text-muted);
+}
+
+.consult-modal .form-input:focus,
+.consult-modal .form-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.consult-modal .form-error {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+
+.consult-modal .modal__submit {
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.consult-modal .modal__submit:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.consult-modal__success {
+    color: var(--color-accent);
+}
+
+.product-info__actions > .btn--outline {
+    white-space: normal;
+    text-align: center;
+    min-height: 44px;
+    max-width: 100%;
+    line-height: 1.3;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 390px) {
+    .consult-modal {
+        padding:
+            calc(8px + env(safe-area-inset-top))
+            calc(8px + env(safe-area-inset-right))
+            calc(8px + env(safe-area-inset-bottom))
+            calc(8px + env(safe-area-inset-left));
+    }
+
+    .consult-modal .modal__dialog {
+        padding: 20px 14px calc(16px + env(safe-area-inset-bottom));
+    }
+}
