@@ -16,7 +16,7 @@ def site_settings(request):
         nav_categories = list(
             Category.objects.filter(
                 parent__isnull=True, is_active=True
-            ).order_by('order')[:12]
+            ).order_by('order', 'name')
         )
     except Exception:
         nav_categories = []

@@ -56,7 +56,7 @@ class CatalogView(ListView):
         ctx = super().get_context_data(**kwargs)
         ctx['categories'] = Category.objects.filter(
             parent__isnull=True, is_active=True
-        ).order_by('order')
+        ).order_by('order', 'name')
         ctx['page_title'] = _('Каталог')
         ctx['current_sort'] = self.request.GET.get('sort', 'default')
         ctx['filter_params'] = self.request.GET

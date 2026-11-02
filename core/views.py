@@ -24,7 +24,7 @@ class HomeView(TemplateView):
 
         context['categories'] = Category.objects.filter(
             parent__isnull=True, is_active=True
-        ).order_by('order')[:20]
+        ).order_by('order', 'name')
 
         context['hit_products'] = Product.objects.filter(
             is_active=True
