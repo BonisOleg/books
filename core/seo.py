@@ -89,9 +89,29 @@ def apply_pagination_seo(ctx: dict[str, Any], page_number: int | None) -> dict[s
     return ctx
 
 
+def request_has_facet_filters(request) -> bool:
+    """True when the URL has a non-empty f_<slug> parameter."""
+    params = getattr(request, 'GET', None)
+    if params is None:
+        return False
+    getlist = getattr(params, 'getlist', None)
+    for key in params:
+        if not isinstance(key, str) or not key.startswith('f_') or len(key) < 3:
+            continue
+        raw_values = getlist(key) if getlist else [params.get(key)]
+        if any(str(value).strip() for value in raw_values if value is not None):
+            return True
+    return False
+
+
 def canonical_for_request(request) -> str:
-    """Canonical URL; include ?page=N only when N >= 2."""
+    """Canonical URL; include ?page=N only when N >= 2.
+
+    Attribute filters (f_*) canonicalize to the bare path, without page.
+    """
     url = build_public_absolute_uri(getattr(request, 'path', '/') or '/')
+    if request_has_facet_filters(request):
+        return url
     raw = request.GET.get('page') if hasattr(request, 'GET') else None
     if raw is None or raw == '':
         return url

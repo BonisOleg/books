@@ -9,10 +9,16 @@ from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
+from .attribute_filters import attribute_filter_choices, category_branch_ids, preserved_query
 from .models import FilterGroup, Product, Category
 from .filters import filter_products
 from .schema import get_product_schema, get_breadcrumb_schema
 from .search import apply_search, search_tokens
+
+
+def _attach_attribute_filters(ctx, product_qs, category, params):
+    ctx['attribute_filters'] = attribute_filter_choices(product_qs, category, params)
+    ctx['preserved_query'] = preserved_query(params)
 
 
 def _get_filter_groups(category=None):
@@ -63,6 +69,9 @@ class CatalogView(ListView):
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
         ctx['selected_badges'] = self.request.GET.getlist('badge')
         ctx['selected_subcategories'] = self.request.GET.getlist('subcategory')
+        _attach_attribute_filters(
+            ctx, Product.objects.filter(is_active=True), None, self.request.GET,
+        )
         page_obj = ctx.get('page_obj')
         apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx
@@ -75,12 +84,8 @@ class CategoryDetailView(ListView):
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, slug=self.kwargs['slug'], is_active=True)
-        cat_ids = [self.category.id]
-        children = Category.objects.filter(parent=self.category, is_active=True)
-        cat_ids.extend(children.values_list('id', flat=True))
-
         qs = Product.objects.filter(
-            is_active=True, categories__id__in=cat_ids
+            is_active=True, categories__id__in=category_branch_ids(self.category),
         ).prefetch_related('images', 'categories').distinct()
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
@@ -106,6 +111,15 @@ class CategoryDetailView(ListView):
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
         ctx['filter_groups'] = _get_filter_groups(self.category)
+        _attach_attribute_filters(
+            ctx,
+            Product.objects.filter(
+                is_active=True,
+                categories__id__in=category_branch_ids(self.category),
+            ).distinct(),
+            self.category,
+            self.request.GET,
+        )
         page_obj = ctx.get('page_obj')
         apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx

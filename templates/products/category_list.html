@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+<link rel="stylesheet" href="{% static 'css/catalog-filters.css' %}">
 <link rel="stylesheet" href="{% static 'css/timer.css' %}">
 <link rel="stylesheet" href="{% static 'css/promotions.css' %}">
 {% endblock %}
@@ -33,6 +34,7 @@
     {% endif %}
 
     <div class="catalog-toolbar">
+        <div class="catalog-toolbar__controls">
         <div class="catalog-toolbar__sort">
             <select class="js-sort-redirect" data-custom-select aria-label="{% trans 'Сортування' %}">
                 <option value="{% querystring sort='default' page=None %}" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
@@ -40,6 +42,8 @@
                 <option value="{% querystring sort='price_desc' page=None %}" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
                 <option value="{% querystring sort='newest' page=None %}" {% if current_sort == 'newest' %}selected{% endif %}>{% trans 'За новизною' %}</option>
             </select>
+        </div>
+        {% include "products/partials/attribute_filters.html" %}
         </div>
     </div>
 
@@ -68,5 +72,6 @@
 
 {% block extra_js %}
 <script src="{% static 'js/catalog.js' %}"></script>
+<script src="{% static 'js/catalog-filters.js' %}"></script>
 <script src="{% static 'js/timer.js' %}"></script>
 {% endblock %}

@@ -1,0 +1,30 @@
+{% load i18n %}
+{% if attribute_filters %}
+<form class="attr-filters" method="get" action="">
+    <input type="hidden" name="sort" value="{{ current_sort|default:'default' }}">
+    {% for key, value in preserved_query %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+    <div class="attr-filters__fields">
+        {% for attr in attribute_filters %}
+        <details class="attr-filter">
+            <summary class="attr-filter__summary">
+                <span class="attr-filter__label">{{ attr.name }}{% if attr.selected_count %} ({{ attr.selected_count }}){% endif %}</span>
+                <svg class="attr-filter__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </summary>
+            <div class="attr-filter__panel" role="group" aria-label="{{ attr.name }}">
+                {% for value in attr.values %}
+                <label class="attr-filter__option">
+                    <input type="checkbox" name="f_{{ attr.slug }}" value="{{ value.slug }}" {% if value.selected %}checked{% endif %}>
+                    <span>{{ value.name }}</span>
+                </label>
+                {% endfor %}
+                <button type="submit" class="btn btn--primary btn--sm attr-filter__apply">{% trans 'Застосувати' %}</button>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</form>
+{% endif %}

@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+<link rel="stylesheet" href="{% static 'css/catalog-filters.css' %}">
 <link rel="stylesheet" href="{% static 'css/timer.css' %}">
 <link rel="stylesheet" href="{% static 'css/promotions.css' %}">
 {% endblock %}
@@ -52,11 +53,12 @@
     {% endif %}
 
     <div class="catalog-toolbar">
+        <div class="catalog-toolbar__controls">
         <div class="catalog-toolbar__sort">
             <select hx-get="{% url 'products:category' category.slug %}"
                     hx-target="#product-grid"
                     hx-swap="innerHTML"
-                    hx-include=".filter-panel input[name], .filter-panel select[name]"
+                    hx-include=".filter-panel input[name], .filter-panel select[name], .attr-filters__fields input"
                     name="sort"
                     data-custom-select
                     aria-label="{% trans 'Сортування' %}">
@@ -65,6 +67,8 @@
                 <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
                 <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>{% trans 'За новизною' %}</option>
             </select>
+        </div>
+        {% include "products/partials/attribute_filters.html" %}
         </div>
         <button class="catalog-toolbar__filter-btn" id="open-filters">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -111,6 +115,7 @@
 
 {% block extra_js %}
 <script src="{% static 'js/category-filters.js' %}"></script>
+<script src="{% static 'js/catalog-filters.js' %}"></script>
 <script src="{% static 'js/filters.js' %}"></script>
 <script src="{% static 'js/timer.js' %}"></script>
 {% endblock %}
