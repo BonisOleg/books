@@ -81,6 +81,7 @@
                 <div class="product-gallery__thumb product-gallery__thumb--video"
                      data-type="video"
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
+                     data-embed="{{ vid.embed_url }}"
                      data-index="{{ product.images.count|add:forloop.counter0 }}">
                     {% if vid.poster %}
                     {% product_gallery_alt product.name forloop.counter as vid_alt %}
@@ -101,6 +102,11 @@
                 <span class="stock-status stock-status--{{ product.stock_status }}">
                     {{ product.get_stock_status_display }}
                 </span>
+                {% with shipping=product.display_shipping_time %}
+                {% if shipping %}
+                <div class="product-info__shipping">{{ shipping }}</div>
+                {% endif %}
+                {% endwith %}
             </div>
 
             {% if product.short_description %}

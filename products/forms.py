@@ -1,6 +1,17 @@
 from django import forms
 
-from .models import Badge, FilterOption, Product
+from .models import Badge, FilterOption, Product, ProductVideo
+
+
+class ProductVideoForm(forms.ModelForm):
+    class Meta:
+        model = ProductVideo
+        fields = '__all__'
+        error_messages = {
+            'video_url': {
+                'invalid': 'Вкажіть коректне посилання на YouTube.',
+            },
+        }
 
 
 class FilterOptionForm(forms.ModelForm):

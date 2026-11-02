@@ -13,10 +13,11 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from core.admin_mixins import LangFilteredFieldsets
 
-from .forms import BulkImageUploadForm, FilterOptionForm
+from .forms import BulkImageUploadForm, FilterOptionForm, ProductVideoForm
 from .models import (
     Badge,
     Category,
+    ConsultationRequest,
     FilterGroup,
     FilterOption,
     Product,
@@ -69,6 +70,7 @@ class ProductImageInline(admin.TabularInline):
 
 class ProductVideoInline(admin.TabularInline):
     model = ProductVideo
+    form = ProductVideoForm
     extra = 0
     max_num = 5
     fields = ('poster_preview', 'video_url', 'video_file', 'poster', 'order')
@@ -151,13 +153,16 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
             ),
         }),
         ('Додатково', {
-            'fields': ('manufacturer', 'country', 'weight', 'is_active', 'exclude_from_feeds'),
+            'fields': (
+                'manufacturer', 'country', 'weight', 'is_active',
+                'exclude_from_feeds', 'show_consult_button',
+            ),
         }),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': (
                 'name_uk', 'description_uk', 'short_description_uk',
-                'order_info_uk',
+                'order_info_uk', 'shipping_time_uk',
                 'meta_title_uk', 'meta_description_uk',
             ),
             'classes': ('lang-panel', 'lang-uk'),
@@ -165,7 +170,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇬🇧 English', {
             'fields': (
                 'name_en', 'description_en', 'short_description_en',
-                'order_info_en',
+                'order_info_en', 'shipping_time_en',
                 'meta_title_en', 'meta_description_en',
             ),
             'classes': ('lang-panel', 'lang-en'),
@@ -173,7 +178,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇷🇺 Русский', {
             'fields': (
                 'name_ru', 'description_ru', 'short_description_ru',
-                'order_info_ru',
+                'order_info_ru', 'shipping_time_ru',
                 'meta_title_ru', 'meta_description_ru',
             ),
             'classes': ('lang-panel', 'lang-ru'),
@@ -527,3 +532,21 @@ class BadgeAdmin(LangFilteredFieldsets, TranslationAdmin):
     @admin.display(description='Товарів')
     def products_count(self, obj):
         return obj.products.count()
+
+
+@admin.register(ConsultationRequest)
+class ConsultationRequestAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'name', 'phone', 'product_name', 'is_processed')
+    list_filter = ('is_processed', 'created_at')
+    search_fields = ('name', 'phone', 'product_name', 'question')
+    autocomplete_fields = ('product',)
+    readonly_fields = ('created_at',)
+    list_editable = ('is_processed',)
+    fieldsets = (
+        ('Товар', {
+            'fields': ('product', 'product_name', 'product_url'),
+        }),
+        ('Заявка', {
+            'fields': ('name', 'phone', 'question', 'is_processed', 'created_at'),
+        }),
+    )

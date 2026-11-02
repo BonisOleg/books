@@ -5,8 +5,10 @@ from .models import FAQ, Banner, Page, ProfileCabinetTexts, SEOTemplate, SiteSet
 
 @register(SiteSettings)
 class SiteSettingsTranslationOptions(TranslationOptions):
-    fields = ('site_description', 'promo_banner_text', 'seo_home_title', 'seo_home_description',
-              'default_order_info')
+    fields = (
+        'site_description', 'promo_banner_text', 'seo_home_title', 'seo_home_description',
+        'default_order_info', 'default_shipping_time',
+    )
 
 
 @register(FAQ)

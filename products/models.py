@@ -4,6 +4,8 @@ from django.urls import reverse
 
 from tinymce.models import HTMLField
 
+from products.youtube import YOUTUBE_URL_ERROR, parse_youtube_url, youtube_embed_url
+
 
 class Badge(models.Model):
     COLOR_CHOICES = [
@@ -130,6 +132,20 @@ class Product(models.Model):
         'Наявність', max_length=20,
         choices=STOCK_CHOICES, default='in_stock'
     )
+    shipping_time = models.CharField(
+        'Час відправки',
+        max_length=60,
+        blank=True,
+        default='',
+        help_text='Короткий рядок біля наявності на сторінці товару. '
+                  'Якщо порожньо — береться значення з налаштувань сайту. '
+                  'Якщо і там порожньо — рядок не показується.',
+    )
+    show_consult_button = models.BooleanField(
+        'Кнопка «Проконсультувати»',
+        default=False,
+        help_text='Увімкніть, щоб на сторінці цього товару показувати кнопку консультації.',
+    )
     badge = models.CharField(
         'Бейдж (старий)', max_length=20,
         choices=BADGE_CHOICES, blank=True, default='',
@@ -224,6 +240,17 @@ class Product(models.Model):
         }
         return mapping.get(self.stock_status, 'https://schema.org/InStock')
 
+    @property
+    def display_shipping_time(self):
+        own = (self.shipping_time or '').strip()
+        if own:
+            return own
+        from core.models import SiteSettings
+        site = SiteSettings.objects.first()
+        if site is None:
+            return ''
+        return (site.default_shipping_time or '').strip()
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(
@@ -273,10 +300,25 @@ class ProductVideo(models.Model):
         return f"Відео для {self.product.name}"
 
     def clean(self):
-        if not self.video_url and not self.video_file:
+        url = (self.video_url or '').strip()
+        if not url and not self.video_file:
             raise ValidationError(
-                'Вкажіть URL відео (YouTube/Vimeo) або завантажте файл відео.'
+                'Вкажіть посилання на YouTube або завантажте файл відео.'
             )
+        if url:
+            try:
+                parse_youtube_url(url)
+            except ValueError:
+                raise ValidationError({'video_url': YOUTUBE_URL_ERROR}) from None
+
+    @property
+    def embed_url(self):
+        if not self.video_url:
+            return ''
+        try:
+            return youtube_embed_url(self.video_url)
+        except ValueError:
+            return ''
 
 
 class ProductAttribute(models.Model):
@@ -353,3 +395,26 @@ class FilterOption(models.Model):
 
     def __str__(self):
         return f"{self.group.name}: {self.label}"
+
+
+class ConsultationRequest(models.Model):
+    product = models.ForeignKey(
+        Product, verbose_name='Товар',
+        related_name='consultation_requests',
+        null=True, blank=True, on_delete=models.SET_NULL,
+    )
+    product_name = models.CharField('Назва товару', max_length=400, blank=True, default='')
+    product_url = models.URLField('Посилання на товар', max_length=500, blank=True, default='')
+    name = models.CharField('Ім\'я', max_length=150)
+    phone = models.CharField('Телефон', max_length=30)
+    question = models.TextField('Питання')
+    created_at = models.DateTimeField('Дата створення', auto_now_add=True)
+    is_processed = models.BooleanField('Опрацьовано', default=False)
+
+    class Meta:
+        verbose_name = 'Заявка на консультацію'
+        verbose_name_plural = 'Заявки на консультацію'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} — {self.phone}'
