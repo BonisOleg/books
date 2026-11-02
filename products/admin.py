@@ -527,3 +527,6 @@ class BadgeAdmin(LangFilteredFieldsets, TranslationAdmin):
     @admin.display(description='Товарів')
     def products_count(self, obj):
         return obj.products.count()
+
+
+from . import admin_groups  # noqa: E402,F401

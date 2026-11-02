@@ -11,7 +11,7 @@ def site_settings(request):
     except Exception:
         site = None
 
-    from products.models import Category
+    from products.models import Category, ProductGroup
     try:
         nav_categories = list(
             Category.objects.filter(
@@ -20,6 +20,15 @@ def site_settings(request):
         )
     except Exception:
         nav_categories = []
+
+    try:
+        header_groups = list(
+            ProductGroup.objects.visible_now().filter(
+                show_in_header=True,
+            ).order_by('order', 'name')
+        )
+    except Exception:
+        header_groups = []
 
     try:
         footer_pages = Page.objects.filter(
@@ -63,6 +72,7 @@ def site_settings(request):
     return {
         'site_settings': site,
         'nav_categories': nav_categories,
+        'header_groups': header_groups,
         'footer_pages': footer_pages,
         'header_pages': header_pages,
         'available_languages': available_languages,

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static core_tags i18n %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+<link rel="stylesheet" href="{% static 'css/timer.css' %}">
+<link rel="stylesheet" href="{% static 'css/promotions.css' %}">
+{% endblock %}
+
+{% block structured_data %}
+{% json_ld breadcrumb_schema %}
+{% endblock %}
+
+{% block content %}
+<div class="container catalog-page">
+    <nav aria-label="Breadcrumb" class="breadcrumbs">
+        {% for name, url in breadcrumbs %}
+        {% if url %}
+        <a href="{{ url }}">{{ name }}</a> &rsaquo;
+        {% else %}
+        <span>{{ name }}</span>
+        {% endif %}
+        {% endfor %}
+    </nav>
+
+    <div class="catalog-header">
+        <h1 class="catalog-header__title">{{ group.name }}</h1>
+    </div>
+
+    <div class="catalog-toolbar">
+        <div class="catalog-toolbar__sort">
+            <select class="js-sort-redirect" data-custom-select aria-label="{% trans 'Сортування' %}">
+                <option value="{% querystring sort='default' page=None %}" {% if current_sort == 'default' %}selected{% endif %}>{% trans 'За порядком' %}</option>
+                <option value="{% querystring sort='price_asc' page=None %}" {% if current_sort == 'price_asc' %}selected{% endif %}>{% trans 'За зростанням ціни' %}</option>
+                <option value="{% querystring sort='price_desc' page=None %}" {% if current_sort == 'price_desc' %}selected{% endif %}>{% trans 'За зниженням ціни' %}</option>
+                <option value="{% querystring sort='newest' page=None %}" {% if current_sort == 'newest' %}selected{% endif %}>{% trans 'За новизною' %}</option>
+            </select>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="product-grid">
+        {% for product in products %}
+        {% include "includes/product_card.html" with product=product img_index=forloop.counter %}
+        {% endfor %}
+    </div>
+
+    {% include "includes/pagination.html" %}
+    {% else %}
+    <div class="cart-empty">
+        <div class="cart-empty__icon">&#128269;</div>
+        <div class="cart-empty__text">{% trans 'Товарів не знайдено' %}</div>
+        <a href="{% url 'products:catalog' %}" class="btn btn--primary">{% trans 'До каталогу' %}</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/catalog.js' %}"></script>
+<script src="{% static 'js/timer.js' %}"></script>
+{% endblock %}

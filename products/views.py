@@ -9,7 +9,7 @@ from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
-from .models import FilterGroup, Product, Category
+from .models import FilterGroup, Product, Category, ProductGroup
 from .filters import filter_products
 from .schema import get_product_schema, get_breadcrumb_schema
 from .search import apply_search, search_tokens
@@ -114,6 +114,42 @@ class CategoryDetailView(ListView):
         if self.request.headers.get('HX-Request'):
             return ['products/partials/product_grid.html']
         return ['products/category_detail.html']
+
+
+class ProductGroupView(ListView):
+    template_name = 'products/group_detail.html'
+    context_object_name = 'products'
+    paginate_by = 24
+
+    def get_group(self):
+        if not hasattr(self, 'group'):
+            self.group = get_object_or_404(
+                ProductGroup.objects.visible_now(),
+                slug=self.kwargs['slug'],
+            )
+        return self.group
+
+    def get_queryset(self):
+        group = self.get_group()
+        qs = group.products.filter(is_active=True).prefetch_related(
+            'images', 'categories',
+        )
+        qs = _with_active_promotions(qs)
+        return filter_products(qs, self.request.GET)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        group = self.get_group()
+        ctx['group'] = group
+        ctx['page_title'] = group.meta_title or group.name
+        ctx['page_meta_description'] = group.meta_description
+        ctx['current_sort'] = self.request.GET.get('sort', 'default')
+        breadcrumbs = [(_('Головна'), '/'), (group.name, None)]
+        ctx['breadcrumbs'] = breadcrumbs
+        ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
+        page_obj = ctx.get('page_obj')
+        apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
+        return ctx
 
 
 class ProductDetailView(DetailView):

@@ -17,6 +17,7 @@ from core.sitemaps import (
 )
 from orders.views import liqpay_callback, mono_callback
 from products.feeds import feed_middle, feed_vip, google_merchant_feed
+from products.views import ProductGroupView
 
 sitemaps = {
     'static': StaticSitemap,
@@ -48,6 +49,7 @@ urlpatterns = [
 
 urlpatterns += i18n_patterns(
     path('', include('core.urls')),
+    path('group/<slug:slug>/', ProductGroupView.as_view(), name='product_group'),
     path('catalog/', include('products.urls')),
     path('cart/', include('cart.urls')),
     path('orders/', include('orders.urls')),
