@@ -65,6 +65,26 @@ class SupplierAdminTests(TestCase):
         self.assertContains(follow, 'Пробний запуск')
         self.assertContains(follow, 'supplier-sync-report')
 
+    def test_dry_run_report_lists_future_out_of_stock(self):
+        missing = make_product(
+            name='Зникне з вітрини',
+            slug='admin-missing',
+            sku='ADM-MISS',
+            sku_manufacturer='NO-FEED-ADM',
+            price=Decimal('11.00'),
+            stock_status='in_stock',
+        )
+        url = reverse('admin:suppliers_supplier_dry_run', args=[self.supplier.pk])
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Стане «Немає в наявності»: 1')
+        self.assertContains(response, 'Зникне з вітрини | NO-FEED-ADM')
+        missing.refresh_from_db()
+        self.product.refresh_from_db()
+        self.assertEqual(missing.stock_status, 'in_stock')
+        self.assertEqual(self.product.price, Decimal('10.00'))
+        self.assertEqual(self.product.stock_status, 'in_stock')
+
     def test_sync_post_updates_price(self):
         url = reverse('admin:suppliers_supplier_sync', args=[self.supplier.pk])
         response = self.client.post(url)

@@ -22,6 +22,11 @@ def render_report(plan, *, status: str, dry_run: bool) -> tuple[str, dict]:
     not_in_feed = len(plan.not_in_feed) if applied else 0
     not_in_catalog = len(plan.not_in_catalog) if applied else 0
 
+    if dry_run and applied:
+        stock_line = f'Стане «Немає в наявності»: {marked_out}'
+    else:
+        stock_line = f'Позначено «Немає в наявності»: {marked_out}'
+
     lines = []
     if dry_run and applied:
         lines.append('Пробний запуск: каталог не змінювався.')
@@ -33,7 +38,7 @@ def render_report(plan, *, status: str, dry_run: bool) -> tuple[str, dict]:
         f'Змінено цін: {price_changed}',
         f'Немає у фіді (з каталогу): {not_in_feed}',
         f'Немає в каталозі (з фіду): {not_in_catalog}',
-        f'Позначено «Немає в наявності»: {marked_out}',
+        stock_line,
         f'Помилки: {plan.error_count}',
         '',
     ])
@@ -41,6 +46,7 @@ def render_report(plan, *, status: str, dry_run: bool) -> tuple[str, dict]:
     price_rows = []
     feed_rows = []
     catalog_rows = []
+    mark_rows = []
     if applied:
         lines.append('Зміни цін:')
         price_rows = _price_rows(plan)
@@ -60,6 +66,13 @@ def render_report(plan, *, status: str, dry_run: bool) -> tuple[str, dict]:
             f"- {row['title']} | код {row['code']} | ціна фіду {row['price']}"
         ), not_in_catalog))
         lines.append('')
+        if dry_run:
+            lines.append(f'Стане «Немає в наявності»: {marked_out}')
+            mark_rows = _mark_out_rows(plan)
+            lines.extend(_section(mark_rows, lambda row: (
+                f"- {row['name']} | {row['code']}"
+            ), marked_out))
+            lines.append('')
 
     if plan.error_messages:
         lines.append('Помилки:')
@@ -82,6 +95,7 @@ def render_report(plan, *, status: str, dry_run: bool) -> tuple[str, dict]:
         'price_changes': price_rows,
         'not_in_feed_examples': feed_rows,
         'not_in_catalog_examples': catalog_rows,
+        'mark_out_examples': mark_rows,
         'error_messages': list(plan.error_messages[:MAX_EXAMPLES]),
     }
     return '\n'.join(lines).rstrip() + '\n', payload
@@ -117,6 +131,21 @@ def _feed_rows(plan) -> list[dict]:
             'code': row.code,
             'sku': row.sku,
         })
+    return rows
+
+
+def _mark_out_rows(plan) -> list[dict]:
+    wanted = set(plan.mark_out_ids)
+    rows = []
+    for row in plan.not_in_feed:
+        if row.product_id not in wanted:
+            continue
+        rows.append({
+            'name': row.name,
+            'code': row.code,
+        })
+        if len(rows) >= MAX_EXAMPLES:
+            break
     return rows
 
 

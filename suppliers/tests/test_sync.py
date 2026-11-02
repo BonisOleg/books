@@ -205,6 +205,8 @@ class SyncSupplierTests(TestCase):
         self.assertEqual(already.stock_status, 'out')
         self.assertEqual(on.marked_out, 1)
         self.assertIn('Немає у фіді', on.report)
+        self.assertIn('Позначено «Немає в наявності»: 1', on.report)
+        self.assertNotIn('Стане «Немає в наявності»', on.report)
 
     def test_feed_availability_does_not_change_stock(self):
         product = make_product(
@@ -264,6 +266,7 @@ class SyncSupplierTests(TestCase):
     def test_duplicate_feed_id_does_not_update(self):
         product = make_product(
             slug='feed-dup', sku='FD', sku_manufacturer='ZZ', price=Decimal('8.00'),
+            stock_status='in_stock',
         )
         run = sync_supplier(make_supplier(), source=feed_bytes([
             {'id': 'ZZ', 'price': '30 UAH'},
@@ -271,6 +274,8 @@ class SyncSupplierTests(TestCase):
         ]))
         product.refresh_from_db()
         self.assertEqual(product.price, Decimal('8.00'))
+        self.assertEqual(product.stock_status, 'in_stock')
+        self.assertEqual(run.marked_out, 0)
         self.assertIn('у фіді', run.report)
 
     def test_invalid_price_is_skipped_and_valid_sibling_applies(self):

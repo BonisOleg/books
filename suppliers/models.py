@@ -65,7 +65,7 @@ class Supplier(models.Model):
     )
     mark_missing_out_of_stock = models.BooleanField(
         'Товари, яких немає у фіді — ставити «Немає в наявності»',
-        default=False,
+        default=True,
     )
     is_active = models.BooleanField('Активний', default=True)
     created_at = models.DateTimeField('Створено', auto_now_add=True)

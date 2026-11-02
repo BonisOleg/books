@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from suppliers.models import SupplierSyncRun
 
-from .utils import FIXTURE, make_product, make_supplier
+from .utils import FIXTURE, feed_bytes, make_product, make_supplier
 
 
 class SyncCommandTests(TestCase):
@@ -85,6 +85,33 @@ class SyncCommandTests(TestCase):
         self.assertEqual(product.price, Decimal('8.00'))
         self.assertEqual(product.stock_status, 'in_stock')
         self.assertEqual(SupplierSyncRun.objects.get().status, SupplierSyncRun.Status.FAILED)
+
+    def test_dry_run_prints_future_out_of_stock_and_does_not_write(self):
+        missing = make_product(
+            name='Зникне', slug='cmd-gone', sku='CMD-GONE',
+            sku_manufacturer='NO-FEED-CMD', price=Decimal('4.00'),
+            stock_status='in_stock',
+        )
+        supplier = make_supplier()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'feed.xml'
+            path.write_bytes(feed_bytes([
+                {'id': 'OTHER', 'price': '5 UAH', 'title': 'Є'},
+            ]).getvalue())
+            out = StringIO()
+            call_command(
+                'sync_supplier_feeds',
+                '--dry-run',
+                '--supplier', str(supplier.pk),
+                '--file', str(path),
+                stdout=out,
+            )
+        missing.refresh_from_db()
+        self.assertEqual(missing.stock_status, 'in_stock')
+        self.assertEqual(missing.price, Decimal('4.00'))
+        text = out.getvalue()
+        self.assertIn('Стане «Немає в наявності»: 1', text)
+        self.assertIn('- Зникне | NO-FEED-CMD', text)
 
     def test_no_active_suppliers(self):
         make_supplier(is_active=False)
