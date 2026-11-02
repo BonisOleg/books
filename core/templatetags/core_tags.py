@@ -68,6 +68,34 @@ def clean_richtext(value):
     return mark_safe(result)
 
 
+@register.filter
+def with_site_suffix(title, site_name=None):
+    """Idempotent document title ending with «| SITE_NAME»."""
+    from core.seo import with_site_suffix as _with_site_suffix
+    return _with_site_suffix(title or '', site_name)
+
+
+@register.filter
+def demote_h1(value, css_class='seo-h2'):
+    """Render-time h1→h2 for SEO HTML; DB unchanged."""
+    from core.seo import demote_h1_html
+    if not value:
+        return value
+    return mark_safe(demote_h1_html(str(value), css_class=css_class or 'seo-h2'))
+
+
+@register.filter
+def trim_seo(value):
+    from core.seo import normalize_product_name
+    return normalize_product_name(value) if value else value
+
+
+@register.simple_tag
+def product_gallery_alt(product_name, index=1, is_main=False):
+    from core.seo import product_image_alt
+    return product_image_alt(product_name, int(index or 1), is_main=bool(is_main))
+
+
 @register.simple_tag
 def analytics_payload(site_settings):
     if not site_settings:

@@ -178,6 +178,23 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse('products:detail', kwargs={'slug': self.slug})
 
+    def clean(self):
+        from core.seo import normalize_product_name
+        for fname in ('name', 'name_uk', 'name_en', 'name_ru'):
+            if hasattr(self, fname):
+                val = getattr(self, fname)
+                if isinstance(val, str) and val:
+                    setattr(self, fname, normalize_product_name(val))
+
+    def save(self, *args, **kwargs):
+        from core.seo import normalize_product_name
+        for fname in ('name', 'name_uk', 'name_en', 'name_ru'):
+            if hasattr(self, fname):
+                val = getattr(self, fname)
+                if isinstance(val, str) and val:
+                    setattr(self, fname, normalize_product_name(val))
+        super().save(*args, **kwargs)
+
     @property
     def main_image(self):
         return self.images.first()

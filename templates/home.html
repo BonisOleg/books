@@ -9,7 +9,12 @@
 {% block title %}{{ SITE_HOME_TITLE }}{% endblock %}
 {% block og_title %}{{ SITE_HOME_TITLE }}{% endblock %}
 
+{% block structured_data %}
+{% if home_json_ld %}{% json_ld home_json_ld %}{% endif %}
+{% endblock %}
+
 {% block content %}
+<h1 class="visually-hidden">{{ SITE_NAME }}</h1>
 <div class="container">
     {% banners "home_hero" %}
 </div>
@@ -55,7 +60,7 @@
 <section class="seo-text">
     <div class="container">
         <div class="seo-text__content">
-            {{ site_settings.site_description|safe }}
+            {{ site_settings.site_description|demote_h1|safe }}
         </div>
     </div>
 </section>

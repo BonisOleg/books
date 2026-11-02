@@ -8,9 +8,10 @@ from django.views import View
 from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
+from core.seo import apply_pagination_seo, build_product_meta_description
 from .models import FilterGroup, Product, Category
 from .filters import filter_products
-from .schema import _plain_text, get_product_schema, get_breadcrumb_schema
+from .schema import get_product_schema, get_breadcrumb_schema
 from .search import apply_search, search_tokens
 
 
@@ -62,6 +63,8 @@ class CatalogView(ListView):
         ctx['selected_stocks'] = self.request.GET.getlist('stock')
         ctx['selected_badges'] = self.request.GET.getlist('badge')
         ctx['selected_subcategories'] = self.request.GET.getlist('subcategory')
+        page_obj = ctx.get('page_obj')
+        apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx
 
 
@@ -103,6 +106,8 @@ class CategoryDetailView(ListView):
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
         ctx['filter_groups'] = _get_filter_groups(self.category)
+        page_obj = ctx.get('page_obj')
+        apply_pagination_seo(ctx, page_obj.number if page_obj else 1)
         return ctx
 
     def get_template_names(self):
@@ -126,8 +131,7 @@ class ProductDetailView(DetailView):
         ctx = super().get_context_data(**kwargs)
         product = self.object
         ctx['page_title'] = product.meta_title or product.name
-        raw_meta = product.meta_description or product.short_description
-        ctx['page_meta_description'] = _plain_text(raw_meta, max_len=300)
+        ctx['page_meta_description'] = build_product_meta_description(product)
         ctx['product_schema'] = get_product_schema(product, self.request)
         ctx['reviews'] = product.reviews.filter(is_approved=True).order_by('-created_at')
 

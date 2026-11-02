@@ -79,6 +79,17 @@
     font-size: 1rem;
 }
 
+/* Former SEO h1 look after demote_h1 → h2.seo-h2 */
+.catalog-header__desc h2.seo-h2,
+.catalog-header__desc .seo-h2 {
+    font-family: var(--font-heading);
+    color: var(--color-accent);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 12px 0 8px;
+}
+
 .catalog-header__desc ul,
 .catalog-header__desc ol {
     padding-left: 20px;

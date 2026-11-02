@@ -345,6 +345,17 @@
     line-height: 1.35;
 }
 
+/* Former order-info h1 look after demote_h1 → h2.seo-h2 */
+.product-tabs__panel h2.seo-h2,
+.product-tabs__panel .seo-h2 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 14px 0 6px;
+    line-height: 1.35;
+    color: var(--color-accent);
+}
+
 .product-tabs__panel h1:first-child,
 .product-tabs__panel h2:first-child,
 .product-tabs__panel h3:first-child,

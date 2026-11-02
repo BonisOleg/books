@@ -28,7 +28,7 @@ class AbsoluteSitemap(Sitemap):
 
 
 class StaticSitemap(AbsoluteSitemap):
-    priority = 0.8
+    priority = 1.0
     changefreq = 'weekly'
 
     def items(self):

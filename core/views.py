@@ -12,7 +12,8 @@ from django.views.generic import DetailView, TemplateView
 from blog.models import Article, News
 from products.models import Category, Product
 
-from .models import Page
+from .models import Page, SiteSettings
+from .seo import get_home_json_ld
 
 
 class HomeView(TemplateView):
@@ -36,6 +37,14 @@ class HomeView(TemplateView):
         context['latest_articles'] = Article.objects.filter(
             is_published=True
         ).order_by('-created_at')[:4]
+
+        site = context.get('site_settings')
+        if site is None:
+            try:
+                site = SiteSettings.objects.first()
+            except Exception:
+                site = None
+        context['home_json_ld'] = get_home_json_ld(site, self.request)
 
         return context
 

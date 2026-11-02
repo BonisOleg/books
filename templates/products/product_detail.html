@@ -45,7 +45,8 @@
                  data-label-next="{% trans 'Наступне' %}">
                 {% with first_img=product.images.first %}
                 {% if first_img %}
-                {% responsive_img first_img.image alt=first_img.alt_text|default:product.name img_id="gallery-current" sizes="(max-width: 767px) 100vw, 640px" eager=True priority=True %}
+                {% product_gallery_alt product.name 1 is_main=True as main_alt %}
+                {% responsive_img first_img.image alt=main_alt img_id="gallery-current" sizes="(max-width: 767px) 100vw, 640px" eager=True priority=True %}
                 {% else %}
                 <div class="no-photo">{% trans 'Немає фото' %}</div>
                 {% endif %}
@@ -67,12 +68,13 @@
 
             <div class="product-gallery__nav" id="gallery-thumbs">
                 {% for img in product.images.all %}
+                {% product_gallery_alt product.name forloop.counter as thumb_alt %}
                 <div class="product-gallery__thumb {% if forloop.first %}is-active{% endif %}"
                      data-src="{% image_variant img.image 1280 %}"
                      data-srcset="{% image_srcset img.image %}"
                      data-full="{{ img.image.url }}"
                      data-type="image" data-index="{{ forloop.counter0 }}">
-                    {% responsive_img img.image alt=img.alt_text|default:'' sizes="56px" %}
+                    {% responsive_img img.image alt=thumb_alt sizes="56px" %}
                 </div>
                 {% endfor %}
                 {% for vid in product.videos.all %}
@@ -81,7 +83,8 @@
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
                      data-index="{{ product.images.count|add:forloop.counter0 }}">
                     {% if vid.poster %}
-                    {% responsive_img vid.poster alt='' sizes="56px" %}
+                    {% product_gallery_alt product.name forloop.counter as vid_alt %}
+                    {% responsive_img vid.poster alt=vid_alt sizes="56px" %}
                     {% else %}
                     <div class="thumb-empty"></div>
                     {% endif %}
@@ -92,7 +95,7 @@
 
         <div class="product-info">
             <div class="product-info__sku">{% trans 'Код:' %} {{ product.sku }}</div>
-            <h1 class="product-info__title">{{ product.name }}</h1>
+            <h1 class="product-info__title">{{ product.name|trim_seo }}</h1>
 
             <div class="product-info__stock">
                 <span class="stock-status stock-status--{{ product.stock_status }}">
@@ -101,7 +104,7 @@
             </div>
 
             {% if product.short_description %}
-            <div class="product-info__short">{{ product.short_description|clean_richtext }}</div>
+            <div class="product-info__short">{{ product.short_description|clean_richtext|demote_h1 }}</div>
             {% endif %}
 
             <div class="product-info__price-block">
@@ -192,9 +195,9 @@
 
         <div class="product-tabs__panel is-active" id="tab-desc">
             {% if description_for_tab %}
-                {{ description_for_tab|clean_richtext }}
+                {{ description_for_tab|clean_richtext|demote_h1 }}
             {% elif not product.short_description %}
-                {{ product.description|clean_richtext }}
+                {{ product.description|clean_richtext|demote_h1 }}
             {% endif %}
         </div>
 
@@ -224,9 +227,9 @@
 
         <div class="product-tabs__panel" id="tab-order-info">
             {% if product.order_info %}
-                {{ product.order_info|clean_richtext }}
+                {{ product.order_info|clean_richtext|demote_h1 }}
             {% elif site_settings.default_order_info %}
-                {{ site_settings.default_order_info|clean_richtext }}
+                {{ site_settings.default_order_info|clean_richtext|demote_h1 }}
             {% else %}
                 <p>{% trans 'Доставка здійснюється Новою Поштою по всій Україні.' %}</p>
                 <p>{% trans 'Оплата: LiqPay, Monobank, накладений платіж.' %}</p>
