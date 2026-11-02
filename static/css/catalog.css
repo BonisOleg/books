@@ -188,6 +188,16 @@
     gap: 24px;
 }
 
+.catalog-layout--full {
+    display: block;
+}
+
+.catalog-layout--full .product-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
 .catalog-sidebar {
     display: none;
     width: 260px;

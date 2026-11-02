@@ -381,3 +381,112 @@ class AttributeFilterApplyTests(SimpleTestCase):
             template,
             r'onchange\s*=\s*["\'][^"\']*(?:\.submit\s*\(|requestSubmit)',
         )
+
+
+LEGACY_PANEL_MARKERS = (
+    '<aside class="catalog-sidebar">',
+    'id="open-filters"',
+    'id="mobile-filters"',
+    'class="filter-panel"',
+    'filter-panel__submit',
+)
+
+SORT_HX_INCLUDE = (
+    'hx-include=".filter-panel input[name], .filter-panel select[name], '
+    '.attr-filters__fields input"'
+)
+
+
+@override_settings(CACHES=LOC_MEM)
+class LegacyFilterPanelVisibilityTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name='Книги', slug='books-panel')
+        self.sale = make_product(
+            name='Акція', slug='sale-panel', sku='P1', price='100.00', badge='sale',
+        )
+        self.sale.categories.add(self.category)
+        self.cheap = make_product(
+            name='Дешева', slug='cheap-panel', sku='P2', price='10.00', stock_status='out',
+        )
+        self.cheap.categories.add(self.category)
+
+    def _page(self, name='category', query=None):
+        if name == 'category':
+            url = reverse('products:category', kwargs={'slug': self.category.slug})
+        else:
+            url = reverse('products:catalog')
+        return self.client.get(url, query or {}).content.decode()
+
+    def test_without_groups_category_and_catalog_omit_legacy_panel(self):
+        category_html = self._page()
+        catalog_html = self._page('catalog')
+        for html in (category_html, catalog_html):
+            for marker in LEGACY_PANEL_MARKERS:
+                self.assertNotIn(marker, html)
+            self.assertNotIn('id="filter-overlay"', html)
+        self.assertIn('catalog-layout--full', category_html)
+        self.assertNotIn('product-grid--with-sidebar', category_html)
+        self.assertIn(SORT_HX_INCLUDE, category_html)
+        self.assertIn('name="sort"', category_html)
+
+    def test_groups_without_renderable_options_stay_hidden(self):
+        stock = FilterGroup.objects.create(name='Наявність', filter_type='stock', order=1)
+        FilterOption.objects.create(
+            group=stock, label='В наявності', value='in_stock', is_active=False,
+        )
+        FilterGroup.objects.create(name='Підкатегорії', filter_type='subcategory', order=2)
+        FilterGroup.objects.create(
+            name='Вимкнений бюджет', filter_type='price_range', order=3, is_active=False,
+        )
+        other = Category.objects.create(name='Інша', slug='other-panel')
+        foreign = FilterGroup.objects.create(name='Чужий бюджет', filter_type='price_range', order=4)
+        foreign.categories.add(other)
+
+        html = self._page()
+        for marker in LEGACY_PANEL_MARKERS:
+            self.assertNotIn(marker, html)
+        self.assertIn('catalog-layout--full', html)
+        self.assertNotIn('Підкатегорії', html)
+        self.assertNotIn('Чужий бюджет', html)
+        self.assertNotIn('name="price_min"', html)
+
+    def test_three_production_groups_show_working_sidebar(self):
+        stock = FilterGroup.objects.create(name='Наявність', filter_type='stock', order=2)
+        badge = FilterGroup.objects.create(name='Мітки', filter_type='badge', order=3)
+        FilterGroup.objects.create(name='Бюджет', filter_type='price_range', order=1)
+        FilterOption.objects.create(group=stock, label='В наявності', value='in_stock')
+        FilterOption.objects.create(group=badge, label='Акція', value='sale')
+        self.assertEqual(FilterGroup.objects.count(), 3)
+
+        html = self._page()
+        for marker in LEGACY_PANEL_MARKERS:
+            self.assertIn(marker, html)
+        self.assertIn('id="filter-overlay"', html)
+        self.assertIn('product-grid--with-sidebar', html)
+        self.assertNotIn('catalog-layout--full', html)
+        self.assertIn(SORT_HX_INCLUDE, html)
+        self.assertEqual(html.count('class="filter-panel"'), 2)
+        self.assertEqual(html.count('filter-panel__submit'), 2)
+        self.assertIn('Бюджет', html)
+        self.assertIn('Наявність', html)
+        self.assertIn('Мітки', html)
+        self.assertIn('name="price_min"', html)
+        self.assertIn('value="in_stock"', html)
+        self.assertIn('value="sale"', html)
+        self.assertRegex(
+            html,
+            r'<button[^>]*type="submit"[^>]*class="[^"]*filter-panel__submit[^"]*"[^>]*>\s*Застосувати\s*</button>',
+        )
+
+        catalog_html = self._page('catalog')
+        for marker in LEGACY_PANEL_MARKERS:
+            self.assertNotIn(marker, catalog_html)
+
+        filtered = self._page(query={'price_min': '50'})
+        self.assertIn('sale-panel', filtered)
+        self.assertNotIn('cheap-panel', filtered)
+        self.assertIn('<aside class="catalog-sidebar">', filtered)
+
+        by_stock = self._page(query={'stock': 'in_stock'})
+        self.assertIn('sale-panel', by_stock)
+        self.assertNotIn('cheap-panel', by_stock)

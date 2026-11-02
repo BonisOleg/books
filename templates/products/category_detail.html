@@ -70,6 +70,7 @@
         </div>
         {% include "products/partials/attribute_filters.html" %}
         </div>
+        {% if filter_groups %}
         <button class="catalog-toolbar__filter-btn" id="open-filters">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
@@ -80,14 +81,17 @@
             </svg>
             {% trans 'Фільтри' %}
         </button>
+        {% endif %}
     </div>
 
-    <div class="catalog-layout">
+    <div class="catalog-layout{% if not filter_groups %} catalog-layout--full{% endif %}">
+        {% if filter_groups %}
         <aside class="catalog-sidebar">
             {% include "products/partials/filter_panel.html" %}
         </aside>
+        {% endif %}
 
-        <div id="product-grid" class="product-grid product-grid--with-sidebar">
+        <div id="product-grid" class="product-grid{% if filter_groups %} product-grid--with-sidebar{% endif %}">
             {% include "products/partials/product_grid.html" %}
         </div>
     </div>
@@ -96,6 +100,7 @@
 
 </div>
 
+{% if filter_groups %}
 <div class="mobile-menu__overlay" id="filter-overlay"></div>
 <div class="mobile-filters" id="mobile-filters">
     <div class="mobile-filters__header">
@@ -110,6 +115,7 @@
         {% include "products/partials/filter_panel.html" %}
     </div>
 </div>
+{% endif %}
 
 {% endblock %}
 

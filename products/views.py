@@ -34,6 +34,24 @@ def _get_filter_groups(category=None):
     return result
 
 
+def _group_renders_options(group, subcategories):
+    """True when the legacy sidebar would output real controls, not an empty shell."""
+    if group.filter_type == 'price_range':
+        return True
+    if group.filter_type in ('stock', 'badge'):
+        return any(option.is_active for option in group.options.all())
+    if group.filter_type == 'subcategory':
+        return bool(subcategories)
+    return False
+
+
+def _renderable_filter_groups(category, subcategories):
+    return [
+        group for group in _get_filter_groups(category)
+        if _group_renders_options(group, subcategories)
+    ]
+
+
 def _with_active_promotions(qs):
     from promotions.models import Promotion
     now = timezone.now()
@@ -110,7 +128,9 @@ class CategoryDetailView(ListView):
         breadcrumbs.append((self.category.name, None))
         ctx['breadcrumbs'] = breadcrumbs
         ctx['breadcrumb_schema'] = get_breadcrumb_schema(breadcrumbs, self.request)
-        ctx['filter_groups'] = _get_filter_groups(self.category)
+        ctx['filter_groups'] = _renderable_filter_groups(
+            self.category, ctx['subcategories'],
+        )
         _attach_attribute_filters(
             ctx,
             Product.objects.filter(
