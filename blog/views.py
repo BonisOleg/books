@@ -9,7 +9,7 @@ class ArticleListView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        return Article.objects.filter(is_published=True)
+        return Article.objects.published()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -23,7 +23,7 @@ class ArticleDetailView(DetailView):
     context_object_name = 'article'
 
     def get_queryset(self):
-        return Article.objects.filter(is_published=True)
+        return Article.objects.published()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -39,7 +39,7 @@ class NewsListView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        return News.objects.filter(is_published=True)
+        return News.objects.published()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -53,7 +53,7 @@ class NewsDetailView(DetailView):
     context_object_name = 'news_item'
 
     def get_queryset(self):
-        return News.objects.filter(is_published=True)
+        return News.objects.published()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils import timezone
 from modeltranslation.admin import TranslationAdmin
 
 from core.admin_mixins import LangFilteredFieldsets
@@ -11,15 +12,25 @@ class LangPanelMedia:
     js = ('js/admin_lang_panels.js',)
 
 
+class PublishStatusMixin:
+    @admin.display(description='Статус')
+    def publish_status(self, obj):
+        if not obj.is_published:
+            return 'Чернетка'
+        if obj.published_at > timezone.now():
+            return 'Заплановано'
+        return 'Опубліковано'
+
+
 @admin.register(Article)
-class ArticleAdmin(LangFilteredFieldsets, TranslationAdmin):
-    list_display = ('title', 'is_published', 'created_at')
-    list_filter = ('is_published', 'created_at')
+class ArticleAdmin(PublishStatusMixin, LangFilteredFieldsets, TranslationAdmin):
+    list_display = ('title', 'publish_status', 'is_published', 'published_at', 'created_at')
+    list_filter = ('is_published', 'published_at')
     search_fields = ('title_uk', 'title_en', 'title_ru')
     prepopulated_fields = {'slug': ('title_uk',)}
     list_editable = ('is_published',)
     fieldsets = (
-        ('Загальне', {'fields': ('slug', 'image', 'is_published')}),
+        ('Загальне', {'fields': ('slug', 'image', 'is_published', 'published_at')}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'content_uk', 'excerpt_uk',
@@ -43,14 +54,14 @@ class ArticleAdmin(LangFilteredFieldsets, TranslationAdmin):
 
 
 @admin.register(News)
-class NewsAdmin(LangFilteredFieldsets, TranslationAdmin):
-    list_display = ('title', 'is_published', 'created_at')
-    list_filter = ('is_published', 'created_at')
+class NewsAdmin(PublishStatusMixin, LangFilteredFieldsets, TranslationAdmin):
+    list_display = ('title', 'publish_status', 'is_published', 'published_at', 'created_at')
+    list_filter = ('is_published', 'published_at')
     search_fields = ('title_uk', 'title_en', 'title_ru')
     prepopulated_fields = {'slug': ('title_uk',)}
     list_editable = ('is_published',)
     fieldsets = (
-        ('Загальне', {'fields': ('slug', 'image', 'is_published')}),
+        ('Загальне', {'fields': ('slug', 'image', 'is_published', 'published_at')}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'content_uk', 'excerpt_uk',

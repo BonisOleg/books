@@ -30,13 +30,8 @@ class HomeView(TemplateView):
             is_active=True
         ).prefetch_related('categories', 'images').order_by('-created_at')[:20]
 
-        context['latest_news'] = News.objects.filter(
-            is_published=True
-        ).order_by('-created_at')[:4]
-
-        context['latest_articles'] = Article.objects.filter(
-            is_published=True
-        ).order_by('-created_at')[:4]
+        context['latest_news'] = News.objects.published()[:4]
+        context['latest_articles'] = Article.objects.published()[:4]
 
         site = context.get('site_settings')
         if site is None:
