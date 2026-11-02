@@ -131,7 +131,7 @@ class ProductGroupView(ListView):
 
     def get_queryset(self):
         group = self.get_group()
-        qs = group.products.filter(is_active=True).prefetch_related(
+        qs = group.get_products().filter(is_active=True).prefetch_related(
             'images', 'categories',
         )
         qs = _with_active_promotions(qs)

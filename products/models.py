@@ -156,6 +156,11 @@ class Product(models.Model):
     meta_title = models.CharField('SEO Title', max_length=200, blank=True)
     meta_description = models.TextField('SEO Description', blank=True)
     is_active = models.BooleanField('Активний', default=True)
+    is_bestseller = models.BooleanField(
+        'Топ продажів',
+        default=False,
+        help_text='Товар потрапляє в групи з автодобором «Топ продажів».',
+    )
     exclude_from_feeds = models.BooleanField(
         'Виключити з VIP/Middle фідів',
         default=False,
@@ -368,6 +373,13 @@ class ProductGroupQuerySet(models.QuerySet):
 
 
 class ProductGroup(models.Model):
+    AUTO_MANUAL = ''
+    AUTO_BESTSELLER = 'bestseller'
+    AUTO_SOURCE_CHOICES = [
+        (AUTO_MANUAL, 'Лише вручну'),
+        (AUTO_BESTSELLER, 'Товари з прапорцем «Топ продажів»'),
+    ]
+
     name = models.CharField('Назва', max_length=200)
     slug = models.SlugField(
         'URL', unique=True, max_length=200,
@@ -377,8 +389,16 @@ class ProductGroup(models.Model):
         Product, verbose_name='Товари', blank=True, related_name='groups',
     )
     show_in_header = models.BooleanField(
-        'Показувати в шапці', default=False,
-        help_text='Якщо увімкнено — посилання з’явиться у верхній панелі поруч зі сторінками.',
+        'Показувати в меню «Усі товари»', default=False,
+        help_text='Якщо увімкнено — посилання з’явиться у випадаючому меню «Усі товари» та в мобільному меню.',
+    )
+    auto_source = models.CharField(
+        'Автодобір',
+        max_length=20,
+        choices=AUTO_SOURCE_CHOICES,
+        blank=True,
+        default=AUTO_MANUAL,
+        help_text='До обраних товарів можна автоматично додати товари з прапорцем «Топ продажів».',
     )
     order = models.PositiveIntegerField('Порядок', default=0)
     date_from = models.DateTimeField(
@@ -424,3 +444,14 @@ class ProductGroup(models.Model):
 
     def get_absolute_url(self):
         return reverse('product_group', kwargs={'slug': self.slug})
+
+    def get_products(self):
+        if self.pk:
+            manual = self.products.all()
+        else:
+            manual = Product.objects.none()
+        if self.auto_source != self.AUTO_BESTSELLER:
+            return manual
+        return Product.objects.filter(
+            models.Q(pk__in=manual.values('pk')) | models.Q(is_bestseller=True)
+        )

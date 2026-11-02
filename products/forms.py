@@ -1,6 +1,7 @@
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from .models import Badge, FilterOption, Product
+from .models import Badge, FilterOption, Product, ProductGroup
 
 
 class FilterOptionForm(forms.ModelForm):
@@ -40,6 +41,29 @@ class MultipleFileField(forms.FileField):
         if isinstance(data, (list, tuple)):
             return [single_clean(d, initial) for d in data]
         return single_clean(data, initial)
+
+
+class ProductAdminForm(forms.ModelForm):
+    groups = forms.ModelMultipleChoiceField(
+        queryset=ProductGroup.objects.all(),
+        required=False,
+        label='Групи',
+        widget=FilteredSelectMultiple('Групи', False),
+    )
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and 'groups' in self.fields:
+            self.fields['groups'].initial = self.instance.groups.all()
+
+    def _save_m2m(self):
+        super()._save_m2m()
+        if 'groups' in self.cleaned_data:
+            self.instance.groups.set(self.cleaned_data['groups'])
 
 
 class BulkImageUploadForm(forms.Form):

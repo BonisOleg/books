@@ -13,7 +13,7 @@ from modeltranslation.admin import TranslationAdmin, TranslationTabularInline
 
 from core.admin_mixins import LangFilteredFieldsets
 
-from .forms import BulkImageUploadForm, FilterOptionForm
+from .forms import BulkImageUploadForm, FilterOptionForm, ProductAdminForm
 from .models import (
     Badge,
     Category,
@@ -129,11 +129,12 @@ class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
 @admin.register(Product)
 class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
     actions = ['set_sale_end_date_action', 'clear_sale_end_date_action']
+    form = ProductAdminForm
     list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
-                    'stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds')
+                    'stock_status', 'badge_obj', 'is_bestseller', 'is_active', 'exclude_from_feeds')
     list_display_links = ('image_thumb', 'name')
-    list_editable = ('price', 'stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds')
-    list_filter = ('stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds', 'categories')
+    list_editable = ('price', 'stock_status', 'badge_obj', 'is_bestseller', 'is_active', 'exclude_from_feeds')
+    list_filter = ('stock_status', 'badge_obj', 'is_bestseller', 'is_active', 'exclude_from_feeds', 'categories')
     search_fields = ('name_uk', 'name_en', 'name_ru', 'sku', 'sku_manufacturer')
     prepopulated_fields = {'slug': ('name_uk',)}
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
@@ -142,12 +143,12 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
     fieldsets = (
 
         ('Ідентифікація', {
-            'fields': ('slug', 'sku', 'sku_manufacturer', 'categories'),
+            'fields': ('slug', 'sku', 'sku_manufacturer', 'categories', 'groups'),
         }),
         ('Ціна та наявність', {
             'fields': (
                 'price', 'old_price', 'discount_percent', 'stock_status',
-                'badge_obj', 'badge', 'sale_end_date',
+                'badge_obj', 'badge', 'sale_end_date', 'is_bestseller',
             ),
         }),
         ('Додатково', {

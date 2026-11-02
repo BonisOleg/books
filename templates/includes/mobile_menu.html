@@ -24,7 +24,7 @@
         {% for page in header_pages %}
         <a href="{{ page.get_absolute_url }}" class="mobile-menu__link">{{ page.title }}</a>
         {% endfor %}
-        {% for group in header_groups %}
+        {% for group in menu_groups %}
         <a href="{{ group.get_absolute_url }}" class="mobile-menu__link">{{ group.name }}</a>
         {% endfor %}
         {% for page in footer_pages %}
