@@ -12,11 +12,28 @@ from suppliers.exceptions import PriceComputeError
 from suppliers.plans import MissingInCatalog, MissingInFeed, PriceChange, SyncPlan
 from suppliers.pricing import compute_price
 
+# Візуальні двійники кирилиці → латиниця до strip/casefold (фід і каталог).
+_CYRILLIC_LOOKALIKES = str.maketrans({
+    '\u0430': 'a', '\u0410': 'A',  # а А
+    '\u0432': 'b', '\u0412': 'B',  # в В
+    '\u0435': 'e', '\u0415': 'E',  # е Е
+    '\u0456': 'i', '\u0406': 'I',  # і І
+    '\u043a': 'k', '\u041a': 'K',  # к К
+    '\u043c': 'm', '\u041c': 'M',  # м М
+    '\u043d': 'h', '\u041d': 'H',  # н Н
+    '\u043e': 'o', '\u041e': 'O',  # о О
+    '\u0440': 'p', '\u0420': 'P',  # р Р
+    '\u0441': 'c', '\u0421': 'C',  # с С
+    '\u0442': 't', '\u0422': 'T',  # т Т
+    '\u0443': 'y', '\u0423': 'Y',  # у У
+    '\u0445': 'x', '\u0425': 'X',  # х Х
+})
+
 
 def normalize_code(value) -> str:
     if value is None:
         return ''
-    return str(value).strip().casefold()
+    return str(value).translate(_CYRILLIC_LOOKALIKES).strip().casefold()
 
 
 def plan_from_items(supplier, items, error_messages, error_count) -> SyncPlan:

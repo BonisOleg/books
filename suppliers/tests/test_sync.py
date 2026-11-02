@@ -4,9 +4,10 @@ from unittest.mock import patch
 
 import requests
 from django.db import connection
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.test.utils import CaptureQueriesContext
 
+from suppliers.matching import normalize_code
 from suppliers.models import SupplierSyncRun
 from suppliers.services import sync_supplier
 
@@ -66,6 +67,58 @@ class SyncSupplierTests(TestCase):
         ]))
         product.refresh_from_db()
         self.assertEqual(product.price, Decimal('20.00'))
+
+    def test_cyrillic_u_matches_latin_y(self):
+        product = make_product(
+            slug='tail', sku='TAIL', sku_manufacturer='0101003002y', price=Decimal('1.00'),
+        )
+        feed_code = '0101003002\u0443'
+        self.assertNotEqual(feed_code, product.sku_manufacturer)
+        sync_supplier(make_supplier(), source=feed_bytes([
+            {'id': feed_code, 'price': '15 UAH', 'title': 'Хвіст'},
+        ]))
+        product.refresh_from_db()
+        self.assertEqual(product.price, Decimal('15.00'))
+
+    def test_cyrillic_ve_matches_latin_b(self):
+        product = make_product(
+            slug='ve', sku='VE', sku_manufacturer='B5SUH2PGD', price=Decimal('2.00'),
+        )
+        feed_code = '\u04125SUH2PGD'
+        self.assertEqual(feed_code[0], '\u0412')
+        self.assertNotEqual(feed_code, product.sku_manufacturer)
+        sync_supplier(make_supplier(), source=feed_bytes([
+            {'id': feed_code, 'price': '25 UAH', 'title': 'Ве'},
+        ]))
+        product.refresh_from_db()
+        self.assertEqual(product.price, Decimal('25.00'))
+
+    def test_lookalike_duplicates_are_conflict(self):
+        feed_product = make_product(
+            slug='feed-look', sku='FL', sku_manufacturer='0101003002y', price=Decimal('3.00'),
+        )
+        latin = make_product(
+            slug='cat-look-b', sku='CLB', sku_manufacturer='B5SUH2PGD', price=Decimal('4.00'),
+        )
+        cyrillic = make_product(
+            slug='cat-look-ve', sku='CLV',
+            sku_manufacturer='\u04125SUH2PGD', price=Decimal('5.00'),
+        )
+        run = sync_supplier(make_supplier(), source=feed_bytes([
+            {'id': '0101003002\u0443', 'price': '40 UAH', 'title': 'Кирилиця'},
+            {'id': '0101003002y', 'price': '41 UAH', 'title': 'Латиниця'},
+            {'id': 'B5SUH2PGD', 'price': '50 UAH', 'title': 'Латинська В'},
+        ]))
+        feed_product.refresh_from_db()
+        latin.refresh_from_db()
+        cyrillic.refresh_from_db()
+        self.assertEqual(feed_product.price, Decimal('3.00'))
+        self.assertEqual(latin.price, Decimal('4.00'))
+        self.assertEqual(cyrillic.price, Decimal('5.00'))
+        self.assertEqual(run.status, SupplierSyncRun.Status.OK)
+        self.assertIn('Конфлікт', run.report)
+        self.assertIn('у фіді', run.report)
+        self.assertIn('каталозі', run.report)
 
     def test_dry_run_does_not_write_products(self):
         product = make_product(
@@ -327,3 +380,30 @@ class SyncSupplierTests(TestCase):
         self.assertEqual(run.matched, 0)
         self.assertIn('Новий купол', run.report)
         self.assertEqual(run.report_json['not_in_catalog_examples'][0]['code'], 'NEW-1')
+
+
+class NormalizeCodeTests(SimpleTestCase):
+    def test_cyrillic_lookalikes_become_latin_before_casefold(self):
+        pairs = (
+            ('\u0430', 'a'), ('\u0410', 'a'),
+            ('\u0432', 'b'), ('\u0412', 'b'),
+            ('\u0435', 'e'), ('\u0415', 'e'),
+            ('\u0456', 'i'), ('\u0406', 'i'),
+            ('\u043a', 'k'), ('\u041a', 'k'),
+            ('\u043c', 'm'), ('\u041c', 'm'),
+            ('\u043d', 'h'), ('\u041d', 'h'),
+            ('\u043e', 'o'), ('\u041e', 'o'),
+            ('\u0440', 'p'), ('\u0420', 'p'),
+            ('\u0441', 'c'), ('\u0421', 'c'),
+            ('\u0442', 't'), ('\u0422', 't'),
+            ('\u0443', 'y'), ('\u0423', 'y'),
+            ('\u0445', 'x'), ('\u0425', 'x'),
+        )
+        for src, expected in pairs:
+            self.assertNotEqual(src.casefold(), expected)
+            self.assertEqual(normalize_code(f'  {src}Z '), f'{expected}z')
+        self.assertEqual(normalize_code('0101003002\u0443'), '0101003002y')
+        self.assertEqual(normalize_code(' \u04125SUH2PGD '), 'b5suh2pgd')
+        self.assertEqual(normalize_code('Я\u0438'), 'я\u0438')
+        self.assertEqual(normalize_code(None), '')
+        self.assertEqual(normalize_code('   '), '')
