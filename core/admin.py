@@ -50,7 +50,7 @@ class SiteSettingsAdmin(LangFilteredFieldsets, TranslationAdmin):
             'fields': (
                 'site_description_uk', 'promo_banner_text_uk',
                 'seo_home_title_uk', 'seo_home_description_uk',
-                'default_order_info_uk',
+                'default_order_info_uk', 'default_shipping_time_uk',
             ),
             'classes': ('lang-panel', 'lang-uk'),
         }),
@@ -58,7 +58,7 @@ class SiteSettingsAdmin(LangFilteredFieldsets, TranslationAdmin):
             'fields': (
                 'site_description_en', 'promo_banner_text_en',
                 'seo_home_title_en', 'seo_home_description_en',
-                'default_order_info_en',
+                'default_order_info_en', 'default_shipping_time_en',
             ),
             'classes': ('lang-panel', 'lang-en'),
         }),
@@ -66,7 +66,7 @@ class SiteSettingsAdmin(LangFilteredFieldsets, TranslationAdmin):
             'fields': (
                 'site_description_ru', 'promo_banner_text_ru',
                 'seo_home_title_ru', 'seo_home_description_ru',
-                'default_order_info_ru',
+                'default_order_info_ru', 'default_shipping_time_ru',
             ),
             'classes': ('lang-panel', 'lang-ru'),
         }),

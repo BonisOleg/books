@@ -10,6 +10,7 @@ from django.views.generic import ListView, DetailView
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
 from .attribute_filters import attribute_filter_choices, category_branch_ids, preserved_query
+from .forms import ConsultationForm
 from .models import FilterGroup, Product, Category, ProductGroup
 from .filters import filter_products
 from .schema import get_product_schema, get_breadcrumb_schema
@@ -70,7 +71,7 @@ class CatalogView(ListView):
     paginate_by = 24
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'categories'
         )
         qs = _with_active_promotions(qs)
@@ -104,7 +105,7 @@ class CategoryDetailView(ListView):
         self.category = get_object_or_404(Category, slug=self.kwargs['slug'], is_active=True)
         qs = Product.objects.filter(
             is_active=True, categories__id__in=category_branch_ids(self.category),
-        ).prefetch_related('images', 'categories').distinct()
+        ).with_rating().prefetch_related('images', 'categories').distinct()
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
@@ -165,7 +166,7 @@ class ProductGroupView(ListView):
 
     def get_queryset(self):
         group = self.get_group()
-        qs = group.get_products().filter(is_active=True).prefetch_related(
+        qs = group.get_products().filter(is_active=True).with_rating().prefetch_related(
             'images', 'categories',
         )
         qs = _with_active_promotions(qs)
@@ -192,7 +193,7 @@ class ProductDetailView(DetailView):
     context_object_name = 'product'
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'videos', 'attributes', 'categories'
         )
         return _with_active_promotions(qs)
@@ -221,7 +222,7 @@ class ProductDetailView(DetailView):
         if previous_viewed:
             recently_viewed_qs = Product.objects.filter(
                 id__in=previous_viewed[:12], is_active=True
-            ).prefetch_related('images')
+            ).with_rating().prefetch_related('images')
             recently_viewed_map = {p.id: p for p in recently_viewed_qs}
             ctx['recently_viewed'] = [
                 recently_viewed_map[pid] for pid in previous_viewed[:12]
@@ -244,7 +245,9 @@ class ProductDetailView(DetailView):
         if primary_category:
             ctx['related_products'] = Product.objects.filter(
                 categories=primary_category, is_active=True
-            ).exclude(id=product.id).prefetch_related('images').distinct()[:8]
+            ).exclude(id=product.id).with_rating().prefetch_related(
+                'images'
+            ).distinct()[:8]
 
         from promotions.models import UpsellGroup, Promotion
         from django.utils import timezone
@@ -253,7 +256,11 @@ class ProductDetailView(DetailView):
                 trigger_product=product, is_active=True
             ).prefetch_related('suggested_products__images').first()
             if upsell:
-                ctx['upsell_products'] = upsell.suggested_products.filter(is_active=True)
+                ctx['upsell_products'] = (
+                    upsell.suggested_products.filter(is_active=True)
+                    .with_rating()
+                    .prefetch_related('images')
+                )
         except Exception:
             pass
 
@@ -273,6 +280,9 @@ class ProductDetailView(DetailView):
         except Exception:
             pass
 
+        if product.show_consult_button:
+            ctx['consult_form'] = ConsultationForm(request=self.request)
+
         return ctx
 
 
@@ -283,7 +293,7 @@ class SearchView(ListView):
 
     def get_queryset(self):
         q = self.request.GET.get('q', '')
-        qs = Product.objects.filter(is_active=True).prefetch_related(
+        qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
             'images', 'categories'
         )
         qs = _with_active_promotions(qs)

@@ -6,6 +6,9 @@
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
 <link rel="stylesheet" href="{% static 'css/timer.css' %}">
 <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
+{% if product.show_consult_button %}
+<link rel="stylesheet" href="{% static 'css/consult-modal.css' %}">
+{% endif %}
 {% endblock %}
 
 {% block structured_data %}
@@ -81,6 +84,7 @@
                 <div class="product-gallery__thumb product-gallery__thumb--video"
                      data-type="video"
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
+                     data-embed="{{ vid.embed_url }}"
                      data-index="{{ product.images.count|add:forloop.counter0 }}">
                     {% if vid.poster %}
                     {% product_gallery_alt product.name forloop.counter as vid_alt %}
@@ -97,10 +101,17 @@
             <div class="product-info__sku">{% trans 'Код:' %} {{ product.sku }}</div>
             <h1 class="product-info__title">{{ product.name|trim_seo }}</h1>
 
+            {% include "includes/product_rating.html" %}
+
             <div class="product-info__stock">
                 <span class="stock-status stock-status--{{ product.stock_status }}">
                     {{ product.get_stock_status_display }}
                 </span>
+                {% with shipping=product.display_shipping_time %}
+                {% if shipping %}
+                <div class="product-info__shipping">{{ shipping }}</div>
+                {% endif %}
+                {% endwith %}
             </div>
 
             {% if product.short_description %}
@@ -148,6 +159,14 @@
                 <p class="product-info__unavailable">
                     {% trans 'Товар тимчасово відсутній. Зателефонуйте для уточнення.' %}
                 </p>
+                {% endif %}
+                {% if product.show_consult_button %}
+                <a class="btn btn--outline btn--block"
+                   href="#consult-modal"
+                   data-consult-open
+                   aria-controls="consult-modal">
+                    {% trans 'Проконсультуватися' %}
+                </a>
                 {% endif %}
             </div>
 
@@ -280,6 +299,10 @@
     {% faq "product" %}
 
     {% banners "product_bottom" %}
+
+    {% if product.show_consult_button %}
+    {% include "products/partials/consult_modal.html" %}
+    {% endif %}
 </div>
 {% endblock %}
 
@@ -287,4 +310,7 @@
 <script src="{% static 'js/gallery.js' %}"></script>
 <script src="{% static 'js/timer.js' %}"></script>
 <script src="{% static 'js/product-tabs.js' %}"></script>
+{% if product.show_consult_button %}
+<script src="{% static 'js/consult-modal.js' %}"></script>
+{% endif %}
 {% endblock %}

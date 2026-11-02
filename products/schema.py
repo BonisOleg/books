@@ -72,6 +72,30 @@ def _return_policy_schema(return_policy_text: str) -> dict:
     }
 
 
+def _aggregate_rating(product):
+    """AggregateRating лише зі схвалених відгуків. Бере annotate, якщо він є."""
+    if 'rating_count' in product.__dict__:
+        count = int(product.rating_count or 0)
+        average = product.rating_avg
+    else:
+        from django.db.models import Avg, Count
+        stats = product.reviews.filter(is_approved=True).aggregate(
+            average=Avg('rating'),
+            count=Count('pk'),
+        )
+        average = stats['average']
+        count = int(stats['count'] or 0)
+    if not count or average is None:
+        return None
+    return {
+        "@type": "AggregateRating",
+        "ratingValue": str(round(float(average), 1)),
+        "reviewCount": str(count),
+        "bestRating": "5",
+        "worstRating": "1",
+    }
+
+
 def get_product_schema(product, request):
     images = [
         build_public_absolute_uri(img.image.url)
@@ -127,17 +151,9 @@ def get_product_schema(product, request):
     if primary_cat:
         schema["category"] = primary_cat.name
 
-    reviews = product.reviews.filter(is_approved=True)
-    if reviews.exists():
-        from django.db.models import Avg
-        avg = reviews.aggregate(avg=Avg('rating'))['avg']
-        schema["aggregateRating"] = {
-            "@type": "AggregateRating",
-            "ratingValue": str(round(avg, 1)),
-            "reviewCount": str(reviews.count()),
-            "bestRating": "5",
-            "worstRating": "1",
-        }
+    aggregate = _aggregate_rating(product)
+    if aggregate:
+        schema["aggregateRating"] = aggregate
 
     return schema
 

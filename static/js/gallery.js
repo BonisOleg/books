@@ -12,19 +12,53 @@ document.addEventListener('DOMContentLoaded', function () {
             src: thumb.dataset.src,
             srcset: thumb.dataset.srcset || '',
             full: thumb.dataset.full || thumb.dataset.src,
+            embed: thumb.dataset.embed || '',
             el: thumb,
         });
     });
 
     if (items.length === 0) return;
 
-    function isYoutube(src) {
-        return src.indexOf('youtube') !== -1 || src.indexOf('youtu.be') !== -1;
+    function parseYoutubeTime(value) {
+        if (!value) return 0;
+        var raw = String(value).trim().toLowerCase();
+        if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+        var match = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(raw);
+        if (!match || (!match[1] && !match[2] && !match[3])) return 0;
+        return (parseInt(match[1] || '0', 10) * 3600)
+            + (parseInt(match[2] || '0', 10) * 60)
+            + parseInt(match[3] || '0', 10);
     }
 
-    function youtubeEmbed(src) {
-        var match = src.match(/(?:v=|\/embed\/|youtu\.be\/)([^&?#]+)/);
-        return match ? match[1] : null;
+    function youtubeEmbedUrl(src) {
+        if (!src) return '';
+        var raw = String(src).trim();
+        if (!/^https?:\/\//i.test(raw)) raw = 'https://' + raw;
+        var url;
+        try {
+            url = new URL(raw);
+        } catch (e) {
+            return '';
+        }
+        var host = url.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
+        if (host !== 'youtube.com' && host !== 'm.youtube.com' && host !== 'youtu.be' && host !== 'youtube-nocookie.com') {
+            return '';
+        }
+        var parts = url.pathname.split('/').filter(Boolean);
+        var id = '';
+        if (host === 'youtu.be') {
+            id = parts[0] || '';
+        } else if (parts[0] === 'embed' || parts[0] === 'shorts' || parts[0] === 'live' || parts[0] === 'v') {
+            id = parts[1] || '';
+        } else {
+            id = url.searchParams.get('v') || '';
+        }
+        if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return '';
+        var start = parseYoutubeTime(url.searchParams.get('start') || '');
+        if (!start) start = parseYoutubeTime(url.searchParams.get('t') || '');
+        var embed = 'https://www.youtube.com/embed/' + id;
+        if (start) embed += '?start=' + start;
+        return embed;
     }
 
     function showItem(index) {
@@ -41,20 +75,23 @@ document.addEventListener('DOMContentLoaded', function () {
         mainContainer.classList.toggle('product-gallery__main--video', item.type === 'video');
 
         if (item.type === 'video') {
-            if (isYoutube(item.src)) {
-                var videoId = youtubeEmbed(item.src);
-                if (videoId) {
-                    var iframe = document.createElement('iframe');
-                    iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(videoId) + '?autoplay=1';
-                    iframe.className = 'product-gallery__iframe';
-                    iframe.setAttribute('allowfullscreen', '');
-                    mainContainer.appendChild(iframe);
-                }
+            var embedSrc = item.embed || youtubeEmbedUrl(item.src);
+            if (embedSrc) {
+                var iframe = document.createElement('iframe');
+                iframe.src = embedSrc + (embedSrc.indexOf('?') === -1 ? '?autoplay=1' : '&autoplay=1');
+                iframe.className = 'product-gallery__iframe';
+                iframe.setAttribute('allow', 'autoplay; fullscreen');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.title = 'Відео';
+                mainContainer.appendChild(iframe);
             } else {
                 var video = document.createElement('video');
                 video.src = item.src;
                 video.controls = true;
                 video.autoplay = true;
+                video.playsInline = true;
+                video.setAttribute('playsinline', '');
+                video.setAttribute('webkit-playsinline', '');
                 video.className = 'product-gallery__video';
                 mainContainer.appendChild(video);
             }

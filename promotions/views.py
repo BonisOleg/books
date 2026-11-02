@@ -52,7 +52,7 @@ def gift_picker_results(request):
         if opt.price_max is not None and (price_max is None or opt.price_max > price_max):
             price_max = opt.price_max
 
-    qs = Product.objects.filter(is_active=True)
+    qs = Product.objects.filter(is_active=True).with_rating()
     if category_ids:
         qs = qs.filter(categories__id__in=category_ids).distinct()
     if price_min is not None:

@@ -50,6 +50,14 @@ class SiteSettings(models.Model):
         help_text='Відображається на сторінках усіх товарів, де поле «Інформація для замовлення» '
                   'залишено порожнім. Якщо і це поле порожнє — показується стандартний текст.',
     )
+    default_shipping_time = models.CharField(
+        'Час відправки за замовчуванням',
+        max_length=60,
+        blank=True,
+        default='',
+        help_text='Показується на сторінці товару біля наявності, '
+                  'якщо в самого товару поле «Час відправки» порожнє.',
+    )
     online_consultant_code = models.TextField(
         'Код онлайн-консультанта', blank=True,
         help_text='Вставте скрипт-код від Tawk.to, JivoSite, Crisp або іншого чат-сервісу'
