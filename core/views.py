@@ -2,6 +2,7 @@ import os
 import uuid
 
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -75,11 +76,29 @@ class PageDetailView(DetailView):
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
+# Будь-яке право редагувати модель із HTML-полем редактора.
+TINYMCE_UPLOAD_PERMS = (
+    'blog.change_article',
+    'blog.change_news',
+    'core.change_page',
+    'core.change_faq',
+    'core.change_sitesettings',
+    'products.change_product',
+    'products.change_category',
+)
+
+
+def user_can_upload_editor_image(user):
+    return any(user.has_perm(perm) for perm in TINYMCE_UPLOAD_PERMS)
+
 
 @csrf_exempt
 @require_POST
 @staff_member_required
 def tinymce_upload_image(request):
+    if not user_can_upload_editor_image(request.user):
+        raise PermissionDenied
+
     upload = request.FILES.get('file')
     if not upload:
         return JsonResponse({'error': 'Файл не передано'}, status=400)

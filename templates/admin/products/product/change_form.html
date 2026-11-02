@@ -3,7 +3,7 @@
 
 {% block object-tools-items %}
 {{ block.super }}
-{% if original %}
+{% if original and can_bulk_upload_images %}
 <li>
     <a href="{% url 'admin:products_product_bulk_upload' original.pk %}" class="historylink">
         Масове завантаження фото

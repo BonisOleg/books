@@ -19,6 +19,8 @@
     }
 
     function injectSaveButtons() {
+        if (window.ADMIN_QUICK_SAVE_ENABLED === false) return;
+
         var resultList = document.getElementById('result_list');
         if (!resultList) return;
 

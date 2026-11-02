@@ -1,0 +1,37 @@
+.manager-guide {
+    max-width: 42rem;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.manager-guide h2 {
+    margin: 1.4rem 0 0.5rem;
+    font-size: 1.05rem;
+    line-height: 1.35;
+}
+
+.manager-guide p,
+.manager-guide li {
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.manager-guide ol,
+.manager-guide ul {
+    padding-left: 1.25rem;
+    margin: 0.4rem 0 0.8rem;
+}
+
+.manager-guide li {
+    margin: 0 0 0.55rem;
+}
+
+.manager-guide a {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .manager-guide {
+        max-width: none;
+    }
+}

@@ -3,6 +3,7 @@ import os
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -126,15 +127,28 @@ class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
         return _image_thumb(obj.image, 'admin-thumb--sm')
 
 
+_SALE_TIMER_ACTIONS = frozenset({
+    'set_sale_end_date_action',
+    'clear_sale_end_date_action',
+})
+
+
 @admin.register(Product)
 class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
     actions = ['set_sale_end_date_action', 'clear_sale_end_date_action']
-    list_display = ('image_thumb', 'name', 'sku', 'get_categories', 'price',
-                    'stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds')
+    list_display = (
+        'image_thumb', 'name', 'sku', 'manufacturer_code', 'manufacturer',
+        'get_categories', 'price', 'stock_status', 'badge_obj', 'is_active',
+        'exclude_from_feeds',
+    )
     list_display_links = ('image_thumb', 'name')
     list_editable = ('price', 'stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds')
     list_filter = ('stock_status', 'badge_obj', 'is_active', 'exclude_from_feeds', 'categories')
-    search_fields = ('name_uk', 'name_en', 'name_ru', 'sku', 'sku_manufacturer')
+    search_fields = (
+        'name_uk', 'name_en', 'name_ru',
+        'sku', 'sku_manufacturer', 'manufacturer',
+    )
+    change_list_template = 'admin/products/product/change_list.html'
     prepopulated_fields = {'slug': ('name_uk',)}
     inlines = [ProductImageInline, ProductVideoInline, ProductAttributeInline]
     autocomplete_fields = ('badge_obj',)
@@ -236,6 +250,10 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
 
     # ── Column helpers ───────────────────────────────────────────────────────
 
+    @admin.display(description='Код виробника', ordering='sku_manufacturer')
+    def manufacturer_code(self, obj):
+        return obj.sku_manufacturer
+
     @admin.display(description='Категорії')
     def get_categories(self, obj):
         names = [c.name for c in obj.categories.all()]
@@ -247,6 +265,24 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         if not first_image:
             return format_html('<span class="admin-thumb-empty">—</span>')
         return _image_thumb(first_image.image, 'admin-thumb--sm')
+
+    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
+        context['can_bulk_upload_images'] = request.user.has_perm('products.add_productimage')
+        return super().render_change_form(
+            request, context, add=add, change=change, form_url=form_url, obj=obj,
+        )
+
+    def changelist_view(self, request, extra_context=None):
+        if request.method == 'POST':
+            for action_name in request.POST.getlist('action'):
+                if (
+                    action_name in _SALE_TIMER_ACTIONS
+                    and not request.user.has_perm('products.change_product')
+                ):
+                    raise PermissionDenied
+        extra_context = dict(extra_context or {})
+        extra_context['can_quick_save'] = request.user.has_perm('products.change_product')
+        return super().changelist_view(request, extra_context=extra_context)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -265,11 +301,11 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         return custom + urls
 
     def quick_save_view(self, request):
+        if not request.user.has_perm('products.change_product'):
+            raise PermissionDenied
+
         if request.method != 'POST':
             return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-        if not request.user.has_perm('products.change_product'):
-            return JsonResponse({'error': 'Permission denied'}, status=403)
 
         try:
             data = json.loads(request.body)
@@ -320,6 +356,8 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         return JsonResponse({'success': True, 'updated': update_fields})
 
     def bulk_upload_view(self, request, object_id):
+        if not request.user.has_perm('products.add_productimage'):
+            raise PermissionDenied
         product = get_object_or_404(Product, pk=object_id)
 
         if request.method == 'POST':
@@ -373,14 +411,20 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
             'product': product,
             'form': form,
             'opts': self.model._meta,
-            'has_change_permission': True,
+            'has_change_permission': self.has_change_permission(request),
+            'has_view_permission': self.has_view_permission(request),
         }
         return render(request, 'admin/products/product/bulk_upload.html', context)
 
     # ── Sale end date bulk actions ────────────────────────────────────────────
 
-    @admin.action(description='⏱ Встановити таймер акції (масово)')
+    @admin.action(
+        permissions=['change'],
+        description='⏱ Встановити таймер акції (масово)',
+    )
     def set_sale_end_date_action(self, request, queryset):
+        if not request.user.has_perm('products.change_product'):
+            raise PermissionDenied
         selected_ids = list(queryset.values_list('id', flat=True))
         if 'apply' in request.POST:
             raw = request.POST.get('sale_end_date', '').strip()
@@ -415,8 +459,13 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         }
         return render(request, 'admin/products/product/set_sale_end_date.html', context)
 
-    @admin.action(description='✖ Зняти таймер акції (масово)')
+    @admin.action(
+        permissions=['change'],
+        description='✖ Зняти таймер акції (масово)',
+    )
     def clear_sale_end_date_action(self, request, queryset):
+        if not request.user.has_perm('products.change_product'):
+            raise PermissionDenied
         # queryset.update() не тригерить post_save сигнал,
         # тому ітеруємо й зберігаємо по одному — сигнал деактивує Promotion
         products = list(queryset)

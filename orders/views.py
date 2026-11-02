@@ -31,7 +31,7 @@ def _allow_order_access(request, order):
 def _check_order_access(request, order):
     if request.user.is_authenticated and order.user == request.user:
         return True
-    if request.user.is_staff:
+    if request.user.has_perm('orders.view_order'):
         return True
     allowed = request.session.get(ORDER_SESSION_KEY, [])
     return order.id in allowed

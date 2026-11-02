@@ -1,7 +1,12 @@
 {% extends "admin/base.html" %}
-{% load i18n %}
+{% load i18n static %}
 
-{% block title %}{{ title }} | {{ site_title|default:_('Адмінка') }}{% endblock %}
+{% block title %}{{ title }} | {{ site_title|default:_('Адмінка магазину') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_nav.css' %}">
+{% endblock %}
 
 {% block branding %}
 <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Адмінка магазину') }}</a></h1>
@@ -9,12 +14,11 @@
 
 {% block nav-global %}
 {% if user.is_staff %}
-<div id="nav-global-import-export" style="background:#417690;padding:0 16px;">
-    <a href="{% url 'import_export_app:dashboard' %}"
-       style="display:inline-block;padding:6px 0;font-size:0.8rem;color:#fff;text-decoration:none;opacity:0.85;"
-       onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.85'">
-        &#8645; Імпорт / Експорт товарів
-    </a>
+<div id="nav-global-tools" class="admin-global-tools">
+    {% if perms.products.view_product or perms.products.add_product and perms.products.change_product %}
+    <a class="admin-global-tools__link" href="{% url 'import_export_app:dashboard' %}">Імпорт / Експорт товарів</a>
+    {% endif %}
+    <a class="admin-global-tools__link" href="{% url 'admin:how_to_add_manager' %}">Як додати менеджера</a>
 </div>
 {% endif %}
 {% endblock %}
