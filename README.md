@@ -21,6 +21,7 @@ python manage.py runserver
 |-----|------|
 | core | Налаштування сайту, головна сторінка, SEO шаблони |
 | products | Товари, категорії, фото/відео, фільтри, Google Merchant Feed |
+| suppliers | Постачальники: ціни з фіду за артикулом виробника |
 | cart | Кошик (session-based), HTMX оновлення |
 | orders | Замовлення, LiqPay/Monobank/COD оплата |
 | accounts | Реєстрація, авторизація, профіль |
@@ -44,6 +45,18 @@ VIBER_BOT_URI=
 SITE_DOMAIN=localhost:8000
 SITE_PROTOCOL=http
 ```
+
+## Постачальники
+
+У адмінці: **Постачальники** — URL фіду, націнка, округлення. Команда:
+
+```bash
+python manage.py sync_supplier_feeds --dry-run
+python manage.py sync_supplier_feeds --supplier 1
+python manage.py sync_supplier_feeds --supplier 1 --file /path/to/feed.xml
+```
+
+Правила матчингу, звіти і приклад cron (cron сам не ставиться): [docs/suppliers.md](docs/suppliers.md).
 
 ## Google Merchant
 

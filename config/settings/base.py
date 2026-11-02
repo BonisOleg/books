@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'tinymce',
     'core',
     'products',
+    'suppliers',
     'cart',
     'orders',
     'reviews',

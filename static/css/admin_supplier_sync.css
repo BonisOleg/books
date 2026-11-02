@@ -1,0 +1,100 @@
+body.app-suppliers.model-supplier.change-form .object-tools li.supplier-sync-tool {
+    height: auto;
+}
+
+body.app-suppliers.model-supplier.change-form .supplier-sync-form {
+    display: block;
+    margin: 0;
+}
+
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 15px;
+    background: var(--object-tools-bg);
+    color: var(--object-tools-fg);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn--run {
+    background: #417690;
+    color: #fff;
+}
+
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn:hover,
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn:focus {
+    background: var(--object-tools-hover-bg);
+}
+
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn--run:hover,
+body.app-suppliers.model-supplier.change-form .supplier-sync-btn--run:focus {
+    background: #205067;
+    color: #fff;
+}
+
+.supplier-sync-report {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+    max-height: 40rem;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+    color: #222;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+@media (max-width: 1024px) {
+    body.app-suppliers.model-supplier.change-form .object-tools {
+        float: none;
+        margin: 0 0 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+    }
+
+    body.app-suppliers.model-supplier.change-form .object-tools li {
+        float: none;
+        height: auto;
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    body.app-suppliers.model-supplier.change-form .object-tools {
+        flex-direction: column;
+    }
+
+    body.app-suppliers.model-supplier.change-form .object-tools li,
+    body.app-suppliers.model-supplier.change-form .object-tools li.supplier-sync-tool {
+        width: 100%;
+    }
+
+    body.app-suppliers.model-supplier.change-form .supplier-sync-form,
+    body.app-suppliers.model-supplier.change-form .supplier-sync-btn {
+        width: 100%;
+        font-size: 16px;
+    }
+}
