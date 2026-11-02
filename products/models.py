@@ -353,3 +353,70 @@ class FilterOption(models.Model):
 
     def __str__(self):
         return f"{self.group.name}: {self.label}"
+
+
+class FilterAttribute(models.Model):
+    """Довільний фільтр каталогу, окремо від чотирьох типів FilterGroup.
+
+    M2M до товарів навмисно на FilterValue, а не на Product: модель товару
+    паралельно змінюють інші гілки, тож її стан у міграціях не чіпаємо.
+    Порожній список категорій означає «показувати скрізь».
+    """
+
+    name = models.CharField('Назва', max_length=100)
+    slug = models.SlugField(
+        'Код', max_length=80, unique=True,
+        help_text='Латиницею, без пробілів. Наприклад: color, cover.',
+    )
+    position = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Активний', default=True)
+    categories = models.ManyToManyField(
+        Category,
+        verbose_name='Категорії',
+        blank=True,
+        related_name='filter_attributes',
+        help_text='Порожньо — фільтр показується в усіх категоріях.',
+    )
+
+    class Meta:
+        verbose_name = 'Атрибут фільтра'
+        verbose_name_plural = 'Атрибути фільтрів'
+        ordering = ['position', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class FilterValue(models.Model):
+    attribute = models.ForeignKey(
+        FilterAttribute,
+        verbose_name='Атрибут',
+        related_name='values',
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField('Назва', max_length=100)
+    slug = models.SlugField(
+        'Код', max_length=80,
+        help_text='Латиницею, унікальний у межах атрибута. Наприклад: red.',
+    )
+    position = models.PositiveIntegerField('Порядок', default=0)
+    products = models.ManyToManyField(
+        Product,
+        verbose_name='Товари',
+        related_name='filter_values',
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = 'Значення фільтра'
+        verbose_name_plural = 'Значення фільтрів'
+        ordering = ['position', 'name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=('attribute', 'slug'),
+                name='uniq_filter_value_attribute_slug',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.attribute.name}: {self.name}'
