@@ -18,7 +18,7 @@
             </a>
             {% endif %}
             <div class="blog-card__body">
-                <div class="blog-card__date">{{ item.created_at|date:"d.m.Y" }}</div>
+                <div class="blog-card__date">{{ item.published_at|date:"d.m.Y" }}</div>
                 <div class="blog-card__title">
                     <a href="{% url 'blog:news_detail' item.slug %}">{{ item.title }}</a>
                 </div>

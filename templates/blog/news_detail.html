@@ -5,10 +5,14 @@
 <link rel="stylesheet" href="{% static 'css/blog.css' %}?v=2">
 {% endblock %}
 
+{% block structured_data %}
+{% json_ld news_schema %}
+{% endblock %}
+
 {% block content %}
 <div class="container blog-detail">
     <div class="blog-detail__header">
-        <div class="blog-detail__date">{{ news_item.created_at|date:"d.m.Y" }}</div>
+        <div class="blog-detail__date">{{ news_item.published_at|date:"d.m.Y" }}</div>
         <h1 class="blog-detail__title">{{ news_item.title }}</h1>
     </div>
 

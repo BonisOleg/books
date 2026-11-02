@@ -43,7 +43,7 @@ class Article(models.Model):
     class Meta:
         verbose_name = 'Стаття'
         verbose_name_plural = 'Статті'
-        ordering = ['-created_at']
+        ordering = ['-published_at', '-created_at']
 
     def __str__(self):
         return self.title
@@ -81,7 +81,7 @@ class News(models.Model):
     class Meta:
         verbose_name = 'Новина'
         verbose_name_plural = 'Новини'
-        ordering = ['-created_at']
+        ordering = ['-published_at', '-created_at']
 
     def __str__(self):
         return self.title
