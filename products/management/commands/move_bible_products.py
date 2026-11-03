@@ -19,6 +19,19 @@ from products.models import Category, Product
 
 SOURCE_SLUG = 'dityachi-knigi'
 TARGET_SLUG = 'bibliya'
+# Лишається в dityachi-knigi: «Біблія у переказі для дітей».
+KIDS_KEEP_SLUG = (
+    'podarunkova-bibliya-u-perekazi-dlya-ditej-u-shkiryanij-paliturci-z-kartinoyu-na-metali'
+)
+# Євангеліє, Псалтир, набір із Молитвословом — зі сторінки dityachi-knigi.
+SLUGS_MOVE_TO_BIBLE = (
+    'reprintne-vidannya-knigayevangeliya-1784-r',
+    'podarunkove-vidannya-svyatogo-yevangeliya-hudozhnij-rozpis-metalom-emali',
+    'yevangeliye-podarunkova-kniga-v-shkiri',
+    'svyate-yevangeliye-podarunkova-kniga-z-metalevim-rozpyattyam',
+    'podarunkovij-nabir-u-futlyari-molitvoslov-triptih-pidsvichnik-svichka-u-futlyari-z-visokoyakisnoyi-derevini-z-ikonoyu-tayemna-vecherya',
+    'podarunkovij-psaltir-z-hudozhnim-metalevim-hrestom-ta-emalyami',
+)
 TARGET_NAME_UK = 'Біблія'
 TARGET_NAME_EN = 'Bible'
 TARGET_NAME_RU = 'Библия'
@@ -69,8 +82,9 @@ def iter_bible_candidates():
             yield product
 
 
-def _resolve_target_defaults(source: Category | None) -> dict:
+def _resolve_target_defaults(source: Category | None, CategoryModel=None) -> dict:
     """Mirror neighbouring top category (dityachi-knigi): parent/active/order/GPC."""
+    CategoryModel = CategoryModel or Category
     if source is not None:
         parent = source.parent
         is_active = bool(source.is_active)
@@ -80,7 +94,7 @@ def _resolve_target_defaults(source: Category | None) -> dict:
         parent = None
         is_active = True
         top = (
-            Category.objects.filter(parent__isnull=True)
+            CategoryModel.objects.filter(parent__isnull=True)
             .order_by('-order')
             .first()
         )
@@ -94,20 +108,21 @@ def _resolve_target_defaults(source: Category | None) -> dict:
     }
 
 
-def ensure_bible_category(*, create: bool) -> tuple[Category | None, bool]:
+def ensure_bible_category(*, create: bool, CategoryModel=None) -> tuple[Category | None, bool]:
     """Return (category, created_or_would_create).
 
     If create=False and missing — returns (None, True) meaning «would create».
     """
-    existing = Category.objects.filter(slug=TARGET_SLUG).first()
+    CategoryModel = CategoryModel or Category
+    existing = CategoryModel.objects.filter(slug=TARGET_SLUG).first()
     if existing:
         return existing, False
 
     if not create:
         return None, True
 
-    source = Category.objects.filter(slug=SOURCE_SLUG).first()
-    defaults = _resolve_target_defaults(source)
+    source = CategoryModel.objects.filter(slug=SOURCE_SLUG).first()
+    defaults = _resolve_target_defaults(source, CategoryModel)
     kwargs = {
         'slug': TARGET_SLUG,
         'name': TARGET_NAME_UK,
@@ -117,8 +132,89 @@ def ensure_bible_category(*, create: bool) -> tuple[Category | None, bool]:
         **defaults,
     }
     # description_* left blank like many seeded top categories
-    category = Category.objects.create(**kwargs)
+    category = CategoryModel.objects.create(**kwargs)
     return category, True
+
+
+def _parse_slugs(raw_values, *, listed=False) -> list[str]:
+    """Accept --slugs a b and/or --slugs a,b. --bible-slugs adds the fixed list."""
+    slugs: list[str] = []
+    seen: set[str] = set()
+
+    def add(value: str) -> None:
+        value = (value or '').strip()
+        if value and value not in seen:
+            seen.add(value)
+            slugs.append(value)
+
+    if listed:
+        for slug in SLUGS_MOVE_TO_BIBLE:
+            add(slug)
+    for chunk in raw_values or []:
+        for part in str(chunk).split(','):
+            add(part)
+    return slugs
+
+
+def move_slugs_to_bible(slugs, *, apply: bool, log, ProductModel=None, CategoryModel=None) -> dict:
+    """Move products by slug from dityachi-knigi to bibliya.
+
+    Missing slug, missing source, or a product outside the source is skipped
+    and logged. Already in bibliya without the source is a no-op.
+    Never raises for a missing slug.
+    """
+    ProductModel = ProductModel or Product
+    CategoryModel = CategoryModel or Category
+    result = {'moved': [], 'already': [], 'skipped': []}
+    source = CategoryModel.objects.filter(slug=SOURCE_SLUG).first()
+    target = CategoryModel.objects.filter(slug=TARGET_SLUG).first()
+    pending = []
+
+    if source is None:
+        log(f'Категорію source «{SOURCE_SLUG}» не знайдено — перенос за slug пропущено.')
+
+    for slug in slugs:
+        product = ProductModel.objects.filter(slug=slug).first()
+        if product is None:
+            log(f'slug={slug}: товар не знайдено — пропуск.')
+            result['skipped'].append(slug)
+            continue
+        if source is None:
+            result['skipped'].append(slug)
+            continue
+        in_source = product.categories.filter(pk=source.pk).exists()
+        in_target = (
+            target is not None
+            and product.categories.filter(pk=target.pk).exists()
+        )
+        if not in_source:
+            if in_target:
+                log(f'slug={slug} ({product.name}): уже в «{TARGET_SLUG}» — ок.')
+                result['already'].append(slug)
+            else:
+                log(
+                    f'slug={slug} ({product.name}): не в «{SOURCE_SLUG}» — пропуск.'
+                )
+                result['skipped'].append(slug)
+            continue
+        pending.append(product)
+        log(f'slug={slug} ({product.name}): {SOURCE_SLUG} -> {TARGET_SLUG}')
+
+    if not apply:
+        log('Dry-run: змін за slug не зроблено.')
+        return result
+    if not pending:
+        return result
+
+    with transaction.atomic():
+        target, created = ensure_bible_category(create=True, CategoryModel=CategoryModel)
+        if created:
+            log(f'Створено категорію id={target.pk} slug={target.slug}.')
+        for product in pending:
+            product = ProductModel.objects.get(pk=product.pk)
+            if move_product_categories(product, source, target):
+                result['moved'].append(product.slug)
+    return result
 
 
 def _source_label(product: Product, source: Category | None) -> str:
@@ -150,8 +246,8 @@ def move_product_categories(product: Product, source: Category, target: Category
 class Command(BaseCommand):
     help = (
         'Створює категорію bibliya (якщо немає) і переносить товари з '
-        'dityachi-knigi за явним --ids. Без --apply — dry-run; без --ids '
-        'нічого не переносить (лише кандидати «Біблі»).'
+        'dityachi-knigi за явним --ids або --slugs. Без --apply — dry-run; '
+        'без --ids і без --slugs нічого не переносить (лише кандидати «Біблі»).'
     )
 
     def add_arguments(self, parser):
@@ -172,14 +268,31 @@ class Command(BaseCommand):
             default=None,
             help=(
                 'ID товарів для переносу (через пробіл і/або кому). '
-                'Без --ids переносу немає.'
+                'Без --ids і без --slugs переносу немає.'
             ),
+        )
+        parser.add_argument(
+            '--slugs',
+            nargs='+',
+            default=None,
+            help='Slug товарів для переносу (пробіл і/або кома). Невідомий slug пропускається.',
+        )
+        parser.add_argument(
+            '--bible-slugs',
+            action='store_true',
+            help='Перенести сталий список SLUGS_MOVE_TO_BIBLE (Євангеліє, Псалтир, Молитвослов).',
         )
 
     def handle(self, *args, **options):
         apply = bool(options.get('apply'))
         dry_run = not apply
         ids = _parse_ids(options.get('ids'))
+        slugs = _parse_slugs(options.get('slugs'), listed=bool(options.get('bible_slugs')))
+        if slugs:
+            self.stdout.write(f'Режим: {"APPLY" if apply else "DRY-RUN"}.')
+            move_slugs_to_bible(slugs, apply=apply, log=self.stdout.write)
+            if not ids:
+                return
 
         source = Category.objects.filter(slug=SOURCE_SLUG).first()
         target_existing = Category.objects.filter(slug=TARGET_SLUG).first()

@@ -37,14 +37,27 @@ def truncate_at_word(text: str, max_len: int = 160) -> str:
 
 
 def strip_site_suffix(title: str, site_name: str | None = None) -> str:
-    """Remove every «| SITE_NAME» segment (trailing or mid-title)."""
+    """Drop site-name suffixes so exactly one can be appended later.
+
+    Removes every «| SITE» segment (also mid-title, before «— сторінка N»)
+    and any trailing «— SITE», «– SITE» or «- SITE», repeated, with optional
+    surrounding whitespace. Matching is case-insensitive.
+    """
     site_name = (site_name or getattr(settings, 'SITE_NAME', 'OFION') or 'OFION').strip()
     title = (title or '').strip()
     if not title or not site_name:
         return title
-    pattern = re.compile(rf'\s*\|\s*{re.escape(site_name)}\b', re.IGNORECASE)
-    title = pattern.sub('', title)
-    title = _MULTI_SPACE_RE.sub(' ', title).strip(' |')
+    escaped = re.escape(site_name)
+    pipe = re.compile(rf'\s*\|\s*{escaped}\b', re.IGNORECASE)
+    trail = re.compile(
+        rf'(?:\s*(?:—|–|-)\s*{escaped}\b)+\s*$',
+        re.IGNORECASE,
+    )
+    previous = None
+    while previous != title:
+        previous = title
+        title = trail.sub('', pipe.sub('', title)).strip()
+    title = _MULTI_SPACE_RE.sub(' ', title).strip(' |—–-')
     return title.strip()
 
 

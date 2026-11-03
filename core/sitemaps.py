@@ -2,7 +2,8 @@ from django.conf import settings
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 
-from products.models import Product, Category
+from products.attribute_filters import indexable_categories
+from products.models import Product
 from blog.models import Article, News
 
 
@@ -54,7 +55,7 @@ class CategorySitemap(AbsoluteSitemap):
     priority = 0.7
 
     def items(self):
-        return Category.objects.filter(is_active=True)
+        return indexable_categories()
 
 
 class ArticleSitemap(AbsoluteSitemap):

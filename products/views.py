@@ -9,7 +9,12 @@ from django.views.generic import ListView, DetailView
 
 from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
-from .attribute_filters import attribute_filter_choices, category_branch_ids, preserved_query
+from .attribute_filters import (
+    attribute_filter_choices,
+    category_has_visible_products,
+    category_listing_products,
+    preserved_query,
+)
 from .forms import ConsultationForm
 from .models import FilterGroup, Product, Category, ProductGroup
 from .filters import filter_products
@@ -103,15 +108,18 @@ class CategoryDetailView(ListView):
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, slug=self.kwargs['slug'], is_active=True)
-        qs = Product.objects.filter(
-            is_active=True, categories__id__in=category_branch_ids(self.category),
-        ).with_rating().prefetch_related('images', 'categories').distinct()
+        qs = (
+            category_listing_products(self.category)
+            .with_rating()
+            .prefetch_related('images', 'categories')
+        )
         qs = _with_active_promotions(qs)
         return filter_products(qs, self.request.GET)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['category'] = self.category
+        ctx['category_noindex'] = not category_has_visible_products(self.category)
         ctx['subcategories'] = Category.objects.filter(
             parent=self.category, is_active=True
         ).order_by('order')
@@ -134,10 +142,7 @@ class CategoryDetailView(ListView):
         )
         _attach_attribute_filters(
             ctx,
-            Product.objects.filter(
-                is_active=True,
-                categories__id__in=category_branch_ids(self.category),
-            ).distinct(),
+            category_listing_products(self.category),
             self.category,
             self.request.GET,
         )

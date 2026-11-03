@@ -1,6 +1,6 @@
 """Які атрибути показувати в тулбарі категорії та каталогу."""
 from products.filters import attribute_params
-from products.models import Category, FilterAttribute, FilterValue
+from products.models import Category, FilterAttribute, FilterValue, Product
 
 
 def category_branch_ids(category):
@@ -12,6 +12,95 @@ def category_branch_ids(category):
         ).values_list('pk', flat=True)
     )
     return ids
+
+
+def category_listing_products(category):
+    """Активні товари сітки категорії, без GET-фільтрів.
+
+    Той самий відбір, що в CategoryDetailView до filter_products:
+    is_active=True у цій категорії та її активних прямих дітей.
+    «Немає в наявності» лишається в сітці.
+    """
+    return Product.objects.filter(
+        is_active=True,
+        categories__id__in=category_branch_ids(category),
+    ).distinct()
+
+
+def active_descendant_ids(category):
+    """Ця категорія і всі активні нащадки. Цикли в parent ігноруються."""
+    seen = []
+    seen_set = set()
+    frontier = [category.pk]
+    while frontier:
+        layer = []
+        for pk in frontier:
+            if pk in seen_set:
+                continue
+            seen_set.add(pk)
+            seen.append(pk)
+            layer.append(pk)
+        if not layer:
+            break
+        frontier = list(
+            Category.objects.filter(
+                parent_id__in=layer, is_active=True,
+            ).values_list('pk', flat=True)
+        )
+    return seen
+
+
+def category_has_visible_products(category):
+    """Чи є активний товар у категорії або в активних нащадках.
+
+    Фільтр товару той самий, що в лістингу (is_active=True). Гілка лістингу —
+    сама категорія і прямі активні діти; глибші нащадки теж тримають предка
+    в індексі, навіть якщо сітка предка їх не показує.
+    """
+    ids = active_descendant_ids(category)
+    if not ids:
+        return False
+    return Product.objects.filter(
+        is_active=True,
+        categories__id__in=ids,
+    ).exists()
+
+
+def indexable_categories():
+    """Активні категорії, у чиєму дереві активних нащадків є активний товар."""
+    rows = list(
+        Category.objects.filter(is_active=True).values_list('pk', 'parent_id')
+    )
+    children = {}
+    active_ids = []
+    for pk, parent_id in rows:
+        active_ids.append(pk)
+        children.setdefault(parent_id, []).append(pk)
+    active_set = set(active_ids)
+    populated = set(
+        Product.objects.filter(
+            is_active=True,
+            categories__id__in=active_ids,
+        ).values_list('categories__id', flat=True).distinct()
+    ) & active_set
+
+    memo = {}
+
+    def _has(pk):
+        cached = memo.get(pk)
+        if cached is not None:
+            return cached
+        found = pk in populated
+        if not found:
+            for child in children.get(pk, ()):
+                if _has(child):
+                    found = True
+                    break
+        memo[pk] = found
+        return found
+
+    keep = [pk for pk in active_ids if _has(pk)]
+    return Category.objects.filter(pk__in=keep)
 
 
 def preserved_query(params):

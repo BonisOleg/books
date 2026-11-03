@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% load static core_tags i18n image_tags %}
 
+{% block robots %}{% if category_noindex %}noindex,follow{% else %}{{ block.super }}{% endif %}{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
 <link rel="stylesheet" href="{% static 'css/catalog-filters.css' %}">

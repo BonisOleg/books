@@ -83,6 +83,15 @@ class SeoHelpersTests(TestCase):
             'Ікони — сторінка 2 | OFION',
         )
         self.assertEqual(with_site_suffix(''), 'OFION')
+        self.assertEqual(with_site_suffix('Книги — OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги – OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги - OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги — ofion'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('  Книги  —   OFION  '), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги — OFION — OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги — OFION | OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги | OFION — OFION'), 'Книги | OFION')
+        self.assertEqual(with_site_suffix('Книги — Shop', 'Shop'), 'Книги | Shop')
 
     def test_demote_h1(self):
         html = demote_h1_html('<h1>SEO</h1><p>x</p>')
