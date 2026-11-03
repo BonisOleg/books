@@ -5,11 +5,20 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from shipping.np_ttn import MSG_NO_KEY, MSG_UNAVAILABLE, create_ttn
+from shipping.np_recipient import (
+    MSG_BAD_PHONE,
+    MSG_NO_CITY_REF,
+    MSG_NO_NAME,
+    MSG_NO_WAREHOUSE_REF,
+    contact_person_ref,
+)
 from shipping.tests.factories import (
     LOC_MEM,
+    counterparty_save_success,
     json_response,
     order,
     origin,
+    route_np,
     ttn_api_success,
     ttn_settings,
 )
@@ -30,10 +39,10 @@ class CreateTtnTests(TestCase):
 
     def test_success_stores_number_and_ignores_warnings_in_error(self):
         payload = ttn_api_success(warnings=['дрібне попередження'])
-        with patch('shipping.np_ttn.requests.post', side_effect=_post_returning(payload)) as post:
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np(payload)) as post:
             result = create_ttn(self.order.pk)
         self.order.refresh_from_db()
-        self.assertEqual(post.call_count, 1)
+        self.assertEqual(post.call_count, 2)
         body = post.call_args.kwargs['json']
         self.assertEqual(body['modelName'], 'InternetDocument')
         self.assertEqual(body['calledMethod'], 'save')
@@ -48,10 +57,10 @@ class CreateTtnTests(TestCase):
         self.assertIsNotNone(self.order.ttn_created_at)
 
     def test_idempotent_when_number_exists(self):
-        with patch('shipping.np_ttn.requests.post', side_effect=_post_returning(ttn_api_success())) as post:
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()) as post:
             create_ttn(self.order.pk)
             second = create_ttn(self.order.pk)
-        self.assertEqual(post.call_count, 1)
+        self.assertEqual(post.call_count, 2)
         self.assertEqual(second.ttn_number, '20450123456789')
 
     def test_retries_after_error_without_number(self):
@@ -61,7 +70,7 @@ class CreateTtnTests(TestCase):
             calls['n'] += 1
             if calls['n'] == 1:
                 raise requests.Timeout('slow')
-            return json_response(ttn_api_success())
+            return route_np()(url, json=json, timeout=timeout)
 
         with patch('shipping.np_ttn.requests.post', side_effect=post):
             create_ttn(self.order.pk)
@@ -137,6 +146,85 @@ class CreateTtnTests(TestCase):
         self.order.refresh_from_db()
         self.assertEqual(self.order.ttn_error, 'Не обрано точку відправки')
 
+    def test_warehouse_request_uses_recipient_refs(self):
+        calls = []
+
+        def post(url, json=None, timeout=None):
+            calls.append(json)
+            return route_np()(url, json=json, timeout=timeout)
+
+        with patch('shipping.np_ttn.requests.post', side_effect=post):
+            create_ttn(self.order.pk)
+        self.assertEqual(len(calls), 2)
+        counterparty, document = calls
+        self.assertEqual(counterparty['modelName'], 'Counterparty')
+        self.assertEqual(counterparty['calledMethod'], 'save')
+        self.assertEqual(counterparty['methodProperties'], {
+            'CounterpartyType': 'PrivatePerson',
+            'CounterpartyProperty': 'Recipient',
+            'FirstName': 'Іван',
+            'LastName': 'Петренко',
+            'MiddleName': 'Іванович',
+            'Phone': '380501112233',
+        })
+        props = document['methodProperties']
+        self.assertEqual(document['modelName'], 'InternetDocument')
+        self.assertEqual(document['calledMethod'], 'save')
+        self.assertEqual(props['CityRecipient'], 'city-recip')
+        self.assertEqual(props['RecipientAddress'], 'recip-wh')
+        self.assertEqual(props['Recipient'], 'recipient-ref')
+        self.assertEqual(props['ContactRecipient'], 'contact-recipient')
+        self.assertEqual(props['RecipientsPhone'], '380501112233')
+        self.assertEqual(props['PayerType'], 'Recipient')
+        self.assertEqual(props['AfterpaymentOnGoodsCost'], '150.00')
+        self.assertNotIn('RecipientWarehouseIndex', props)
+        self.assertNotIn('BackwardDeliveryData', props)
+
+    def test_missing_recipient_data_skips_np(self):
+        cases = (
+            ({'city_ref': ''}, MSG_NO_CITY_REF),
+            ({'warehouse_ref': ''}, MSG_NO_WAREHOUSE_REF),
+            ({'phone': '123'}, MSG_BAD_PHONE),
+            ({'first_name': '', 'last_name': ''}, MSG_NO_NAME),
+        )
+        for changes, message in cases:
+            with self.subTest(message=message):
+                row = order(shipment_origin=self.origin, **changes)
+                with patch('shipping.np_ttn.requests.post') as post:
+                    create_ttn(row.pk)
+                post.assert_not_called()
+                row.refresh_from_db()
+                self.assertEqual(row.ttn_error, message)
+                self.assertEqual(row.ttn_status, 'error')
+                self.assertEqual(row.ttn_number, '')
+
+    def test_contact_person_shapes(self):
+        self.assertEqual(
+            contact_person_ref({'success': True, 'data': [{'Ref': 'c-1'}]}),
+            'c-1',
+        )
+        wrapped = [{'success': True, 'data': [{'Ref': 'c-2'}]}]
+        self.assertEqual(contact_person_ref(wrapped), 'c-2')
+
+        calls = []
+
+        def post(url, json=None, timeout=None):
+            calls.append(json)
+            if json['modelName'] == 'Counterparty':
+                payload = counterparty_save_success(ref='cp-list', contact_ref='ignored')
+                payload['data'][0]['ContactPerson'] = wrapped
+                return json_response(payload)
+            return json_response(ttn_api_success())
+
+        with patch('shipping.np_ttn.requests.post', side_effect=post):
+            create_ttn(self.order.pk)
+        props = calls[1]['methodProperties']
+        self.assertEqual(props['Recipient'], 'cp-list')
+        self.assertEqual(props['ContactRecipient'], 'c-2')
+        self.assertNotIn('RecipientWarehouseIndex', props)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.ttn_number, '20450123456789')
+
 
 @override_settings(NOVAPOSHTA_API_KEY='')
 class CreateTtnWithoutKeyTests(TestCase):
@@ -184,6 +272,8 @@ class SenderCacheTests(TestCase):
                     'errorCodes': [],
                     'warnings': [],
                 })
+            if json['modelName'] == 'Counterparty' and method == 'save':
+                return json_response(counterparty_save_success())
             return json_response(ttn_api_success(number=f'2045000000000{len(methods)}'))
 
         first = order(shipment_origin=self.origin, warehouse='Відділення №1', warehouse_ref='r1')
@@ -194,6 +284,8 @@ class SenderCacheTests(TestCase):
         self.assertEqual(methods, [
             'getCounterparties',
             'getCounterpartyContactPersons',
+            'save',
+            'save',
             'save',
             'save',
         ])
@@ -233,6 +325,8 @@ class SenderCacheTests(TestCase):
                     'errorCodes': [],
                     'warnings': [],
                 })
+            if json['modelName'] == 'Counterparty' and method == 'save':
+                return json_response(counterparty_save_success())
             seen['sender'] = json['methodProperties']['Sender']
             return json_response(ttn_api_success(number='20450000000999'))
 

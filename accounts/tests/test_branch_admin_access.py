@@ -12,7 +12,7 @@ GROUP_ORDERS = _groups.GROUP_ORDERS
 GROUP_PRODUCTS = _groups.GROUP_PRODUCTS
 from orders.models import Order
 from products.models import Product
-from shipping.tests.factories import json_response, order, origin, ttn_api_success, ttn_settings
+from shipping.tests.factories import order, origin, route_np, ttn_settings
 from suppliers.models import PendingPriceChange, Supplier, SupplierSyncRun
 
 User = get_user_model()
@@ -91,10 +91,7 @@ class BranchAdminAccessTests(TestCase):
 
     def test_order_manager_can_create_ttn(self):
         self.client.force_login(self.orders)
-        with patch(
-            'shipping.np_ttn.requests.post',
-            side_effect=lambda url, json=None, timeout=None: json_response(ttn_api_success()),
-        ):
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()):
             response = self.client.post(self._ttn_url(), follow=True)
         self.order_row.refresh_from_db()
         self.assertEqual(self.order_row.ttn_number, '20450123456789')
@@ -114,10 +111,7 @@ class BranchAdminAccessTests(TestCase):
         self.assertEqual(fresh.ttn_number, '')
 
         self.client.force_login(self.orders)
-        with patch(
-            'shipping.np_ttn.requests.post',
-            side_effect=lambda url, json=None, timeout=None: json_response(ttn_api_success()),
-        ):
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()):
             allowed = self.client.post(reverse('admin:orders_order_changelist'), {
                 'action': 'create_ttn_for_selected',
                 '_selected_action': [str(fresh.pk)],

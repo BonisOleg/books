@@ -33,7 +33,7 @@ class CheckoutForm(forms.ModelForm):
         model = Order
         fields = [
             'first_name', 'last_name', 'patronymic', 'phone',
-            'email', 'city', 'warehouse', 'warehouse_ref',
+            'email', 'city', 'city_ref', 'warehouse', 'warehouse_ref',
             'comment', 'payment_method',
         ]
         widgets = {
@@ -59,6 +59,7 @@ class CheckoutForm(forms.ModelForm):
                 'id': 'warehouse-input',
                 'autocomplete': 'off',
             }),
+            'city_ref': forms.HiddenInput(),
             'warehouse_ref': forms.HiddenInput(),
             'comment': forms.Textarea(attrs={
                 'class': 'form-textarea', 'rows': 3,

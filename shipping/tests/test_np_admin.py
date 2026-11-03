@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from orders.models import Order
-from shipping.tests.factories import json_response, order, origin, ttn_api_success, ttn_settings
+from shipping.tests.factories import order, origin, route_np, ttn_settings
 
 User = get_user_model()
 
@@ -50,10 +50,7 @@ class OrderTtnAdminTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_post_creates_ttn(self):
-        with patch(
-            'shipping.np_ttn.requests.post',
-            side_effect=lambda url, json=None, timeout=None: json_response(ttn_api_success()),
-        ):
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()):
             response = self.client.post(self._create_url(self.order), follow=True)
         self.order.refresh_from_db()
         self.assertEqual(self.order.ttn_number, '20450123456789')
@@ -70,10 +67,7 @@ class OrderTtnAdminTests(TestCase):
         self.assertEqual(self.order.ttn_number, '')
         self.assertContains(response, 'Онлайн-оплата ще не підтверджена')
         self.assertContains(response, 'Підтвердити створення ТТН')
-        with patch(
-            'shipping.np_ttn.requests.post',
-            side_effect=lambda url, json=None, timeout=None: json_response(ttn_api_success()),
-        ):
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()):
             self.client.post(self._create_url(self.order), {'confirm': '1'}, follow=True)
         self.order.refresh_from_db()
         self.assertEqual(self.order.ttn_number, '20450123456789')
@@ -85,16 +79,13 @@ class OrderTtnAdminTests(TestCase):
             payment_status='pending',
             first_name='Марія',
         )
-        with patch(
-            'shipping.np_ttn.requests.post',
-            side_effect=lambda url, json=None, timeout=None: json_response(ttn_api_success()),
-        ) as post:
+        with patch('shipping.np_ttn.requests.post', side_effect=route_np()) as post:
             response = self.client.post(reverse('admin:orders_order_changelist'), {
                 'action': 'create_ttn_for_selected',
                 '_selected_action': [str(self.order.pk), str(online.pk)],
                 'select_across': '0',
             }, follow=True)
-        self.assertEqual(post.call_count, 1)
+        self.assertEqual(post.call_count, 2)
         self.order.refresh_from_db()
         online.refresh_from_db()
         self.assertEqual(self.order.ttn_number, '20450123456789')

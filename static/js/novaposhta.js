@@ -8,7 +8,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var warehouseInput = document.getElementById('warehouse-input');
     var warehouseResults = document.getElementById('warehouse-results');
     var warehouseRef = document.querySelector('[name="warehouse_ref"]');
+    var cityRefInput = document.querySelector('[name="city_ref"]');
     var selectedCityRef = '';
+
+    function rememberCityRef(ref) {
+        selectedCityRef = ref || '';
+        if (!cityRefInput) {
+            var form = cityInput && cityInput.form;
+            if (!form) {
+                return;
+            }
+            cityRefInput = document.createElement('input');
+            cityRefInput.type = 'hidden';
+            cityRefInput.name = 'city_ref';
+            cityRefInput.autocomplete = 'off';
+            form.appendChild(cityRefInput);
+        }
+        cityRefInput.value = selectedCityRef;
+    }
     var cityDebounce = null;
     var warehouseDebounce = null;
 
@@ -58,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
             div.textContent = city.name;
             div.addEventListener('click', function () {
                 cityInput.value = city.name;
-                selectedCityRef = city.ref;
+                rememberCityRef(city.ref);
                 cityResults.classList.remove('is-visible');
                 if (warehouseInput) {
                     warehouseInput.value = '';
@@ -94,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var query = cityInput.value.trim();
 
         if (query.length < 2) {
-            selectedCityRef = '';
+            rememberCityRef('');
             if (cityResults) {
                 cityResults.classList.remove('is-visible');
             }
@@ -105,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var best = pickBestCity(results, query);
 
             if (best) {
-                selectedCityRef = best.ref;
+                rememberCityRef(best.ref);
                 if (best.name && best.name !== cityInput.value) {
                     cityInput.value = best.name;
                 }
@@ -127,8 +144,8 @@ document.addEventListener('DOMContentLoaded', function () {
         cityInput.addEventListener('input', function () {
             clearTimeout(cityDebounce);
 
+            rememberCityRef('');
             if (!cityInput.value.trim()) {
-                selectedCityRef = '';
                 cityResults.classList.remove('is-visible');
                 return;
             }
@@ -150,6 +167,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (cityInput.value.trim().length >= 2) {
             resolveCityRef({ showDropdown: false });
+        }
+
+        if (cityInput.form) {
+            cityInput.form.addEventListener('submit', function () {
+                rememberCityRef(selectedCityRef);
+            });
         }
     }
 

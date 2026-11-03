@@ -94,7 +94,7 @@ class OrderAdmin(admin.ModelAdmin):
             'user', 'first_name', 'last_name', 'patronymic', 'phone', 'email',
         )}),
         ('Доставка', {'fields': (
-            'city', 'warehouse', 'warehouse_ref',
+            'city', 'city_ref', 'warehouse', 'warehouse_ref',
             'recipient_area', 'recipient_street', 'recipient_house', 'recipient_flat',
             'comment',
         )}),

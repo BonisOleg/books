@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-import re
 import threading
 from decimal import Decimal, InvalidOperation
 
@@ -21,9 +20,13 @@ from .np_format import (
     money as _money,
     np_phone,
     parse_cost as _parse_cost,
-    recipient_name as _recipient_name,
-    warehouse_index as _warehouse_index,
     weight as _weight,
+)
+from .np_recipient import (
+    apply_recipient,
+    assert_recipient_ready,
+    recipient_to_doors,
+    save_private_recipient,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,9 +36,6 @@ MSG_UNAVAILABLE = 'НП не відповідає'
 ONLINE_PAYMENT_METHODS = ('liqpay', 'monobank')
 NP_TIMEOUT = 15
 SENDER_CACHE_TTL = 6 * 60 * 60
-
-_BRANCH_HINT = re.compile(r'відділен|поштомат|postomat', re.IGNORECASE)
-
 
 class NpUserError(Exception):
     def __init__(self, message):
@@ -87,11 +87,18 @@ if not any(isinstance(item, _ApiKeyLogFilter) for item in logger.filters):
 
 
 def build_internet_document_payload(order, ttn_settings):
+    """Тіло InternetDocument.save.
+
+    На відділення CityRecipient — Ref міста, RecipientAddress — Ref відділення.
+    Recipient і ContactRecipient беруться з Counterparty.save.
+    RecipientWarehouseIndex не передається: у це поле не можна класти Ref.
+    https://developers.novaposhta.ua/ (Counterparty.save, InternetDocument.save)
+    """
     origin = order.shipment_origin
     if origin is None:
         raise NpUserError('Не обрано точку відправки')
 
-    sender_ref, contact_ref, sender_phone = resolve_sender(ttn_settings)
+    assert_recipient_ready(order)
     weight = _pick_positive(
         order.parcel_weight, ttn_settings.default_weight, 'Не вказано вагу відправлення',
     )
@@ -107,12 +114,11 @@ def build_internet_document_payload(order, ttn_settings):
     description = (ttn_settings.cargo_description or '').strip()
     if not description:
         raise NpUserError('Не вказано опис вантажу')
-    recipient_name = _recipient_name(order)
-    if not recipient_name:
-        raise NpUserError('Не вказано ім’я отримувача')
 
+    sender_ref, contact_ref, sender_phone = resolve_sender(ttn_settings)
+    recipient_ref, recipient_contact = save_private_recipient(order)
     weight_text = _weight(weight)
-    to_doors = _recipient_to_doors(order)
+    to_doors = recipient_to_doors(order)
     payload = {
         'PayerType': ttn_settings.payer_type,
         'PaymentMethod': ttn_settings.payment_method,
@@ -128,8 +134,6 @@ def build_internet_document_payload(order, ttn_settings):
         'SenderAddress': _sender_address(origin),
         'ContactSender': contact_ref,
         'SendersPhone': sender_phone,
-        'RecipientName': recipient_name,
-        'RecipientType': 'PrivatePerson',
         'RecipientsPhone': _require_phone(order.phone, 'Некоректний телефон отримувача'),
         'OptionsSeat': [{
             'volumetricWidth': str(int(Decimal(width))),
@@ -138,7 +142,7 @@ def build_internet_document_payload(order, ttn_settings):
             'weight': weight_text,
         }],
     }
-    _apply_recipient(payload, order, to_doors)
+    apply_recipient(payload, order, to_doors, recipient_ref, recipient_contact)
     _apply_cod(payload, order, ttn_settings)
     return payload
 
@@ -412,52 +416,6 @@ def _service_type(sender_doors, recipient_doors):
     if recipient_doors:
         return 'WarehouseDoors'
     return 'WarehouseWarehouse'
-
-
-def _recipient_to_doors(order):
-    if (order.warehouse_ref or '').strip():
-        return False
-    if any((
-        (getattr(order, 'recipient_street', '') or '').strip(),
-        (getattr(order, 'recipient_house', '') or '').strip(),
-        (getattr(order, 'recipient_area', '') or '').strip(),
-        (getattr(order, 'recipient_flat', '') or '').strip(),
-    )):
-        return True
-    text = (order.warehouse or '').strip()
-    return bool(text) and not _BRANCH_HINT.search(text)
-
-
-def _apply_recipient(payload, order, to_doors):
-    city = (order.city or '').strip()
-    if to_doors:
-        street = (order.recipient_street or '').strip() or (order.warehouse or '').strip()
-        if not city or not street:
-            raise NpUserError('Не вказано адресу отримувача')
-        payload['NewAddress'] = '1'
-        payload['RecipientCityName'] = city
-        area = (order.recipient_area or '').strip()
-        if area:
-            payload['RecipientArea'] = area
-        payload['RecipientAddressName'] = street
-        house = (order.recipient_house or '').strip()
-        flat = (order.recipient_flat or '').strip()
-        if house:
-            payload['RecipientHouse'] = house
-        if flat:
-            payload['RecipientFlat'] = flat
-        return
-
-    warehouse = (order.warehouse or '').strip()
-    ref = (order.warehouse_ref or '').strip()
-    if not city or not warehouse:
-        raise NpUserError('Не вказано відділення отримувача')
-    number = _warehouse_index(warehouse)
-    payload['RecipientCityName'] = city
-    payload['RecipientAddressName'] = number or warehouse
-    if ref:
-        payload['RecipientWarehouseIndex'] = ref
-        payload['RecipientAddress'] = ref
 
 
 def _apply_cod(payload, order, ttn_settings):

@@ -21,7 +21,11 @@ class InternetDocumentPayloadTests(TestCase):
             for key, value in order_kwargs.items():
                 setattr(self.order, key, value)
             self.order.save()
-        with patch('shipping.np_ttn.requests.post') as post:
+        with patch('shipping.np_ttn.requests.post') as post, \
+                patch(
+                    'shipping.np_ttn.save_private_recipient',
+                    return_value=('recipient-ref', 'contact-recipient'),
+                ):
             payload = build_internet_document_payload(self.order, self.settings)
         post.assert_not_called()
         return payload
@@ -42,13 +46,14 @@ class InternetDocumentPayloadTests(TestCase):
         self.assertEqual(payload['SenderAddress'], 'sender-wh')
         self.assertEqual(payload['ContactSender'], 'contact-ref')
         self.assertEqual(payload['SendersPhone'], '380671112233')
-        self.assertEqual(payload['RecipientName'], 'Петренко Іван Іванович')
-        self.assertEqual(payload['RecipientType'], 'PrivatePerson')
         self.assertEqual(payload['RecipientsPhone'], '380501112233')
-        self.assertEqual(payload['RecipientCityName'], 'Київ')
-        self.assertEqual(payload['RecipientAddressName'], '12')
-        self.assertEqual(payload['RecipientWarehouseIndex'], 'recip-wh')
+        self.assertEqual(payload['CityRecipient'], 'city-recip')
+        self.assertEqual(payload['Recipient'], 'recipient-ref')
         self.assertEqual(payload['RecipientAddress'], 'recip-wh')
+        self.assertEqual(payload['ContactRecipient'], 'contact-recipient')
+        self.assertNotIn('RecipientWarehouseIndex', payload)
+        self.assertNotIn('RecipientName', payload)
+        self.assertNotIn('RecipientCityName', payload)
         self.assertEqual(payload['AfterpaymentOnGoodsCost'], '150.00')
         self.assertNotIn('BackwardDeliveryData', payload)
         self.assertEqual(payload['OptionsSeat'], [{
@@ -93,7 +98,9 @@ class InternetDocumentPayloadTests(TestCase):
         self.assertEqual(payload['ServiceType'], 'DoorsWarehouse')
         self.assertEqual(payload['SenderAddress'], 'street-ref')
         self.assertEqual(payload['CitySender'], 'city-ref')
-        self.assertEqual(payload['RecipientWarehouseIndex'], 'recip-wh')
+        self.assertEqual(payload['CityRecipient'], 'city-recip')
+        self.assertEqual(payload['RecipientAddress'], 'recip-wh')
+        self.assertNotIn('RecipientWarehouseIndex', payload)
 
     def test_doors_to_doors(self):
         self.origin.kind = ShipmentOrigin.KIND_ADDRESS

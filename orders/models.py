@@ -35,6 +35,7 @@ class Order(models.Model):
     phone = models.CharField('Телефон', max_length=30)
     email = models.EmailField('Email', blank=True)
     city = models.CharField('Місто', max_length=200)
+    city_ref = models.CharField('Ref міста', max_length=100, blank=True, default='')
     warehouse = models.CharField('Відділення НП', max_length=300, blank=True)
     warehouse_ref = models.CharField('Ref відділення', max_length=100, blank=True)
     recipient_area = models.CharField('Область отримувача', max_length=200, blank=True)

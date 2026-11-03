@@ -9,15 +9,14 @@ from django.urls import reverse
 from orders.models import Order
 from products.models import Product
 from shipping.np_ttn import create_ttn
-from shipping.tests.factories import json_response, origin, ttn_api_success, ttn_settings
+from shipping.tests.factories import origin, route_np, ttn_settings
 
 
 def _run_ttn_now(order_id):
     create_ttn(order_id)
 
 
-def _np_post(url, json=None, timeout=None):
-    return json_response(ttn_api_success())
+_np_post = route_np()
 
 
 @override_settings(NOVAPOSHTA_API_KEY='np-test-key', KEYCRM_API_KEY='')
@@ -45,6 +44,7 @@ class CheckoutTtnTests(TestCase):
             'phone': '+380671112233',
             'email': '',
             'city': 'Львів',
+            'city_ref': 'city-lviv',
             'warehouse': 'Відділення №5',
             'warehouse_ref': 'recip-wh-5',
             'comment': '',
@@ -102,6 +102,8 @@ class CheckoutTtnTests(TestCase):
         )
         self.assertEqual(order.ttn_number, '20450123456789')
         self.assertEqual(order.ttn_status, 'created')
+        self.assertEqual(order.city_ref, 'city-lviv')
+        self.assertEqual(order.warehouse_ref, 'recip-wh-5')
 
     @patch('orders.views.sync_order')
     @patch('orders.forms.validate_form_guards')
@@ -163,6 +165,7 @@ class PaymentCallbackTtnTests(TestCase):
             last_name='Петренко',
             phone='+380501112233',
             city='Київ',
+            city_ref='city-recip',
             warehouse='Відділення №1',
             warehouse_ref='recip-wh',
             payment_method='liqpay',

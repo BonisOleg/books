@@ -21,6 +21,44 @@ def json_response(payload, status_code=200):
     return response
 
 
+def counterparty_save_success(ref='recipient-ref', contact_ref='contact-recipient'):
+    return {
+        'success': True,
+        'data': [{
+            'Ref': ref,
+            'Description': 'Петренко Іван Іванович',
+            'FirstName': 'Іван',
+            'MiddleName': 'Іванович',
+            'LastName': 'Петренко',
+            'CounterpartyType': 'PrivatePerson',
+            'ContactPerson': {
+                'success': True,
+                'data': [{
+                    'Ref': contact_ref,
+                    'FirstName': 'Іван',
+                    'LastName': 'Петренко',
+                    'MiddleName': 'Іванович',
+                }],
+            },
+        }],
+        'errors': [],
+        'warnings': [],
+        'errorCodes': [],
+    }
+
+
+def route_np(document=None):
+    doc = ttn_api_success() if document is None else document
+
+    def _post(url, json=None, timeout=None):
+        body = json or {}
+        if body.get('modelName') == 'Counterparty' and body.get('calledMethod') == 'save':
+            return json_response(counterparty_save_success())
+        return json_response(doc)
+
+    return _post
+
+
 def ttn_api_success(number='20450123456789', ref='ref-ttn', cost='68.00', warnings=None):
     return {
         'success': True,
@@ -85,6 +123,7 @@ def order(**kwargs):
         'patronymic': 'Іванович',
         'phone': '+380501112233',
         'city': 'Київ',
+        'city_ref': 'city-recip',
         'warehouse': 'Поштомат №12',
         'warehouse_ref': 'recip-wh',
         'payment_method': 'cod',
