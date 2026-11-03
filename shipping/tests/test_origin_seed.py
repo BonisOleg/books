@@ -31,15 +31,18 @@ CATALOG = {
 
 
 class SeededOriginsTests(TestCase):
-    def test_migration_seeds_seven_origins_without_refs_or_default(self):
+    def test_migration_seeds_seven_origins_without_refs(self):
         origins = list(ShipmentOrigin.objects.filter(name__in=SEEDED_NAMES))
         self.assertEqual(len(origins), 7)
-        self.assertFalse(ShipmentOrigin.objects.filter(is_default=True).exists())
+        self.assertEqual(
+            list(ShipmentOrigin.objects.filter(is_default=True).values_list('name', flat=True)),
+            ['Київ №129'],
+        )
         for row in origins:
             self.assertEqual(row.city_ref, '')
             self.assertEqual(row.warehouse_ref, '')
             self.assertEqual(row.street_ref, '')
-            self.assertFalse(row.is_default)
+            self.assertEqual(row.is_default, row.name == 'Київ №129')
             self.assertTrue(row.is_active)
         address = ShipmentOrigin.objects.get(
             name='Київ, адресний забір, вул. Золотоустівська 10-12',
@@ -94,6 +97,7 @@ class SeededOriginsTests(TestCase):
         self.assertFalse(inactive.is_default)
 
     def test_order_without_default_stays_empty(self):
+        ShipmentOrigin.objects.filter(is_default=True).update(is_default=False)
         created = Order.objects.create(
             first_name='А', last_name='Б', phone='+380501112233',
             city='Київ', warehouse='1',
@@ -174,7 +178,10 @@ class FillOriginRefsTests(TestCase):
         self.assertEqual(address.city_ref, 'city-kyiv')
         self.assertEqual(address.street_ref, 'street-zol')
         self.assertEqual(address.warehouse_ref, '')
-        self.assertFalse(ShipmentOrigin.objects.filter(is_default=True).exists())
+        self.assertEqual(
+            list(ShipmentOrigin.objects.filter(is_default=True).values_list('name', flat=True)),
+            ['Київ №129'],
+        )
         post.reset_mock()
         with patch('shipping.novaposhta_api.requests.post', side_effect=_np_post) as again:
             call_command('fill_origin_refs', stdout=StringIO())

@@ -1,6 +1,7 @@
 """Data-міграція: старий badge='top' виставляє is_bestseller."""
 from decimal import Decimal
 
+from django.apps import apps
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
@@ -14,7 +15,10 @@ class BadgeTopToBestsellerMigrationTests(TransactionTestCase):
     def test_top_badge_sets_bestseller_and_reverse_clears_only_top(self):
         try:
             self._migrate([(self.app, self.migrate_from)])
-            Product = self._historical_product(self.migrate_from)
+            # Відкат до 0022 знімає лише нащадків цієї гілки. Паралельні
+            # 0021 лишаються в схемі, тож вставка йде поточною моделлю:
+            # інакше NOT NULL-колонки на кшталт shipping_time не потрапляють в INSERT.
+            Product = apps.get_model(self.app, 'Product')
             top = Product.objects.create(
                 name='Топ',
                 slug='badge-top',

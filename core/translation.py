@@ -9,6 +9,12 @@ class SiteSettingsTranslationOptions(TranslationOptions):
         'site_description', 'promo_banner_text', 'seo_home_title', 'seo_home_description',
         'default_order_info', 'default_shipping_time',
     )
+    field_options = {
+        'default_shipping_time': {
+            'en': {'default': None},
+            'ru': {'default': None},
+        },
+    }
 
 
 @register(FAQ)

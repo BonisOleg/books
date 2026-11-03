@@ -36,6 +36,7 @@ class ConsultationRequestViewTests(TestCase):
     def setUpTestData(cls):
         cls.site = SiteSettings.objects.create(
             site_name='OFION',
+            email='public@example.test',
             notification_email='ops@example.test',
         )
         cls.off = Product.objects.create(
@@ -143,7 +144,10 @@ class ConsultationRequestViewTests(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
-        self.assertEqual(email.to, ['ops@example.test'])
+        self.assertEqual(email.to, [self.site.notification_email])
+        self.assertEqual(self.site.notification_email, 'ops@example.test')
+        self.assertNotIn(self.site.email, email.to)
+        self.assertNotEqual(self.site.email, self.site.notification_email)
         self.assertIn(self.on.name, email.subject)
         self.assertIn('Олег', email.body)
         self.assertIn('+380501112233', email.body)
