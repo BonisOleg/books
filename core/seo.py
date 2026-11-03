@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from django.conf import settings
 from django.utils.html import strip_tags
@@ -213,6 +213,35 @@ def product_image_alt(product_name: str, index: int, *, is_main: bool = False) -
     return f'{name} — фото {n}'
 
 
+# Корені соцмереж без профілю: telegram.org, t.me, instagram.com тощо.
+_SOCIAL_ROOT_HOSTS = frozenset({
+    'telegram.org',
+    't.me',
+    'telegram.me',
+    'instagram.com',
+    'facebook.com',
+    'fb.com',
+    'youtube.com',
+    'youtu.be',
+    'tiktok.com',
+    'viber.com',
+})
+
+
+def is_placeholder_social_url(url: str | None) -> bool:
+    """True, якщо це лише корінь соцмережі без шляху профілю."""
+    raw = (url or '').strip()
+    if not raw:
+        return False
+    parsed = urlsplit(raw if '://' in raw else f'https://{raw}')
+    host = (parsed.hostname or '').lower().rstrip('.')
+    if host.startswith('www.'):
+        host = host[4:]
+    if host not in _SOCIAL_ROOT_HOSTS:
+        return False
+    return not (parsed.path or '').strip('/')
+
+
 def get_home_json_ld(site, request=None) -> dict[str, Any] | None:
     """Organization + WebSite @graph from SiteSettings only (no invented fields)."""
     if site is None:
@@ -254,7 +283,7 @@ def get_home_json_ld(site, request=None) -> dict[str, Any] | None:
         'instagram_url', 'youtube_url', 'tiktok_url',
     ):
         url = (getattr(site, attr, '') or '').strip()
-        if url:
+        if url and not is_placeholder_social_url(url):
             same_as.append(url)
     if same_as:
         organization['sameAs'] = same_as
