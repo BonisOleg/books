@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from core.models import SiteSettings
 from core.seo import get_home_json_ld
-from products.models import Category, Product
+from products.models import Category, FilterAttribute, FilterValue, Product
 from products.schema import get_product_schema
 from promotions.models import UpsellGroup
 from reviews.models import Review
@@ -251,3 +251,69 @@ class RatingPagesTests(TestCase):
         catalog = _queries(reverse('products:catalog'))[1].content.decode()
         self.assertIn('class="rating"', catalog)
         self.assertIn('(2)', catalog)
+
+
+class RatingWithCatalogFiltersTests(TestCase):
+    """4 і 5 → 4.5 і в каталозі, і з фільтром атрибута/ціни. Join не двоїть оцінку."""
+
+    def test_зірки_однакові_без_фільтра_і_з_фільтром(self):
+        parent = Category.objects.create(name='Подарунки', slug='rt-gifts', is_active=True)
+        child = Category.objects.create(
+            name='Статуетки', slug='rt-statues', parent=parent, is_active=True,
+        )
+        rated = _product('RT-FLT', 'Лев із відгуками', price='150.00')
+        rated.categories.add(parent, child)
+        other = _product('RT-FLT2', 'Інша оцінка', price='150.00')
+        other.categories.add(parent)
+        cheap = _product('RT-FLT3', 'Дешевший без оцінки', price='10.00')
+        cheap.categories.add(parent)
+        _review(rated, 4, True)
+        _review(rated, 5, True)
+        _review(rated, 1, False)
+        _review(other, 5, True)
+
+        color = FilterAttribute.objects.create(name='Колір', slug='color', is_active=True)
+        red = FilterValue.objects.create(attribute=color, name='Червоний', slug='red')
+        blue = FilterValue.objects.create(attribute=color, name='Синій', slug='blue')
+        size = FilterAttribute.objects.create(name='Розмір', slug='size', is_active=True)
+        large = FilterValue.objects.create(attribute=size, name='Великий', slug='large')
+        red.products.add(rated)
+        blue.products.add(rated)
+        large.products.add(rated)
+        red.products.add(other)
+
+        def assert_half(html, widgets):
+            self.assertEqual(html.count('class="rating"'), widgets)
+            self.assertEqual(html.count('>Лев із відгуками</a>'), 1)
+            self.assertRegex(
+                html,
+                r'aria-label="Середня оцінка 4[.,]5 з 5, кількість відгуків: 2"',
+            )
+            self.assertIn('--rating-pct: 90%', html)
+            self.assertNotIn('кількість відгуків: 4', html)
+            self.assertNotIn('кількість відгуків: 6', html)
+
+        plain = self.client.get(reverse('products:catalog')).content.decode()
+        assert_half(plain, 2)
+
+        filtered = self.client.get(reverse('products:catalog'), {
+            'f_color': 'red',
+            'price_min': '100',
+            'price_max': '200',
+        }).content.decode()
+        assert_half(filtered, 2)
+        self.assertNotIn('Дешевший без оцінки', filtered)
+
+        category = self.client.get(
+            reverse('products:category', kwargs={'slug': parent.slug}),
+            {'f_color': 'red', 'price_min': '100'},
+        ).content.decode()
+        assert_half(category, 2)
+
+        joined = (
+            Product.objects.filter(pk=rated.pk, filter_values__in=[red, blue, large])
+            .with_rating()
+            .get()
+        )
+        self.assertEqual(joined.rating_count, 2)
+        self.assertEqual(round(float(joined.rating_avg), 2), 4.5)
