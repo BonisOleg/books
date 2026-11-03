@@ -13,6 +13,21 @@ from suppliers.models import PendingPriceChange, Supplier, SupplierProduct, Supp
 from suppliers.report import format_percent, money
 from suppliers.services import sync_supplier
 
+_SUPPLIER_RUN_ACTIONS = frozenset({'dry_run_selected', 'sync_selected'})
+_PENDING_DECISION_ACTIONS = frozenset({'apply_pending', 'ignore_product'})
+
+
+def _require_superuser(request):
+    user = request.user
+    if not user.is_active or not user.is_staff or not user.is_superuser:
+        raise PermissionDenied
+
+
+def _posted_actions(request):
+    if request.method != 'POST':
+        return set()
+    return set(request.POST.getlist('action'))
+
 
 class SupplierProductInline(admin.TabularInline):
     model = SupplierProduct
@@ -58,6 +73,18 @@ class SupplierAdmin(admin.ModelAdmin):
     class Media:
         css = {'all': ('css/admin_supplier_sync.css',)}
 
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = dict(extra_context or {})
+        extra_context['can_run_supplier_sync'] = bool(
+            request.user.is_active and request.user.is_staff and request.user.is_superuser
+        )
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def changelist_view(self, request, extra_context=None):
+        if _posted_actions(request) & _SUPPLIER_RUN_ACTIONS:
+            _require_superuser(request)
+        return super().changelist_view(request, extra_context)
+
     def get_urls(self):
         urls = super().get_urls()
         custom = [
@@ -83,7 +110,7 @@ class SupplierAdmin(admin.ModelAdmin):
     def _sync_view(self, request, object_id, *, dry_run):
         if request.method != 'POST':
             return HttpResponseNotAllowed(['POST'])
-        self._require_change(request)
+        _require_superuser(request)
         supplier = self.get_object(request, str(object_id))
         if supplier is None:
             raise Http404('Постачальника не знайдено')
@@ -101,13 +128,13 @@ class SupplierAdmin(admin.ModelAdmin):
 
     def get_actions(self, request):
         actions = super().get_actions(request)
-        if not request.user.has_perm('suppliers.change_supplier'):
+        if not request.user.is_superuser:
             actions.pop('dry_run_selected', None)
             actions.pop('sync_selected', None)
         return actions
 
     def _sync_queryset(self, request, queryset, *, dry_run):
-        self._require_change(request)
+        _require_superuser(request)
         bits = []
         failed = False
         for supplier in queryset.order_by('pk'):
@@ -119,10 +146,6 @@ class SupplierAdmin(admin.ModelAdmin):
             '; '.join(bits) or 'Нічого не вибрано.',
             level=messages.ERROR if failed else messages.SUCCESS,
         )
-
-    def _require_change(self, request):
-        if not request.user.is_staff or not request.user.has_perm('suppliers.change_supplier'):
-            raise PermissionDenied
 
     def _notify(self, request, run, *, dry_run):
         if run.status == SupplierSyncRun.Status.FAILED:
@@ -251,6 +274,18 @@ class PendingPriceChangeAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop('apply_pending', None)
+            actions.pop('ignore_product', None)
+        return actions
+
+    def changelist_view(self, request, extra_context=None):
+        if _posted_actions(request) & _PENDING_DECISION_ACTIONS:
+            _require_superuser(request)
+        return super().changelist_view(request, extra_context)
+
     @admin.display(description='Стара ціна')
     def old_price_uah(self, obj):
         return money(obj.old_price)
@@ -265,11 +300,13 @@ class PendingPriceChangeAdmin(admin.ModelAdmin):
 
     @admin.action(description='Застосувати', permissions=['change'])
     def apply_pending(self, request, queryset):
+        _require_superuser(request)
         applied, errors = _settle(queryset, lambda item: _apply_one(request, item))
         _tell(self, request, applied, errors, f'Застосовано змін цін: {applied}.')
 
     @admin.action(description='Ігнорувати цей товар', permissions=['change'])
     def ignore_product(self, request, queryset):
+        _require_superuser(request)
         applied, errors = _settle(queryset, lambda item: _ignore_one(request, item))
         _tell(self, request, applied, errors, f'Ігноровано товарів: {applied}.')
 

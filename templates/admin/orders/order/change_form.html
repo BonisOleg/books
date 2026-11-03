@@ -8,7 +8,7 @@
 
 {% block submit_buttons_bottom %}
 {{ block.super }}
-{% if original %}
+{% if original and has_change_permission %}
 <div class="submit-row np-ttn-submit-row">
     <button type="submit"
             class="button np-ttn-submit"

@@ -134,6 +134,15 @@ class OrderAdmin(admin.ModelAdmin):
         ]
         return custom + super().get_urls()
 
+    def changelist_view(self, request, extra_context=None):
+        if (
+            request.method == 'POST'
+            and 'create_ttn_for_selected' in request.POST.getlist('action')
+            and not self.has_change_permission(request)
+        ):
+            raise PermissionDenied
+        return super().changelist_view(request, extra_context)
+
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['ttn_needs_payment_confirm'] = request.GET.get('ttn_confirm') == '1'
@@ -172,8 +181,10 @@ class OrderAdmin(admin.ModelAdmin):
             messages.error(request, f'Не вдалося створити ТТН: {result.ttn_error}')
         return redirect(change_url)
 
-    @admin.action(description='Створити ТТН для вибраних')
+    @admin.action(permissions=['change'], description='Створити ТТН для вибраних')
     def create_ttn_for_selected(self, request, queryset):
+        if not self.has_change_permission(request):
+            raise PermissionDenied
         created = 0
         existed = 0
         failed = 0

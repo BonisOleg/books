@@ -2,7 +2,7 @@
 
 {% block object-tools-items %}
 {{ block.super }}
-{% if original and has_change_permission %}
+{% if original and can_run_supplier_sync %}
 <li class="supplier-sync-tool">
     <form method="post" action="{% url 'admin:suppliers_supplier_dry_run' original.pk %}" class="supplier-sync-form">
         {% csrf_token %}

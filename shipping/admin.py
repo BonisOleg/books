@@ -1,6 +1,7 @@
 import re
 
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import path, reverse
@@ -127,12 +128,16 @@ class NPTTNSettingsAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        return not NPTTNSettings.objects.exists()
+        if NPTTNSettings.objects.exists():
+            return False
+        return super().has_add_permission(request)
 
     def has_delete_permission(self, request, obj=None):
         return False
 
     def changelist_view(self, request, extra_context=None):
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
         obj = NPTTNSettings.objects.first()
         if obj:
             return redirect(reverse('admin:shipping_npttnsettings_change', args=[obj.pk]))

@@ -9,7 +9,7 @@ from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
 from suppliers.admin import SupplierSyncRunAdmin
-from suppliers.models import SupplierSyncRun
+from suppliers.models import PendingPriceChange, SupplierSyncRun
 
 from .utils import FIXTURE, make_link, make_product, make_supplier
 
@@ -120,14 +120,39 @@ class SupplierAdminTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('/admin/login/', response.url)
 
-    def test_staff_with_change_can_open_run(self):
-        self.client.force_login(self.staff)
-        response = self.client.post(
-            reverse('admin:suppliers_supplier_dry_run', args=[self.supplier.pk]),
-            follow=True,
+    def test_staff_with_change_cannot_run_sync(self):
+        self.staff.user_permissions.add(
+            Permission.objects.get(
+                codename='view_pendingpricechange',
+                content_type__app_label='suppliers',
+            ),
+            Permission.objects.get(
+                codename='change_pendingpricechange',
+                content_type__app_label='suppliers',
+            ),
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Пробний запуск')
+        self.client.force_login(self.staff)
+        page = self.client.get(reverse('admin:suppliers_supplier_change', args=[self.supplier.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, 'Перевірити (dry-run)')
+        self.assertNotContains(page, 'supplier-sync-btn--run')
+        denied = self.client.post(reverse('admin:suppliers_supplier_dry_run', args=[self.supplier.pk]))
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(SupplierSyncRun.objects.count(), 0)
+        pending = PendingPriceChange.objects.create(
+            supplier=self.supplier,
+            product=self.product,
+            old_price=Decimal('10.00'),
+            new_price=Decimal('20.00'),
+            percent=Decimal('100.00'),
+        )
+        applied = self.client.post(reverse('admin:suppliers_pendingpricechange_changelist'), {
+            'action': 'apply_pending',
+            '_selected_action': [str(pending.pk)],
+        })
+        self.assertEqual(applied.status_code, 403)
+        pending.refresh_from_db()
+        self.assertEqual(pending.status, PendingPriceChange.Status.PENDING)
         self.product.refresh_from_db()
         self.assertEqual(self.product.price, Decimal('10.00'))
 

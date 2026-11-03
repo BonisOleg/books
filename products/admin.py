@@ -135,9 +135,10 @@ class CategoryAdmin(LangFilteredFieldsets, TranslationAdmin):
         return _image_thumb(obj.image, 'admin-thumb--sm')
 
 
-_SALE_TIMER_ACTIONS = frozenset({
+_CHANGE_PRODUCT_ACTIONS = frozenset({
     'set_sale_end_date_action',
     'clear_sale_end_date_action',
+    'add_filter_values_action',
 })
 
 
@@ -301,7 +302,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         if request.method == 'POST':
             for action_name in request.POST.getlist('action'):
                 if (
-                    action_name in _SALE_TIMER_ACTIONS
+                    action_name in _CHANGE_PRODUCT_ACTIONS
                     and not request.user.has_perm('products.change_product')
                 ):
                     raise PermissionDenied

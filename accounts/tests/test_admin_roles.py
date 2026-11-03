@@ -12,10 +12,13 @@ from django.urls import reverse
 from accounts.admin import SUPERUSER_HELP, permission_label
 
 _groups = importlib.import_module('accounts.migrations.0002_manager_groups')
+_branch = importlib.import_module('accounts.migrations.0003_branch_manager_permissions')
 GROUP_ORDERS = _groups.GROUP_ORDERS
 GROUP_PRODUCTS = _groups.GROUP_PRODUCTS
 create_manager_groups = _groups.create_manager_groups
 remove_manager_groups = _groups.remove_manager_groups
+grant_branch_permissions = _branch.grant_branch_permissions
+revoke_branch_permissions = _branch.revoke_branch_permissions
 from orders.models import Order
 from products.admin import ProductAdmin
 from products.models import Product
@@ -51,6 +54,18 @@ ORDER_GROUP_PERMS = {
     ('orders', 'change_orderitem'),
     ('products', 'view_product'),
 }
+
+
+def _spec_perms(spec):
+    collected = set()
+    for app_label, model_name, actions in spec:
+        for action in actions:
+            collected.add((app_label, f'{action}_{model_name}'))
+    return collected
+
+
+PRODUCT_BRANCH_PERMS = _spec_perms(_branch.PRODUCT_MANAGER_EXTRA)
+ORDER_BRANCH_PERMS = _spec_perms(_branch.ORDER_MANAGER_EXTRA)
 
 
 class _Schema:
@@ -95,12 +110,18 @@ class ManagerGroupMigrationTests(TestCase):
     def test_groups_exist_with_expected_permissions(self):
         products = Group.objects.get(name=GROUP_PRODUCTS)
         orders = Group.objects.get(name=GROUP_ORDERS)
-        self.assertEqual(_perm_set(products), PRODUCT_GROUP_PERMS)
-        self.assertEqual(_perm_set(orders), ORDER_GROUP_PERMS)
-        self.assertNotIn(('products', 'delete_product'), _perm_set(products))
-        self.assertNotIn(('orders', 'delete_order'), _perm_set(orders))
-        self.assertNotIn(('products', 'add_product'), _perm_set(orders))
-        self.assertNotIn(('products', 'change_product'), _perm_set(orders))
+        product_perms = _perm_set(products)
+        order_perms = _perm_set(orders)
+        self.assertEqual(product_perms, PRODUCT_GROUP_PERMS | PRODUCT_BRANCH_PERMS)
+        self.assertEqual(order_perms, ORDER_GROUP_PERMS | ORDER_BRANCH_PERMS)
+        self.assertNotIn(('products', 'delete_product'), product_perms)
+        self.assertNotIn(('orders', 'delete_order'), order_perms)
+        self.assertNotIn(('products', 'add_product'), order_perms)
+        self.assertNotIn(('products', 'change_product'), order_perms)
+        self.assertFalse(any(app == 'suppliers' for app, _codename in product_perms))
+        self.assertFalse(any(app == 'suppliers' for app, _codename in order_perms))
+        self.assertNotIn(('shipping', 'view_shipmentorigin'), product_perms)
+        self.assertNotIn(('products', 'view_productgroup'), order_perms)
 
     def test_migration_is_idempotent_and_reversible(self):
         from django.apps import apps
@@ -120,6 +141,32 @@ class ManagerGroupMigrationTests(TestCase):
         self.assertEqual(
             _perm_set(Group.objects.get(name=GROUP_ORDERS)),
             ORDER_GROUP_PERMS,
+        )
+
+    def test_branch_permissions_add_without_wiping_and_are_idempotent(self):
+        from django.apps import apps
+
+        revoke_branch_permissions(apps, _Schema())
+        self.assertEqual(
+            _perm_set(Group.objects.get(name=GROUP_PRODUCTS)),
+            PRODUCT_GROUP_PERMS,
+        )
+        self.assertEqual(
+            _perm_set(Group.objects.get(name=GROUP_ORDERS)),
+            ORDER_GROUP_PERMS,
+        )
+
+        grant_branch_permissions(apps, _Schema())
+        grant_branch_permissions(apps, _Schema())
+        self.assertEqual(Group.objects.filter(name=GROUP_PRODUCTS).count(), 1)
+        self.assertEqual(Group.objects.filter(name=GROUP_ORDERS).count(), 1)
+        self.assertEqual(
+            _perm_set(Group.objects.get(name=GROUP_PRODUCTS)),
+            PRODUCT_GROUP_PERMS | PRODUCT_BRANCH_PERMS,
+        )
+        self.assertEqual(
+            _perm_set(Group.objects.get(name=GROUP_ORDERS)),
+            ORDER_GROUP_PERMS | ORDER_BRANCH_PERMS,
         )
 
 

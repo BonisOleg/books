@@ -103,9 +103,11 @@ class FilterValueAdmin(admin.ModelAdmin):
         })
 
 
-@admin.action(description='Додати значення фільтра')
+@admin.action(permissions=['change'], description='Додати значення фільтра')
 def add_filter_values_action(modeladmin, request, queryset):
     if not modeladmin.has_change_permission(request):
+        raise PermissionDenied
+    if not request.user.has_perm('products.change_filtervalue'):
         raise PermissionDenied
     selected_ids = list(queryset.values_list('pk', flat=True))
     if request.POST.get('apply'):
