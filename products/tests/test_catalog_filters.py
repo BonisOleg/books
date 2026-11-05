@@ -382,6 +382,33 @@ class AttributeFilterApplyTests(SimpleTestCase):
             r'onchange\s*=\s*["\'][^"\']*(?:\.submit\s*\(|requestSubmit)',
         )
 
+    def test_filter_panel_hx_trigger_includes_submit(self):
+        """hx-trigger повинен містити 'submit', щоб кнопка «Застосувати» йшла через htmx."""
+        root = Path(__file__).resolve().parents[2]
+        template = (
+            root / 'templates/products/partials/filter_panel.html'
+        ).read_text(encoding='utf-8')
+        self.assertRegex(
+            template,
+            r'hx-trigger=["\'][^"\']*\bsubmit\b',
+            'hx-trigger у filter_panel.html має включати "submit"',
+        )
+
+    def test_scroll_has_no_mobile_gate(self):
+        """scrollIntoView не повинен бути захований за matchMedia/innerWidth/isMobile."""
+        root = Path(__file__).resolve().parents[2]
+        script = (root / 'static/js/catalog-filters.js').read_text(encoding='utf-8')
+        code = re.sub(r'/\*[\s\S]*?\*/', '', script)
+        code = re.sub(r'//.*?$', '', code, flags=re.M)
+        self.assertIsNone(
+            re.search(r'matchMedia|innerWidth|isMobile', code),
+            'catalog-filters.js не повинен мати mobile-only gate для scrollIntoView',
+        )
+        self.assertIsNotNone(
+            re.search(r'scrollIntoView', code),
+            'catalog-filters.js повинен викликати scrollIntoView',
+        )
+
 
 LEGACY_PANEL_MARKERS = (
     '<aside class="catalog-sidebar">',
