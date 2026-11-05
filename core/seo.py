@@ -6,7 +6,6 @@ from typing import Any
 from urllib.parse import urlencode, urlsplit
 
 from django.conf import settings
-from django.utils.html import strip_tags
 
 from core.public_urls import build_public_absolute_uri, public_base_url
 
@@ -187,7 +186,8 @@ def product_key_characteristic(product) -> str:
             if name and value:
                 return f'{name}: {value}'
             return value or name
-    short = strip_tags(getattr(product, 'short_description', '') or '').strip()
+    from products.schema import _plain_text
+    short = _plain_text(getattr(product, 'short_description', '') or '', max_len=500).strip()
     if short:
         return _first_sentence(short)
     manufacturer = (getattr(product, 'manufacturer', '') or '').strip()

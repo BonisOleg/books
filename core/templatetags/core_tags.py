@@ -69,6 +69,23 @@ def clean_richtext(value):
 
 
 @register.filter
+def plain_text(value):
+    """Strip HTML tags and unescape entities; return plain str for auto-escape.
+
+    Reuses products.schema._plain_text (double-encoding aware). NOT mark_safe —
+    template engine must still escape the result. Do not pipe through |safe.
+    """
+    from products.schema import _plain_text
+
+    if value is None:
+        return ''
+    raw = str(value)
+    if not raw:
+        return ''
+    return _plain_text(raw, max_len=len(raw) + 1)
+
+
+@register.filter
 def with_site_suffix(title, site_name=None):
     """Idempotent document title ending with «| SITE_NAME»."""
     from core.seo import with_site_suffix as _with_site_suffix
