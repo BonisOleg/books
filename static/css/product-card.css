@@ -79,7 +79,6 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     min-width: 0;
-    flex: 1;
 }
 
 .product-card__name a {
@@ -100,6 +99,7 @@
 
 .product-card__actions {
     padding-top: 4px;
+    margin-top: auto;
 }
 
 .rating {
