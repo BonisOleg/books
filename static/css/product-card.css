@@ -63,6 +63,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-height: 0;
 }
 
 .product-card__sku {
@@ -79,6 +80,28 @@
     overflow-wrap: anywhere;
     word-break: break-word;
     min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.product-card__desc {
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+    line-height: 1.45;
+    margin-bottom: 4px;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+
+.product-card__bottom {
+    margin-top: auto;
 }
 
 .product-card__name a {

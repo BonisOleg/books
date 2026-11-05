@@ -273,12 +273,12 @@
     gap: 12px;
     flex: 1;
     align-items: stretch;
-    align-content: start;
 }
 
 #product-grid {
     scroll-margin-top: calc(var(--header-height) + var(--category-nav-height));
-    align-self: flex-start;
+    align-self: start;
+    align-content: start;
 }
 
 
@@ -366,7 +366,6 @@
 
 .product-grid--with-sidebar {
     flex: 1;
-    align-self: flex-start;
 }
 
 .filter-panel__submit {

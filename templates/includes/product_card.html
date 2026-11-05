@@ -44,43 +44,49 @@
             <a href="{% url 'products:detail' product.slug %}">{{ product.name }}</a>
         </div>
 
+        {% if product.short_description %}
+        <div class="product-card__desc">{{ product.short_description|striptags }}</div>
+        {% endif %}
+
         {% include "includes/product_rating.html" %}
 
-        <div class="product-card__stock">
-            <span class="stock-status stock-status--{{ product.stock_status }}">
-                {{ product.get_stock_status_display }}
-            </span>
-        </div>
+        <div class="product-card__bottom">
+            <div class="product-card__stock">
+                <span class="stock-status stock-status--{{ product.stock_status }}">
+                    {{ product.get_stock_status_display }}
+                </span>
+            </div>
 
-        <div class="product-card__price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-            <meta itemprop="priceCurrency" content="UAH">
-            <meta itemprop="price" content="{{ product.price|unlocalize }}">
-            <link itemprop="availability" href="{{ product.availability_schema }}">
-            {% if product.old_price %}
-            <span class="price__old">{{ product.old_price|uah }}</span>
-            {% endif %}
-            <span class="price">{{ product.price|uah }}</span>
-        </div>
+            <div class="product-card__price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                <meta itemprop="priceCurrency" content="UAH">
+                <meta itemprop="price" content="{{ product.price|unlocalize }}">
+                <link itemprop="availability" href="{{ product.availability_schema }}">
+                {% if product.old_price %}
+                <span class="price__old">{{ product.old_price|uah }}</span>
+                {% endif %}
+                <span class="price">{{ product.price|uah }}</span>
+            </div>
 
-        <div class="product-card__actions">
-            {% if product.stock_status != 'out' %}
-            <button type="button" class="btn btn--buy btn--block btn--sm"
-                    aria-label="{% trans 'Купити' %}: {{ product.name }}"
-                    hx-post="{% url 'cart:add' product.id %}"
-                    hx-target="#cart-count"
-                    hx-swap="innerHTML"
-                    hx-indicator=".htmx-indicator">
-                {% trans 'Купити' %}
-            </button>
-            {% else %}
-            {% if PHONE_NUMBERS %}
-            <a href="tel:{{ PHONE_NUMBERS.0|phone_raw }}" class="btn btn--outline btn--block btn--sm">
-                {% trans 'Зателефонувати' %}
-            </a>
-            {% else %}
-            <span class="btn btn--outline btn--block btn--sm btn--disabled">{% trans 'Немає в наявності' %}</span>
-            {% endif %}
-            {% endif %}
+            <div class="product-card__actions">
+                {% if product.stock_status != 'out' %}
+                <button type="button" class="btn btn--buy btn--block btn--sm"
+                        aria-label="{% trans 'Купити' %}: {{ product.name }}"
+                        hx-post="{% url 'cart:add' product.id %}"
+                        hx-target="#cart-count"
+                        hx-swap="innerHTML"
+                        hx-indicator=".htmx-indicator">
+                    {% trans 'Купити' %}
+                </button>
+                {% else %}
+                {% if PHONE_NUMBERS %}
+                <a href="tel:{{ PHONE_NUMBERS.0|phone_raw }}" class="btn btn--outline btn--block btn--sm">
+                    {% trans 'Зателефонувати' %}
+                </a>
+                {% else %}
+                <span class="btn btn--outline btn--block btn--sm btn--disabled">{% trans 'Немає в наявності' %}</span>
+                {% endif %}
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
