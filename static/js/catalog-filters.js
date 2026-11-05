@@ -1,39 +1,36 @@
 (function () {
     'use strict';
 
-    function closeOthers(current) {
-        document.querySelectorAll('.attr-filter[open]').forEach(function (node) {
-            if (node !== current) {
-                node.removeAttribute('open');
-            }
-        });
-    }
+    var _submitClicked = false;
 
-    document.addEventListener('click', function (event) {
-        var inside = event.target.closest ? event.target.closest('.attr-filter') : null;
-        closeOthers(inside);
-    });
-
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape') {
-            closeOthers(null);
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('.filter-panel__submit')) {
+            _submitClicked = true;
         }
     });
 
-    document.querySelectorAll('form.attr-filters').forEach(function (form) {
-        form.addEventListener('submit', function () {
-            var select = document.querySelector('.catalog-toolbar select[name="sort"]');
-            if (!select) {
-                return;
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+        if (!_submitClicked) {
+            return;
+        }
+        _submitClicked = false;
+        if (!e.detail || !e.detail.target || e.detail.target.id !== 'product-grid') {
+            return;
+        }
+        var panel = document.getElementById('mobile-filters');
+        if (panel && panel.classList.contains('is-open')) {
+            panel.classList.remove('is-open');
+            var overlay = document.getElementById('filter-overlay');
+            if (overlay) {
+                overlay.classList.remove('is-visible');
             }
-            var value = select.value || '';
-            if (!value || value.charAt(0) === '/' || value.charAt(0) === '?') {
-                return;
-            }
-            var hidden = form.querySelector('input[name="sort"]');
-            if (hidden) {
-                hidden.value = value;
-            }
-        });
+            document.body.style.overflow = '';
+        }
+        var grid = document.getElementById('product-grid');
+        if (grid) {
+            setTimeout(function () {
+                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+        }
     });
 }());

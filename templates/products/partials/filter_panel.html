@@ -4,7 +4,7 @@
           hx-target="#product-grid"
           hx-swap="innerHTML"
           hx-trigger="change"
-          hx-include="[name='sort'], .attr-filters__fields input">
+          hx-include="[name='sort']">
 
         {% for group in filter_groups %}
 
@@ -63,6 +63,18 @@
         {% endif %}
 
         {% endif %}
+        {% endfor %}
+
+        {% for attr in attribute_filters %}
+        <div class="filter-group">
+            <div class="filter-group__title">{{ attr.name }}{% if attr.selected_count %} ({{ attr.selected_count }}){% endif %}</div>
+            {% for value in attr.values %}
+            <label class="filter-checkbox">
+                <input type="checkbox" name="f_{{ attr.slug }}" value="{{ value.slug }}" {% if value.selected %}checked{% endif %}>
+                {{ value.name }}
+            </label>
+            {% endfor %}
+        </div>
         {% endfor %}
 
         <button type="submit" class="btn btn--primary btn--block btn--sm filter-panel__submit">

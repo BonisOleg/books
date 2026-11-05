@@ -162,11 +162,10 @@ class AttributeFilterQueryTests(TestCase):
     def test_catalog_hides_category_limited_attribute(self):
         response = self.client.get(reverse('products:catalog'), {'q': 'Червона', 'f_color': 'red'})
         html = response.content.decode()
-        self.assertIn('name="f_color"', html)
+        # Attr filters тепер лише в сайдбарі category_detail; catalog toolbar їх не показує
         self.assertNotIn('name="f_cover"', html)
         self.assertIn('red-book', html)
         self.assertNotIn('blue-book', html)
-        self.assertIn('value="red" checked', html)
 
     def test_price_sort_with_filter(self):
         response = self.client.get(
@@ -211,9 +210,8 @@ class AttributeFilterQueryTests(TestCase):
         self.assertIn('name="f_cover"', sibling_html)
 
     def test_catalog_shows_only_attributes_bound_nowhere(self):
+        # Attr filters тепер лише в сайдбарі category_detail; catalog toolbar їх не рендерить
         html = self.client.get(reverse('products:catalog')).content.decode()
-        self.assertIn('name="f_color"', html)
-        self.assertIn('name="f_size"', html)
         self.assertNotIn('name="f_cover"', html)
         self.assertNotIn('name="f_hidden"', html)
 
@@ -222,8 +220,9 @@ class AttributeFilterQueryTests(TestCase):
             reverse('products:category', kwargs={'slug': 'books'}),
             {'f_color': 'red'},
         ).content.decode()
+        # Attr filters тепер в сайдбарі з класом filter-checkbox
         options = re.findall(
-            r'<label class="attr-filter__option">(.*?)</label>',
+            r'<label class="filter-checkbox">(.*?)</label>',
             html,
             re.S,
         )
@@ -233,7 +232,7 @@ class AttributeFilterQueryTests(TestCase):
         self.assertIn('Колір (1)', html)
         self.assertRegex(
             html,
-            r'<button[^>]*type="submit"[^>]*class="[^"]*attr-filter__apply[^"]*"[^>]*>\s*Застосувати\s*</button>',
+            r'<button[^>]*type="submit"[^>]*class="[^"]*filter-panel__submit[^"]*"[^>]*>\s*Застосувати\s*</button>',
         )
 
 
@@ -370,12 +369,13 @@ class AttributeFilterApplyTests(SimpleTestCase):
             code,
         ))
 
+        # Attr filters тепер в filter_panel, кнопка Застосувати — filter-panel__submit
         template = (
-            root / 'templates/products/partials/attribute_filters.html'
+            root / 'templates/products/partials/filter_panel.html'
         ).read_text(encoding='utf-8')
         self.assertRegex(
             template,
-            r'<button[^>]*\btype="submit"[^>]*>\s*\{% trans [\'"]Застосувати[\'"] %\}\s*</button>',
+            r'<button[^>]*\btype="submit"[^>]*class="[^"]*filter-panel__submit[^"]*"[^>]*>\s*\{%[^%]*Застосувати[^%]*%\}\s*</button>',
         )
         self.assertNotRegex(
             template,
@@ -392,8 +392,7 @@ LEGACY_PANEL_MARKERS = (
 )
 
 SORT_HX_INCLUDE = (
-    'hx-include=".filter-panel input[name], .filter-panel select[name], '
-    '.attr-filters__fields input"'
+    'hx-include=".filter-panel input[name], .filter-panel select[name]"'
 )
 
 
