@@ -42,7 +42,7 @@ def _make(model, **kwargs):
 
 def _image_anchor(html, href):
     pattern = re.compile(
-        r'<a href="' + re.escape(href) + r'" class="[^"]*" tabindex="-1" aria-hidden="true">'
+        r'<a href="' + re.escape(href) + r'" class="[^"]*" tabindex="-1" aria-hidden="true"[^>]*>'
         r'.*?</a>',
         re.S,
     )
@@ -52,7 +52,7 @@ def _image_anchor(html, href):
 
 def _content_card(html, href):
     pattern = re.compile(
-        r'<a href="' + re.escape(href) + r'" class="content-card">.*?</a>',
+        r'<a href="' + re.escape(href) + r'" class="content-card"[^>]*>.*?</a>',
         re.S,
     )
     match = pattern.search(html)
@@ -293,6 +293,7 @@ class CoverLinkTests(TestCase):
         self.assertIn('alt="Стаття з фото"', article_block)
         self.assertIn(f'<a href="{article_url}">Стаття з фото</a>', articles)
         self.assertEqual(articles.count('tabindex="-1"'), 1)
+        self.assertNotIn('target="_blank"', article_block)
 
         news = self.client.get(reverse('blog:news_list')).content.decode()
         news_block = _image_anchor(news, news_url)
@@ -300,6 +301,7 @@ class CoverLinkTests(TestCase):
         self.assertIn('alt="Новина з фото"', news_block)
         self.assertIn(f'<a href="{news_url}">Новина з фото</a>', news)
         self.assertEqual(news.count('tabindex="-1"'), 1)
+        self.assertNotIn('target="_blank"', news_block)
 
         home = self.client.get(reverse('core:home')).content.decode()
         home_article = _content_card(home, article_url)
@@ -308,3 +310,55 @@ class CoverLinkTests(TestCase):
         self.assertIn('alt="Ілюстрація: Стаття з фото"', home_article)
         self.assertIn('<img', home_news)
         self.assertIn('alt="Ілюстрація: Новина з фото"', home_news)
+        self.assertNotIn('target="_blank"', home_article)
+        self.assertNotIn('target="_blank"', home_news)
+
+    def test_absolute_cover_link_opens_new_tab(self):
+        external = 'https://example.com/promo'
+        self.article.cover_link = external
+        self.article.save()
+        self.news.cover_link = external
+        self.news.save()
+
+        articles = self.client.get(reverse('blog:articles')).content.decode()
+        article_block = _image_anchor(articles, external)
+        self.assertIn('target="_blank"', article_block)
+        self.assertIn('rel="noopener noreferrer"', article_block)
+        self.assertIn(
+            f'<a href="{self.article.get_absolute_url()}">Стаття з фото</a>',
+            articles,
+        )
+
+        news = self.client.get(reverse('blog:news_list')).content.decode()
+        news_block = _image_anchor(news, external)
+        self.assertIn('target="_blank"', news_block)
+        self.assertIn('rel="noopener noreferrer"', news_block)
+
+        home = self.client.get(reverse('core:home')).content.decode()
+        self.assertIn('target="_blank"', _content_card(home, external))
+        self.assertIn('rel="noopener noreferrer"', _content_card(home, external))
+
+    def test_relative_cover_link_same_tab(self):
+        relative = '/catalog/'
+        self.article.cover_link = relative
+        self.article.save()
+        self.news.cover_link = relative
+        self.news.save()
+
+        articles = self.client.get(reverse('blog:articles')).content.decode()
+        article_block = _image_anchor(articles, relative)
+        self.assertTrue(article_block)
+        self.assertNotIn('target="_blank"', article_block)
+
+        news = self.client.get(reverse('blog:news_list')).content.decode()
+        news_block = _image_anchor(news, relative)
+        self.assertTrue(news_block)
+        self.assertNotIn('target="_blank"', news_block)
+
+        home = self.client.get(reverse('core:home')).content.decode()
+        home_cards = re.findall(
+            r'<a href="' + re.escape(relative) + r'" class="content-card"[^>]*>',
+            home,
+        )
+        self.assertEqual(len(home_cards), 2)
+        self.assertTrue(all('target="_blank"' not in tag for tag in home_cards))

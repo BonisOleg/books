@@ -4,6 +4,8 @@ from django.utils import timezone
 
 from tinymce.models import HTMLField
 
+from blog.cover_link import cover_link_is_external, resolve_cover_href, validate_cover_link
+
 
 class PublishedQuerySet(models.QuerySet):
     def published(self):
@@ -14,7 +16,17 @@ class PublishedQuerySet(models.QuerySet):
         ).order_by('-published_at', '-created_at')
 
 
-class Article(models.Model):
+class CoverLinkMixin:
+    @property
+    def cover_href(self):
+        return resolve_cover_href(self.cover_link, self.get_absolute_url())
+
+    @property
+    def cover_link_is_external(self):
+        return cover_link_is_external(self.cover_link)
+
+
+class Article(CoverLinkMixin, models.Model):
     title = models.CharField('Заголовок', max_length=300)
     slug = models.SlugField(unique=True, max_length=300)
     content = HTMLField('Контент')
@@ -22,6 +34,14 @@ class Article(models.Model):
     image = models.ImageField(
         'Зображення', upload_to='blog/articles/', blank=True,
         help_text='Рекомендований розмір: 1200×675 px (співвідношення 16:9), JPG/WEBP.'
+    )
+    cover_link = models.CharField(
+        'Посилання із заставки',
+        max_length=500,
+        blank=True,
+        default='',
+        validators=[validate_cover_link],
+        help_text='Абсолютне http(s) або відносний шлях (/catalog/). Порожньо — на сторінку запису.',
     )
     is_published = models.BooleanField('Опубліковано', default=True)
     published_at = models.DateTimeField(
@@ -52,7 +72,7 @@ class Article(models.Model):
         return reverse('blog:article_detail', kwargs={'slug': self.slug})
 
 
-class News(models.Model):
+class News(CoverLinkMixin, models.Model):
     title = models.CharField('Заголовок', max_length=300)
     slug = models.SlugField(unique=True, max_length=300)
     content = HTMLField('Контент')
@@ -60,6 +80,14 @@ class News(models.Model):
     image = models.ImageField(
         'Зображення', upload_to='blog/news/', blank=True,
         help_text='Рекомендований розмір: 1200×675 px (співвідношення 16:9), JPG/WEBP.'
+    )
+    cover_link = models.CharField(
+        'Посилання із заставки',
+        max_length=500,
+        blank=True,
+        default='',
+        validators=[validate_cover_link],
+        help_text='Абсолютне http(s) або відносний шлях (/catalog/). Порожньо — на сторінку запису.',
     )
     is_published = models.BooleanField('Опубліковано', default=True)
     published_at = models.DateTimeField(

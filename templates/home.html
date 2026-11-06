@@ -72,7 +72,7 @@
         <h2 class="section__title">{% trans 'Новини' %}</h2>
         <div class="content-cards">
             {% for item in latest_news %}
-            <a href="{% url 'blog:news_detail' item.slug %}" class="content-card">
+            <a href="{{ item.cover_href }}" class="content-card"{% if item.cover_link_is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
                 {% if item.image %}
                 {% blocktrans with name=item.title asvar photo_alt %}Ілюстрація: {{ name }}{% endblocktrans %}
                 {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}
@@ -98,7 +98,7 @@
         <h2 class="section__title">{% trans 'Статті' %}</h2>
         <div class="content-cards">
             {% for item in latest_articles %}
-            <a href="{% url 'blog:article_detail' item.slug %}" class="content-card">
+            <a href="{{ item.cover_href }}" class="content-card"{% if item.cover_link_is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
                 {% if item.image %}
                 {% blocktrans with name=item.title asvar photo_alt %}Ілюстрація: {{ name }}{% endblocktrans %}
                 {% responsive_img item.image alt=photo_alt css_class="content-card__img" sizes="(max-width: 767px) 100vw, 360px" %}

@@ -30,7 +30,7 @@ class ArticleAdmin(PublishStatusMixin, LangFilteredFieldsets, TranslationAdmin):
     prepopulated_fields = {'slug': ('title_uk',)}
     list_editable = ('is_published',)
     fieldsets = (
-        ('Загальне', {'fields': ('slug', 'image', 'is_published', 'published_at')}),
+        ('Загальне', {'fields': ('slug', 'image', 'cover_link', 'is_published', 'published_at')}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'content_uk', 'excerpt_uk',
@@ -61,7 +61,7 @@ class NewsAdmin(PublishStatusMixin, LangFilteredFieldsets, TranslationAdmin):
     prepopulated_fields = {'slug': ('title_uk',)}
     list_editable = ('is_published',)
     fieldsets = (
-        ('Загальне', {'fields': ('slug', 'image', 'is_published', 'published_at')}),
+        ('Загальне', {'fields': ('slug', 'image', 'cover_link', 'is_published', 'published_at')}),
         # ── Language panels ──────────────────────────────────────────────
         ('🇺🇦 Українська', {
             'fields': ('title_uk', 'content_uk', 'excerpt_uk',

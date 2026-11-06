@@ -13,7 +13,7 @@
         {% for article in articles %}
         <div class="blog-card">
             {% if article.image %}
-            <a href="{% url 'blog:article_detail' article.slug %}" class="blog-card__media" tabindex="-1" aria-hidden="true">
+            <a href="{{ article.cover_href }}" class="blog-card__media" tabindex="-1" aria-hidden="true"{% if article.cover_link_is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
                 {% responsive_img article.image alt=article.title css_class="blog-card__img" sizes="(max-width: 767px) 100vw, 480px" %}
             </a>
             {% endif %}
