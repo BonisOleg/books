@@ -184,6 +184,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('Ціна та наявність', {
             'fields': (
                 'price', 'old_price', 'discount_percent', 'stock_status',
+                'shipping_time',
                 'badge_obj', 'badge', 'sale_end_date', 'is_bestseller',
             ),
         }),
@@ -197,7 +198,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇺🇦 Українська', {
             'fields': (
                 'name_uk', 'description_uk', 'short_description_uk',
-                'order_info_uk', 'shipping_time_uk',
+                'order_info_uk',
                 'meta_title_uk', 'meta_description_uk',
             ),
             'classes': ('lang-panel', 'lang-uk'),
@@ -205,7 +206,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇬🇧 English', {
             'fields': (
                 'name_en', 'description_en', 'short_description_en',
-                'order_info_en', 'shipping_time_en',
+                'order_info_en',
                 'meta_title_en', 'meta_description_en',
             ),
             'classes': ('lang-panel', 'lang-en'),
@@ -213,7 +214,7 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         ('🇷🇺 Русский', {
             'fields': (
                 'name_ru', 'description_ru', 'short_description_ru',
-                'order_info_ru', 'shipping_time_ru',
+                'order_info_ru',
                 'meta_title_ru', 'meta_description_ru',
             ),
             'classes': ('lang-panel', 'lang-ru'),
@@ -231,8 +232,12 @@ class ProductAdmin(LangFilteredFieldsets, TranslationAdmin):
         """Decimal fields with USE_L10N=True (uk locale) use comma as decimal
         separator. Without localize=True Django's DecimalField rejects comma
         values submitted from <input type="number">, causing silent save failures."""
+        from django.contrib.admin.widgets import AdminDateWidget
+
         if db_field.name in ('price', 'old_price'):
             kwargs['localize'] = True
+        if db_field.name == 'shipping_time':
+            kwargs['widget'] = AdminDateWidget()
         return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     def get_changelist_form(self, request, **kwargs):

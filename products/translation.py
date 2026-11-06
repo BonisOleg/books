@@ -19,7 +19,7 @@ class CategoryTranslationOptions(TranslationOptions):
 class ProductTranslationOptions(TranslationOptions):
     fields = (
         'name', 'description', 'short_description', 'order_info',
-        'shipping_time', 'meta_title', 'meta_description',
+        'meta_title', 'meta_description',
     )
 
 

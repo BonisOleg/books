@@ -145,14 +145,14 @@ class Product(models.Model):
         'Наявність', max_length=20,
         choices=STOCK_CHOICES, default='in_stock'
     )
-    shipping_time = models.CharField(
-        'Час відправки',
-        max_length=60,
+    shipping_time = models.DateField(
+        'Дата відправки',
+        null=True,
         blank=True,
-        default='',
-        help_text='Короткий рядок біля наявності на сторінці товару. '
-                  'Якщо порожньо — береться значення з налаштувань сайту. '
-                  'Якщо і там порожньо — рядок не показується.',
+        help_text='Дата відправки біля наявності на сторінці товару (ДД.ММ.РРРР). '
+                  'Майбутня або сьогоднішня дата показується; минула — приховується '
+                  'без підстановки дефолту сайту. Порожньо — береться значення '
+                  'з налаштувань сайту; якщо і там порожньо — рядок не показується.',
     )
     show_consult_button = models.BooleanField(
         'Кнопка «Проконсультувати»',
@@ -260,9 +260,12 @@ class Product(models.Model):
 
     @property
     def display_shipping_time(self):
-        own = (self.shipping_time or '').strip()
-        if own:
-            return own
+        from products.shipping_date import format_ship_date, local_today
+
+        if self.shipping_time is not None:
+            if self.shipping_time >= local_today():
+                return format_ship_date(self.shipping_time)
+            return ''
         from core.models import SiteSettings
         site = SiteSettings.objects.first()
         if site is None:
