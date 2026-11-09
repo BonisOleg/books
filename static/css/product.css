@@ -555,14 +555,14 @@
 
 .upsell-grid .product-card {
     flex: 0 0 160px;
-    height: 320px;
+    align-self: stretch;
+    height: auto;
+    display: flex;
+    flex-direction: column;
 }
 
-.upsell-grid .product-card__name {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.upsell-grid .product-card__stock {
+    margin-top: auto;
 }
 
 .product-tabs--top {

@@ -8,7 +8,7 @@
 
 .hits-scroll {
     display: flex;
-    align-items: start;
+    align-items: stretch;
     gap: 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -24,8 +24,14 @@
 .hits-scroll .product-card {
     flex: 0 0 160px;
     scroll-snap-align: start;
+    align-self: stretch;
     height: auto;
-    align-self: start;
+    display: flex;
+    flex-direction: column;
+}
+
+.hits-scroll .product-card__stock {
+    margin-top: auto;
 }
 
 .seo-text {
