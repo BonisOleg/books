@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var iframe = document.createElement('iframe');
                 iframe.src = embedSrc + (embedSrc.indexOf('?') === -1 ? '?autoplay=1' : '&autoplay=1');
                 iframe.className = 'product-gallery__iframe';
+                iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
                 iframe.setAttribute('allow', 'autoplay; fullscreen');
                 iframe.setAttribute('allowfullscreen', '');
                 iframe.title = 'Відео';

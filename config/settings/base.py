@@ -108,6 +108,9 @@ LANGUAGE_COOKIE_SECURE = False
 LANGUAGE_COOKIE_HTTPONLY = False
 LANGUAGE_COOKIE_SAMESITE = 'Lax'
 
+# YouTube embed потребує Referer (помилка 153 при same-origin).
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'

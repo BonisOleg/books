@@ -125,3 +125,29 @@ class ProductVideoValidationTests(TestCase):
             response,
             f'data-embed="https://www.youtube.com/embed/{VIDEO_ID}?start=90"',
         )
+
+    def test_referrer_policy_для_youtube_embed(self):
+        ProductVideo.objects.create(
+            product=self.product,
+            video_url=f'https://www.youtube.com/watch?v={VIDEO_ID}',
+            order=0,
+        )
+        url = reverse('products:detail', kwargs={'slug': self.product.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get('Referrer-Policy'),
+            'strict-origin-when-cross-origin',
+        )
+
+    def test_gallery_js_має_referrerpolicy_на_iframe(self):
+        from pathlib import Path
+
+        from django.conf import settings
+
+        gallery_js = Path(settings.BASE_DIR) / 'static' / 'js' / 'gallery.js'
+        content = gallery_js.read_text(encoding='utf-8')
+        self.assertIn(
+            "setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')",
+            content,
+        )
