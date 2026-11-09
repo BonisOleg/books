@@ -270,9 +270,15 @@
 .product-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    column-gap: 12px;
+    row-gap: 0;
     flex: 1;
-    align-items: start;
+    align-items: stretch;
+    align-content: start;
+}
+
+.product-grid > .product-card {
+    margin-bottom: 12px;
 }
 
 #product-grid {
