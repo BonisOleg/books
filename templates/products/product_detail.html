@@ -42,31 +42,49 @@
                 {% include "includes/product_badges.html" with product=product only %}
             </div>
 
-            <div class="product-gallery__main" id="gallery-main"
-                 data-label-close="{% trans 'Закрити' %}"
-                 data-label-prev="{% trans 'Попереднє' %}"
-                 data-label-next="{% trans 'Наступне' %}">
-                {% with first_img=product.images.first %}
-                {% if first_img %}
-                {% product_gallery_alt product.name 1 is_main=True as main_alt %}
-                {% responsive_img first_img.image alt=main_alt img_id="gallery-current" sizes="(max-width: 767px) 100vw, 640px" eager=True priority=True %}
-                {% else %}
-                <div class="no-photo">{% trans 'Немає фото' %}</div>
+            <div class="product-gallery__stage">
+                <div class="product-gallery__main" id="gallery-main"
+                     data-label-close="{% trans 'Закрити' %}"
+                     data-label-prev="{% trans 'Попереднє' %}"
+                     data-label-next="{% trans 'Наступне' %}">
+                    {% with first_img=product.images.first %}
+                    {% if first_img %}
+                    {% product_gallery_alt product.name 1 is_main=True as main_alt %}
+                    {% responsive_img first_img.image alt=main_alt img_id="gallery-current" sizes="(max-width: 767px) 100vw, 640px" eager=True priority=True %}
+                    {% else %}
+                    <div class="no-photo">{% trans 'Немає фото' %}</div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                {% if product.videos.exists %}
+                <button type="button"
+                        class="product-gallery__play-video"
+                        id="gallery-play-video"
+                        aria-label="{% trans 'Відтворити відео' %}">
+                    <span class="product-gallery__play-video-icon" aria-hidden="true">▶</span>
+                    <span class="product-gallery__play-video-text">{% trans 'Відео' %}</span>
+                </button>
+                {% endif %}
+
+                {% with gallery_total=product.images.count|add:product.videos.count %}
+                {% if gallery_total > 0 %}
+                <div class="product-gallery__counter" id="gallery-counter" aria-live="polite">1/{{ gallery_total }}</div>
                 {% endif %}
                 {% endwith %}
-            </div>
 
-            <div class="product-gallery__arrows">
-                <button type="button" class="product-gallery__arrow" id="gallery-prev" aria-label="{% trans 'Попереднє фото' %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                        <polyline points="15 18 9 12 15 6"/>
-                    </svg>
-                </button>
-                <button type="button" class="product-gallery__arrow" id="gallery-next" aria-label="{% trans 'Наступне фото' %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                        <polyline points="9 6 15 12 9 18"/>
-                    </svg>
-                </button>
+                <div class="product-gallery__arrows">
+                    <button type="button" class="product-gallery__arrow" id="gallery-prev" aria-label="{% trans 'Попереднє фото' %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                            <polyline points="15 18 9 12 15 6"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="product-gallery__arrow" id="gallery-next" aria-label="{% trans 'Наступне фото' %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                            <polyline points="9 6 15 12 9 18"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="product-gallery__nav" id="gallery-thumbs">
@@ -82,6 +100,9 @@
                 {% endfor %}
                 {% for vid in product.videos.all %}
                 <div class="product-gallery__thumb product-gallery__thumb--video"
+                     role="button"
+                     tabindex="0"
+                     aria-label="{% trans 'Відтворити відео' %}"
                      data-type="video"
                      data-src="{% if vid.video_file %}{{ vid.video_file.url }}{% else %}{{ vid.video_url }}{% endif %}"
                      data-embed="{{ vid.embed_url }}"
