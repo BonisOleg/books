@@ -22,9 +22,19 @@ def site_settings(request):
         nav_categories = []
 
     try:
+        top_menu_groups = list(
+            ProductGroup.objects.visible_now().filter(
+                show_in_top_menu=True,
+            ).order_by('top_menu_order', 'order', 'name')
+        )
+    except Exception:
+        top_menu_groups = []
+
+    try:
         menu_groups = list(
             ProductGroup.objects.visible_now().filter(
                 show_in_header=True,
+                show_in_top_menu=False,
             ).order_by('order', 'name')
         )
     except Exception:
@@ -72,6 +82,7 @@ def site_settings(request):
     return {
         'site_settings': site,
         'nav_categories': nav_categories,
+        'top_menu_groups': top_menu_groups,
         'menu_groups': menu_groups,
         'footer_pages': footer_pages,
         'header_pages': header_pages,

@@ -9,19 +9,22 @@ from .models import ProductGroup
 @admin.register(ProductGroup)
 class ProductGroupAdmin(LangFilteredFieldsets, TranslationAdmin):
     list_display = (
-        'name', 'slug', 'order', 'show_in_header', 'auto_source', 'is_active',
+        'name', 'slug', 'order', 'show_in_header', 'show_in_top_menu',
+        'top_menu_order', 'auto_source', 'is_active',
         'date_from', 'date_to',
     )
     list_display_links = ('name',)
-    list_editable = ('order', 'show_in_header')
-    list_filter = ('is_active', 'show_in_header', 'auto_source')
+    list_editable = ('order', 'show_in_header', 'show_in_top_menu', 'top_menu_order')
+    list_filter = ('is_active', 'show_in_header', 'show_in_top_menu', 'auto_source')
     search_fields = ('name_uk', 'name_en', 'name_ru', 'slug')
     prepopulated_fields = {'slug': ('name_uk',)}
     autocomplete_fields = ('products',)
     fieldsets = (
         ('Загальне', {
             'fields': (
-                'slug', 'products', 'auto_source', 'show_in_header', 'order', 'is_active',
+                'slug', 'products', 'auto_source',
+                'show_in_header', 'show_in_top_menu', 'top_menu_order',
+                'order', 'is_active',
                 'date_from', 'date_to',
             ),
         }),

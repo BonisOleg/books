@@ -224,7 +224,7 @@ class ProductGroupVisibilityTests(TestCase):
             query['sql'] for query in captured.captured_queries
             if 'productgroup' in query['sql'].lower()
         ]
-        self.assertEqual(len(group_sql), 1)
+        self.assertEqual(len(group_sql), 2)
 
     def test_page_is_open_inside_range_and_missing_outside(self):
         ok = self.client.get(reverse('product_group', kwargs={'slug': 'potochna-grupa'}))
@@ -276,6 +276,74 @@ class ProductGroupVisibilityTests(TestCase):
         self.assertFalse(
             ProductGroup.objects.visible_now(moment + timedelta(minutes=2)).filter(pk=group.pk).exists()
         )
+
+
+@override_settings(CACHES=LOC_MEM)
+class ProductGroupTopMenuTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        Category.objects.create(
+            name='Каталог для меню',
+            slug='kataloh-dlia-menu',
+            order=0,
+            is_active=True,
+        )
+        cls.top = ProductGroup.objects.create(
+            name='Топ товарів',
+            slug='top-tovariv',
+            show_in_header=True,
+            show_in_top_menu=True,
+            top_menu_order=1,
+            is_active=True,
+            order=1,
+        )
+        cls.dropdown = ProductGroup.objects.create(
+            name='Лише у випадному',
+            slug='lyshe-u-vypadnomu',
+            show_in_header=True,
+            show_in_top_menu=False,
+            is_active=True,
+            order=2,
+        )
+        ProductGroup.objects.create(
+            name='Ніде в меню',
+            slug='nide-v-menu',
+            show_in_header=False,
+            show_in_top_menu=False,
+            is_active=True,
+            order=3,
+        )
+
+    def test_top_menu_group_in_header_not_in_dropdown(self):
+        html = self.client.get('/').content.decode()
+        nav = _block(html, r'class="category-nav__list">(.*?)</div>')
+        mega = _block(html, r'class="megamenu" role="menu">(.*?)</div>\s*</div>')
+        mobile = _block(html, r'id="mobile-menu"(.*?)</nav>')
+
+        self.assertIn('/group/top-tovariv/', nav)
+        self.assertIn('category-nav__link">Топ товарів', nav)
+        self.assertNotIn('/group/lyshe-u-vypadnomu/', nav)
+        self.assertNotIn('/group/nide-v-menu/', nav)
+
+        self.assertNotIn('/group/top-tovariv/', mega)
+        self.assertIn('/group/lyshe-u-vypadnomu/', mega)
+        self.assertIn('megamenu__title">Лише у випадному', mega)
+        self.assertNotIn('/group/nide-v-menu/', mega)
+
+        self.assertIn('/group/top-tovariv/', mobile)
+        self.assertIn('/group/lyshe-u-vypadnomu/', mobile)
+        self.assertLess(
+            mobile.find('/group/top-tovariv/'),
+            mobile.find('/group/lyshe-u-vypadnomu/'),
+        )
+        self.assertNotIn('/group/nide-v-menu/', mobile)
+
+    def test_header_only_group_stays_in_dropdown(self):
+        html = self.client.get('/').content.decode()
+        mega = _block(html, r'class="megamenu" role="menu">(.*?)</div>\s*</div>')
+        nav = _block(html, r'class="category-nav__list">(.*?)</div>')
+        self.assertIn('/group/lyshe-u-vypadnomu/', mega)
+        self.assertNotIn('/group/lyshe-u-vypadnomu/', nav)
 
 
 @override_settings(CACHES=LOC_MEM)
