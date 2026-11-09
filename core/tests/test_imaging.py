@@ -135,6 +135,8 @@ class ResponsiveImgTests(TestCase):
         with translation.override('uk'):
             image = self._product_image()
             image.product.refresh_from_db()
+            image.product.short_description = 'Короткий опис для картки'
+            image.product.save(update_fields=['short_description'])
             html = render_to_string('includes/product_card.html', {
                 'product': image.product,
                 'PHONE_NUMBERS': [],
@@ -142,6 +144,7 @@ class ResponsiveImgTests(TestCase):
         self.assertIn('image/webp', html)
         self.assertIn('Купити: Книга', html)
         self.assertIn('type="button"', html)
+        self.assertNotIn('product-card__desc', html)
         output = StringIO()
         call_command('build_image_variants', '--dry-run', stdout=output)
         self.assertIn('would process', output.getvalue())

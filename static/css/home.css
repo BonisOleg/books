@@ -8,7 +8,7 @@
 
 .hits-scroll {
     display: flex;
-    align-items: stretch;
+    align-items: start;
     gap: 12px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -25,7 +25,7 @@
     flex: 0 0 160px;
     scroll-snap-align: start;
     height: auto;
-    align-self: stretch;
+    align-self: start;
 }
 
 .seo-text {

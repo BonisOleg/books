@@ -44,10 +44,6 @@
             <a href="{% url 'products:detail' product.slug %}">{{ product.name }}</a>
         </div>
 
-        {% if product.short_description %}
-        <div class="product-card__desc">{{ product.short_description|plain_text }}</div>
-        {% endif %}
-
         {% include "includes/product_rating.html" %}
 
         <div class="product-card__bottom">
