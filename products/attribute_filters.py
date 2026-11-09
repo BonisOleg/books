@@ -1,6 +1,46 @@
 """Які атрибути показувати в тулбарі категорії та каталогу."""
+from django.http import QueryDict
+
 from products.filters import attribute_params
 from products.models import Category, FilterAttribute, FilterValue, Product
+
+
+def clean_catalog_querydict(params, *, drop_page: bool = True) -> QueryDict:
+    """GET без порожніх значень і службових HX-параметрів (збереження getlist).
+
+    page за замовчуванням прибирається (номер додає {% filter_querystring page=N %}
+    або HX-Push-Url після фільтра/сортування).
+    """
+    cleaned = QueryDict(mutable=True)
+    if params is None:
+        return cleaned
+    keys = params.keys() if hasattr(params, 'keys') else []
+    for key in keys:
+        if not isinstance(key, str):
+            continue
+        if key.lower().startswith('hx'):
+            continue
+        if key == 'page' and drop_page:
+            continue
+        if key == 'page':
+            for value in _values(params, key):
+                try:
+                    if int(value) >= 2:
+                        cleaned.appendlist(key, str(int(value)))
+                except (TypeError, ValueError):
+                    continue
+            continue
+        for value in _values(params, key):
+            cleaned.appendlist(key, value)
+    return cleaned
+
+
+def catalog_push_path(request) -> str:
+    """Шлях + чистий query для HX-Push-Url (без page і порожніх параметрів)."""
+    path = getattr(request, 'path', '/') or '/'
+    cleaned = clean_catalog_querydict(getattr(request, 'GET', None), drop_page=True)
+    encoded = cleaned.urlencode()
+    return f'{path}?{encoded}' if encoded else path
 
 
 def category_branch_ids(category):

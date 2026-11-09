@@ -516,3 +516,149 @@ class LegacyFilterPanelVisibilityTests(TestCase):
         by_stock = self._page(query={'stock': 'in_stock'})
         self.assertIn('sale-panel', by_stock)
         self.assertNotIn('cheap-panel', by_stock)
+
+
+@override_settings(CACHES=LOC_MEM, SITE_DOMAIN='example.test', SITE_PROTOCOL='https')
+class FilterPaginationUrlTests(TestCase):
+    """Фільтри в URL + пагінація зберігає f_*/sort; HTMX оновлює пагінацію OOB."""
+
+    def setUp(self):
+        self.category = Category.objects.create(name='Шахи', slug='shahi-filter-pag')
+        self.attr = FilterAttribute.objects.create(name='Комплектація', slug='komplektaciya')
+        self.tables = FilterValue.objects.create(
+            attribute=self.attr, name='Шахові столи', slug='shahovi-stoli',
+        )
+        self.sets = FilterValue.objects.create(
+            attribute=self.attr, name='Шахи', slug='shahi',
+        )
+        self.table_products = []
+        for index in range(30):
+            product = make_product(
+                name=f'Стіл {index}',
+                slug=f'table-pag-{index}',
+                sku=f'TP-{index}',
+                price=f'{10 + index}.00',
+            )
+            product.categories.add(self.category)
+            self.tables.products.add(product)
+            self.table_products.append(product)
+        for index in range(10):
+            product = make_product(
+                name=f'Набір {index}',
+                slug=f'set-pag-{index}',
+                sku=f'SP-{index}',
+                price='5.00',
+            )
+            product.categories.add(self.category)
+            self.sets.products.add(product)
+        self.url = reverse('products:category', kwargs={'slug': self.category.slug})
+
+    def test_filtered_page2_returns_only_matching_products(self):
+        response = self.client.get(
+            self.url,
+            {'f_komplektaciya': 'shahovi-stoli', 'page': 2},
+        )
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertEqual(_cards(html), 6)
+        self.assertIn('table-pag-24', html)
+        self.assertNotIn('set-pag-', html)
+
+    def test_pagination_links_preserve_filters_sort_and_multivalue(self):
+        response = self.client.get(
+            self.url,
+            {
+                'f_komplektaciya': ['shahovi-stoli', 'shahi'],
+                'sort': 'price_asc',
+                'page': 2,
+            },
+        )
+        html = response.content.decode()
+        self.assertIn('f_komplektaciya=shahovi-stoli', html)
+        self.assertIn('f_komplektaciya=shahi', html)
+        self.assertIn('sort=price_asc', html)
+        self.assertRegex(
+            html,
+            r'href="\?[^"]*f_komplektaciya=shahovi-stoli[^"]*page=1"',
+        )
+        self.assertRegex(
+            html,
+            r'href="\?[^"]*f_komplektaciya=shahi[^"]*page=1"',
+        )
+        self.assertRegex(html, r'href="\?[^"]*sort=price_asc[^"]*page=1"')
+        # 40 товарів → 2 сторінки; лінк «1» і ««» ведуть на page=1 з фільтрами
+        self.assertIn('page=1', html)
+        self.assertNotIn('set-pag-9', html)  # page 2 при price_asc — дорожчі столи
+
+    def test_htmx_filter_response_includes_pagination_with_filter_params(self):
+        response = self.client.get(
+            self.url,
+            {
+                'f_komplektaciya': ['shahovi-stoli', 'shahi'],
+                'sort': 'newest',
+                'price_min': '',
+            },
+            HTTP_HX_REQUEST='true',
+        )
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('id="catalog-pagination"', html)
+        self.assertIn('hx-swap-oob="true"', html)
+        self.assertIn('catalog-pagination', html)
+        self.assertIn('f_komplektaciya=shahovi-stoli', html)
+        self.assertIn('f_komplektaciya=shahi', html)
+        self.assertIn('sort=newest', html)
+        self.assertIn('page=2', html)
+        self.assertNotIn('price_min=', html)
+        push = response.headers.get('HX-Push-Url') or response.get('HX-Push-Url')
+        self.assertEqual(
+            push,
+            f'{self.url}?f_komplektaciya=shahovi-stoli&f_komplektaciya=shahi&sort=newest',
+        )
+        self.assertNotIn('page=', push)
+
+    def test_htmx_push_url_drops_page_and_empty_params(self):
+        response = self.client.get(
+            self.url,
+            {'f_komplektaciya': 'shahovi-stoli', 'page': '2', 'price_max': ''},
+            HTTP_HX_REQUEST='true',
+        )
+        push = response.headers.get('HX-Push-Url') or response.get('HX-Push-Url')
+        self.assertEqual(push, f'{self.url}?f_komplektaciya=shahovi-stoli')
+
+    def test_seo_unchanged_for_filtered_and_paginated_urls(self):
+        cases = [
+            ({}, 'index, follow', True),
+            ({'page': 2}, 'index, follow', True),
+            ({'f_komplektaciya': 'shahovi-stoli'}, 'noindex,follow', False),
+            (
+                {'f_komplektaciya': 'shahovi-stoli', 'page': 2},
+                'noindex,follow',
+                False,
+            ),
+        ]
+        for query, robots, page_in_canonical in cases:
+            with self.subTest(query=query):
+                html = self.client.get(self.url, query).content.decode()
+                self.assertEqual(_robots(html), robots)
+                canon = _canonical(html)
+                self.assertTrue(canon.endswith(f'/catalog/{self.category.slug}/') or 'page=' in canon)
+                if query.get('f_komplektaciya'):
+                    self.assertTrue(canon.rstrip('/').endswith(self.category.slug))
+                    self.assertNotIn('f_', canon)
+                    self.assertNotIn('page=', canon)
+                elif page_in_canonical and int(query.get('page', 1)) >= 2:
+                    self.assertIn('page=2', canon)
+                    self.assertNotIn('f_', canon)
+
+    def test_filter_panel_has_hx_push_url(self):
+        root = Path(__file__).resolve().parents[2]
+        template = (
+            root / 'templates/products/partials/filter_panel.html'
+        ).read_text(encoding='utf-8')
+        self.assertIn('hx-push-url="true"', template)
+        category = (
+            root / 'templates/products/category_detail.html'
+        ).read_text(encoding='utf-8')
+        self.assertIn('hx-push-url="true"', category)
+        self.assertIn('id="catalog-pagination"', category)

@@ -1,6 +1,10 @@
 (function () {
     'use strict';
 
+    if (typeof htmx !== 'undefined' && htmx.config) {
+        htmx.config.refreshOnHistoryMiss = true;
+    }
+
     var _submitClicked = false;
 
     document.addEventListener('click', function (e) {

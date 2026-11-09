@@ -60,6 +60,7 @@
             <select hx-get="{% url 'products:category' category.slug %}"
                     hx-target="#product-grid"
                     hx-swap="innerHTML"
+                    hx-push-url="true"
                     hx-include=".filter-panel input[name], .filter-panel select[name]"
                     name="sort"
                     data-custom-select
@@ -97,7 +98,9 @@
         </div>
     </div>
 
-    {% include "includes/pagination.html" %}
+    <div id="catalog-pagination">
+        {% include "includes/pagination.html" %}
+    </div>
 
 </div>
 

@@ -11,6 +11,7 @@ from core.ratelimit import is_rate_limited
 from core.seo import apply_pagination_seo, build_product_meta_description
 from .attribute_filters import (
     attribute_filter_choices,
+    catalog_push_path,
     category_has_visible_products,
     category_listing_products,
     preserved_query,
@@ -152,8 +153,14 @@ class CategoryDetailView(ListView):
 
     def get_template_names(self):
         if self.request.headers.get('HX-Request'):
-            return ['products/partials/product_grid.html']
+            return ['products/partials/catalog_htmx.html']
         return ['products/category_detail.html']
+
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+        if self.request.headers.get('HX-Request'):
+            response['HX-Push-Url'] = catalog_push_path(self.request)
+        return response
 
 
 class ProductGroupView(ListView):

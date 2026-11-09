@@ -126,6 +126,19 @@ def analytics_payload(site_settings):
     }
 
 
+@register.simple_tag(takes_context=True)
+def filter_querystring(context, **kwargs):
+    """Як {% querystring %}, але без порожніх значень і HX-* параметрів."""
+    from django.template.defaulttags import querystring as django_querystring
+
+    from products.attribute_filters import clean_catalog_querydict
+
+    request = context.get('request')
+    params = getattr(request, 'GET', None) if request is not None else None
+    cleaned = clean_catalog_querydict(params)
+    return django_querystring(context, cleaned, **kwargs)
+
+
 def _first_banner_size(banner):
     from core.imaging.variants import field_local_path, read_meta
 

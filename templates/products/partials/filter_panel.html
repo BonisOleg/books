@@ -3,6 +3,7 @@
     <form hx-get="{% url 'products:category' category.slug %}"
           hx-target="#product-grid"
           hx-swap="innerHTML"
+          hx-push-url="true"
           hx-trigger="change, submit"
           hx-sync="this:replace"
           hx-include="[name='sort']">
