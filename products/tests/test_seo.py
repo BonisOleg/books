@@ -168,7 +168,7 @@ class SeoPagesClientTests(TestCase):
         ProductImage.objects.create(
             product=cls.product, image=_png('b.png'), order=1, alt_text=''
         )
-        # enough products for page=2 (paginate_by=24)
+        # enough products for page=2 (paginate_by=25)
         for i in range(30):
             p = Product.objects.create(
                 name=f'Товар пагінації {i}',

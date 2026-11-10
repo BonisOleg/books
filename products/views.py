@@ -74,7 +74,7 @@ class CatalogView(ListView):
     model = Product
     template_name = 'products/category_list.html'
     context_object_name = 'products'
-    paginate_by = 24
+    paginate_by = 25
 
     def get_queryset(self):
         qs = Product.objects.filter(is_active=True).with_rating().prefetch_related(
@@ -105,7 +105,7 @@ class CatalogView(ListView):
 class CategoryDetailView(ListView):
     template_name = 'products/category_detail.html'
     context_object_name = 'products'
-    paginate_by = 24
+    paginate_by = 25
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, slug=self.kwargs['slug'], is_active=True)
@@ -166,7 +166,7 @@ class CategoryDetailView(ListView):
 class ProductGroupView(ListView):
     template_name = 'products/group_detail.html'
     context_object_name = 'products'
-    paginate_by = 24
+    paginate_by = 25
 
     def get_group(self):
         if not hasattr(self, 'group'):
@@ -301,7 +301,7 @@ class ProductDetailView(DetailView):
 class SearchView(ListView):
     template_name = 'products/category_list.html'
     context_object_name = 'products'
-    paginate_by = 24
+    paginate_by = 25
 
     def get_queryset(self):
         q = self.request.GET.get('q', '')
