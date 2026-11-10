@@ -246,12 +246,14 @@ document.addEventListener('DOMContentLoaded', function () {
         lightboxIndex = index;
         renderLightbox();
         lightbox.classList.add('is-open');
+        document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
     }
 
     function closeLightbox() {
         if (!lightbox) return;
         lightbox.classList.remove('is-open');
+        document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
         if (lightboxMedia) lightboxMedia.innerHTML = '';
     }
